@@ -116,6 +116,22 @@
             background: #333;
         }
         
+        .viz-selector {
+            margin-left: auto;
+            padding: 6px 12px;
+            background: #fff;
+            border: 1px solid #e0e0e0;
+            border-radius: 2px;
+            font-family: inherit;
+            font-size: 12px;
+            color: #333;
+            cursor: pointer;
+        }
+        
+        .viz-selector:hover {
+            border-color: #ccc;
+        }
+        
         .visualization {
             flex: 1;
             background: #fafafa;
@@ -139,6 +155,12 @@
             <button id="pauseBtn" style="display: none;">⏸</button>
             <button id="stopBtn">⏹</button>
             <button id="loopBtn" class="toggle-btn active">Loop</button>
+            <select id="vizMode" class="viz-selector">
+                <option value="waveform">Waveform</option>
+                <option value="intensity">Intensity Bars</option>
+                <option value="stereo">Stereo Field</option>
+                <option value="spectrum">Frequency Spectrum</option>
+            </select>
         </div>
         <div class="visualization">
             <div id="p5-container"></div>
