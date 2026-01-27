@@ -5,7 +5,16 @@ let isPlaying = false;
 let isLooping = true;
 let currentFilePath = null;
 let filesList = [];
-let visualizationMode = 'waveform'; // 'waveform', 'intensity', 'stereo', 'spectrum'
+let visualizationMode = 'waveform'; // 'waveform', 'intensity', 'stereo', 'spectrum', 'pulses', 'blob', 'particles', 'landscape'
+
+// Pulse tracking for directional pulses visualization
+let activePulses = [];
+
+// Particle system for particle swarm
+let particles = [];
+
+// Blob vertices for liquid blob
+let blobVertices = [];
 
 // Load files when page loads
 window.addEventListener('DOMContentLoaded', () => {
@@ -383,6 +392,18 @@ function setupP5Sketch() {
                     case 'spectrum':
                         drawFrequencySpectrum(p);
                         break;
+                    case 'pulses':
+                        drawDirectionalPulses(p);
+                        break;
+                    case 'blob':
+                        drawLiquidBlob(p);
+                        break;
+                    case 'particles':
+                        drawParticleSwarm(p);
+                        break;
+                    case 'landscape':
+                        draw3DLandscape(p);
+                        break;
                     case 'waveform':
                     default:
                         drawWaveform(p);
@@ -709,35 +730,51 @@ function setupP5Sketch() {
                 const y = p.height - barHeight;
                 
                 // Color mapping: low freq (blue) -> mid (green) -> high (red)
+                // More vibrant, saturated colors for better contrast
                 const freqRatio = i / spectrum.length;
                 let r, g, b;
                 
                 if (freqRatio < 0.33) {
-                    // Low frequencies - blue
+                    // Low frequencies - bright blue to cyan
                     const t = freqRatio / 0.33;
-                    r = Math.floor(50 * t);
-                    g = Math.floor(100 * t);
+                    r = Math.floor(30 * t);
+                    g = Math.floor(100 + 155 * t);
                     b = 255;
                 } else if (freqRatio < 0.66) {
-                    // Mid frequencies - green to yellow
+                    // Mid frequencies - cyan to bright yellow
                     const t = (freqRatio - 0.33) / 0.33;
-                    r = Math.floor(50 + 205 * t);
+                    r = Math.floor(30 + 225 * t);
                     g = 255;
-                    b = Math.floor(255 * (1 - t));
+                    b = Math.floor(255 * (1 - t * 0.8));
                 } else {
-                    // High frequencies - yellow to red
+                    // High frequencies - yellow to bright red
                     const t = (freqRatio - 0.66) / 0.34;
                     r = 255;
                     g = Math.floor(255 * (1 - t));
-                    b = 0;
+                    b = Math.floor(50 * (1 - t));
                 }
                 
-                // Intensity affects opacity/brightness
+                // Intensity affects brightness and saturation - make it more vibrant
                 const intensityFactor = spectrum[i] / 255;
-                const alpha = 150 + intensityFactor * 105;
+                
+                // Boost saturation and brightness for better visibility
+                const saturationBoost = 1.2;
+                const brightnessBoost = 0.8 + intensityFactor * 0.2;
+                
+                // Apply boosts
+                r = Math.min(255, Math.floor(r * brightnessBoost));
+                g = Math.min(255, Math.floor(g * brightnessBoost));
+                b = Math.min(255, Math.floor(b * brightnessBoost));
+                
+                // Higher opacity for better contrast
+                const alpha = 200 + intensityFactor * 55;
                 
                 p.fill(r, g, b, alpha);
-                p.noStroke();
+                
+                // Add subtle stroke for definition
+                p.stroke(r * 0.7, g * 0.7, b * 0.7, alpha * 0.8);
+                p.strokeWeight(0.5);
+                
                 p.rect(x, y, barWidth - 1, barHeight);
             }
             
@@ -771,6 +808,851 @@ function setupP5Sketch() {
             p.stroke(200);
             p.strokeWeight(1);
             p.line(0, p.height / 2, p.width, p.height / 2);
+        }
+        
+        // Directional pulses visualization (FPS-style impact indicators)
+        function drawDirectionalPulses(p) {
+            // Get stereo channel intensities and sharpness
+            let leftIntensity = 0;
+            let rightIntensity = 0;
+            let leftSharpness = 0;
+            let rightSharpness = 0;
+            
+            if (window.isStereo && sound && sound.buffer && sound.buffer.numberOfChannels >= 2 && sound.isPlaying()) {
+                try {
+                    const currentTime = sound.currentTime();
+                    const sampleRate = sound.buffer.sampleRate;
+                    const bufferLength = sound.buffer.length;
+                    const sampleIndex = Math.floor(currentTime * sampleRate);
+                    
+                    const leftChannel = sound.buffer.getChannelData(0);
+                    const rightChannel = sound.buffer.getChannelData(1);
+                    
+                    // Sample recent audio for intensity and sharpness
+                    const sampleWindow = 512;
+                    let leftSum = 0;
+                    let rightSum = 0;
+                    let leftMaxChange = 0;
+                    let rightMaxChange = 0;
+                    let count = 0;
+                    
+                    let prevLeft = 0;
+                    let prevRight = 0;
+                    
+                    for (let i = 0; i < sampleWindow; i++) {
+                        const idx = sampleIndex - sampleWindow + i;
+                        if (idx >= 0 && idx < bufferLength) {
+                            const leftVal = Math.abs(leftChannel[idx]);
+                            const rightVal = Math.abs(rightChannel[idx]);
+                            
+                            leftSum += leftVal;
+                            rightSum += rightVal;
+                            
+                            // Calculate sharpness as rate of change (attack/transient detection)
+                            if (i > 0) {
+                                const leftChange = Math.abs(leftVal - prevLeft);
+                                const rightChange = Math.abs(rightVal - prevRight);
+                                leftMaxChange = Math.max(leftMaxChange, leftChange);
+                                rightMaxChange = Math.max(rightMaxChange, rightChange);
+                            }
+                            
+                            prevLeft = leftVal;
+                            prevRight = rightVal;
+                            count++;
+                        }
+                    }
+                    
+                    leftIntensity = count > 0 ? leftSum / count : 0;
+                    rightIntensity = count > 0 ? rightSum / count : 0;
+                    leftSharpness = leftMaxChange; // Sharpness = max rate of change
+                    rightSharpness = rightMaxChange;
+                } catch (e) {
+                    console.warn('Error getting stereo data for pulses:', e);
+                }
+            } else {
+                // Fallback to waveform analysis
+                const waveform = fft.waveform();
+                let sum = 0;
+                let maxChange = 0;
+                let prev = 0;
+                
+                for (let i = 0; i < waveform.length; i++) {
+                    const val = Math.abs(waveform[i]);
+                    sum += val;
+                    
+                    const change = Math.abs(val - prev);
+                    maxChange = Math.max(maxChange, change);
+                    prev = val;
+                }
+                
+                const avg = sum / waveform.length;
+                leftIntensity = avg;
+                rightIntensity = avg;
+                leftSharpness = maxChange;
+                rightSharpness = maxChange;
+            }
+            
+            // Lower threshold and ensure pulses always appear
+            const pulseThreshold = 0.03; // Much lower threshold
+            const currentFrame = p.frameCount;
+            
+            // Always create pulses if there's any audio, even if very low
+            // Scale intensity to ensure visibility
+            const minVisibleIntensity = 0.15; // Minimum intensity for visual impact
+            const scaledLeftIntensity = Math.max(leftIntensity, minVisibleIntensity * 0.3);
+            const scaledRightIntensity = Math.max(rightIntensity, minVisibleIntensity * 0.3);
+            
+            // Create pulses more frequently
+            const timeSinceLastLeft = activePulses.filter(p => p.side === 'left').length > 0 
+                ? currentFrame - Math.max(...activePulses.filter(p => p.side === 'left').map(p => p.frame))
+                : 999;
+            const timeSinceLastRight = activePulses.filter(p => p.side === 'right').length > 0
+                ? currentFrame - Math.max(...activePulses.filter(p => p.side === 'right').map(p => p.frame))
+                : 999;
+            
+            // Create left pulses
+            if (leftIntensity > pulseThreshold || (leftIntensity > 0 && timeSinceLastLeft > 60)) {
+                const recentLeftPulses = activePulses.filter(pulse => 
+                    pulse.side === 'left' && currentFrame - pulse.frame < 40
+                );
+                if (recentLeftPulses.length < 5) {
+                    activePulses.push({
+                        side: 'left',
+                        intensity: Math.max(scaledLeftIntensity, minVisibleIntensity),
+                        sharpness: leftSharpness,
+                        radius: 0,
+                        frame: currentFrame,
+                        maxRadius: Math.min(p.width, p.height) * 0.95
+                    });
+                }
+            }
+            
+            // Create right pulses
+            if (rightIntensity > pulseThreshold || (rightIntensity > 0 && timeSinceLastRight > 60)) {
+                const recentRightPulses = activePulses.filter(pulse => 
+                    pulse.side === 'right' && currentFrame - pulse.frame < 40
+                );
+                if (recentRightPulses.length < 5) {
+                    activePulses.push({
+                        side: 'right',
+                        intensity: Math.max(scaledRightIntensity, minVisibleIntensity),
+                        sharpness: rightSharpness,
+                        radius: 0,
+                        frame: currentFrame,
+                        maxRadius: Math.min(p.width, p.height) * 0.95
+                    });
+                }
+            }
+            
+            // Update and draw active pulses with more visual impact
+            p.noFill();
+            const centerY = p.height / 2;
+            
+            for (let i = activePulses.length - 1; i >= 0; i--) {
+                const pulse = activePulses[i];
+                const age = currentFrame - pulse.frame;
+                
+                // Faster speed for more impact
+                const speed = 6 + pulse.intensity * 12; // Increased from 4 + 8
+                pulse.radius += speed;
+                
+                // Calculate opacity (fade out as pulse expands, but stay visible longer)
+                const progress = pulse.radius / pulse.maxRadius;
+                const baseOpacity = 255 * (1 - progress * 0.8) * Math.max(pulse.intensity, 0.3); // Minimum opacity
+                
+                if (pulse.radius > pulse.maxRadius || baseOpacity < 15) { // Lower threshold
+                    activePulses.splice(i, 1);
+                    continue;
+                }
+                
+                // Color based on intensity: green (low) -> yellow (mid) -> red (high)
+                let r, g, b;
+                const intensityNorm = Math.min(pulse.intensity * 1.5, 1); // Normalize intensity
+                
+                if (intensityNorm < 0.33) {
+                    // Green to yellow-green
+                    const t = intensityNorm / 0.33;
+                    r = Math.floor(50 + 100 * t);
+                    g = 255;
+                    b = Math.floor(50 * (1 - t));
+                } else if (intensityNorm < 0.66) {
+                    // Yellow-green to yellow
+                    const t = (intensityNorm - 0.33) / 0.33;
+                    r = Math.floor(150 + 105 * t);
+                    g = 255;
+                    b = Math.floor(50 * (1 - t));
+                } else {
+                    // Yellow to red
+                    const t = (intensityNorm - 0.66) / 0.34;
+                    r = 255;
+                    g = Math.floor(255 * (1 - t));
+                    b = 0;
+                }
+                
+                // Sharpness affects opacity and adds visual "spark"
+                const sharpnessNorm = Math.min(pulse.sharpness * 10, 1);
+                const opacity = Math.max(baseOpacity * (0.8 + 0.2 * sharpnessNorm), 80); // Higher minimum opacity
+                
+                // Draw main pulse circle (thicker, more visible)
+                const pulseX = pulse.side === 'left' ? 0 : p.width;
+                p.stroke(r, g, b, opacity);
+                p.strokeWeight(3 + pulse.intensity * 5); // Thicker stroke
+                p.circle(pulseX, centerY, pulse.radius * 2);
+                
+                // Draw multiple concentric circles for more impact
+                if (pulse.radius > 20) {
+                    p.stroke(r, g, b, opacity * 0.6);
+                    p.strokeWeight(2 + pulse.intensity * 3);
+                    p.circle(pulseX, centerY, pulse.radius * 1.5);
+                }
+                
+                // Sharpness visualization: add inner pulse or spikes for sharp transients
+                if (sharpnessNorm > 0.2) { // Lower threshold
+                    // Draw inner pulse for sharpness
+                    const innerRadius = pulse.radius * 0.5;
+                    const sharpOpacity = opacity * sharpnessNorm * 0.8;
+                    p.stroke(r, g, b, sharpOpacity);
+                    p.strokeWeight(2 + sharpnessNorm * 3);
+                    p.circle(pulseX, centerY, innerRadius * 2);
+                    
+                    // Add "spark" lines for very sharp sounds
+                    if (sharpnessNorm > 0.5) { // Lower threshold
+                        p.stroke(r, g, b, sharpOpacity);
+                        p.strokeWeight(2);
+                        const sparkLength = pulse.radius * 0.4;
+                        const numSparks = 12; // More sparks
+                        for (let s = 0; s < numSparks; s++) {
+                            const angle = (s / numSparks) * p.TWO_PI;
+                            const startX = pulseX + Math.cos(angle) * innerRadius;
+                            const startY = centerY + Math.sin(angle) * innerRadius;
+                            const endX = pulseX + Math.cos(angle) * (innerRadius + sparkLength);
+                            const endY = centerY + Math.sin(angle) * (innerRadius + sparkLength);
+                            p.line(startX, startY, endX, endY);
+                        }
+                    }
+                }
+                
+                // Add glow effect for high intensity
+                if (pulse.intensity > 0.4) {
+                    p.stroke(r, g, b, opacity * 0.3);
+                    p.strokeWeight(1);
+                    p.circle(pulseX, centerY, pulse.radius * 2.2);
+                }
+            }
+            
+            // If no pulses exist and audio is playing, create at least one
+            if (activePulses.length === 0 && sound && sound.isPlaying()) {
+                // Create a subtle pulse to show something is happening
+                const fallbackIntensity = Math.max(leftIntensity, rightIntensity, 0.2);
+                if (fallbackIntensity > 0) {
+                    const side = leftIntensity > rightIntensity ? 'left' : 'right';
+                    activePulses.push({
+                        side: side,
+                        intensity: fallbackIntensity,
+                        sharpness: Math.max(leftSharpness, rightSharpness),
+                        radius: 0,
+                        frame: currentFrame,
+                        maxRadius: Math.min(p.width, p.height) * 0.9
+                    });
+                }
+            }
+            
+            // Draw center reference line
+            p.stroke(200);
+            p.strokeWeight(1);
+            p.line(0, centerY, p.width, centerY);
+        }
+        
+        // Liquid Morphing Blob visualization
+        function drawLiquidBlob(p) {
+            const spectrum = fft.analyze();
+            const waveform = fft.waveform();
+            
+            // Calculate overall intensity
+            let totalIntensity = 0;
+            for (let i = 0; i < waveform.length; i++) {
+                totalIntensity += Math.abs(waveform[i]);
+            }
+            const avgIntensity = totalIntensity / waveform.length;
+            
+            // Get stereo data for asymmetric morphing
+            let leftIntensity = avgIntensity;
+            let rightIntensity = avgIntensity;
+            let leftSharpness = 0;
+            let rightSharpness = 0;
+            
+            if (window.isStereo && sound && sound.buffer && sound.buffer.numberOfChannels >= 2) {
+                try {
+                    const currentTime = sound.currentTime();
+                    const sampleRate = sound.buffer.sampleRate;
+                    const sampleIndex = Math.floor(currentTime * sampleRate);
+                    const leftChannel = sound.buffer.getChannelData(0);
+                    const rightChannel = sound.buffer.getChannelData(1);
+                    
+                    let leftSum = 0, rightSum = 0, leftMaxChange = 0, rightMaxChange = 0;
+                    let prevLeft = 0, prevRight = 0;
+                    const windowSize = 256;
+                    
+                    for (let i = 0; i < windowSize; i++) {
+                        const idx = sampleIndex - windowSize + i;
+                        if (idx >= 0 && idx < leftChannel.length) {
+                            const l = Math.abs(leftChannel[idx]);
+                            const r = Math.abs(rightChannel[idx]);
+                            leftSum += l;
+                            rightSum += r;
+                            
+                            if (i > 0) {
+                                leftMaxChange = Math.max(leftMaxChange, Math.abs(l - prevLeft));
+                                rightMaxChange = Math.max(rightMaxChange, Math.abs(r - prevRight));
+                            }
+                            prevLeft = l;
+                            prevRight = r;
+                        }
+                    }
+                    
+                    leftIntensity = leftSum / windowSize;
+                    rightIntensity = rightSum / windowSize;
+                    leftSharpness = leftMaxChange;
+                    rightSharpness = rightMaxChange;
+                } catch (e) {}
+            }
+            
+            // Base blob size from intensity (more dramatic scaling)
+            const baseRadius = 100 + avgIntensity * 300;
+            const centerX = p.width / 2;
+            const centerY = p.height / 2;
+            
+            // Create blob vertices using perlin noise and audio
+            const numPoints = 80; // More points for smoother, more detailed blob
+            if (blobVertices.length !== numPoints) {
+                blobVertices = [];
+                for (let i = 0; i < numPoints; i++) {
+                    blobVertices.push({ angle: 0, radius: baseRadius });
+                }
+            }
+            
+            // Update blob shape with more liquid-like, flowing effects
+            const time = p.frameCount * 0.02; // Slower, more fluid animation
+            const maxSharpness = Math.max(leftSharpness, rightSharpness);
+            
+            // Use multiple noise layers for more organic, wave-like motion
+            for (let i = 0; i < numPoints; i++) {
+                const angle = (i / numPoints) * p.TWO_PI;
+                
+                // Multiple noise layers for more complex, fluid motion
+                const noiseX1 = Math.cos(angle) * 1.5 + time * 0.5;
+                const noiseY1 = Math.sin(angle) * 1.5 + time * 0.5;
+                const noiseX2 = Math.cos(angle) * 3.0 + time * 0.3;
+                const noiseY2 = Math.sin(angle) * 3.0 + time * 0.3;
+                const noiseX3 = Math.cos(angle) * 0.8 + time * 0.7;
+                const noiseY3 = Math.sin(angle) * 0.8 + time * 0.7;
+                
+                // Combine multiple noise layers for smoother, more organic waves
+                const noise1 = p.noise(noiseX1, noiseY1);
+                const noise2 = p.noise(noiseX2, noiseY2) * 0.6;
+                const noise3 = p.noise(noiseX3, noiseY3) * 0.4;
+                const combinedNoise = (noise1 + noise2 + noise3) / 2;
+                
+                // Base radius with smooth, wave-like noise
+                let radius = baseRadius + combinedNoise * 50;
+                
+                // Frequency bands affect different parts (smoother transitions)
+                const freqBand = Math.floor((i / numPoints) * spectrum.length);
+                const freqIntensity = spectrum[freqBand] / 255;
+                radius += freqIntensity * 100;
+                
+                // Sharpness creates fluid spikes (more rounded, less angular)
+                const sharpness = (leftSharpness + rightSharpness) / 2;
+                if (sharpness > 0.05) {
+                    const spikeAngle = Math.atan2(Math.sin(angle), Math.cos(angle));
+                    const leftSpike = Math.abs(spikeAngle) < p.PI / 2 ? leftSharpness : 0;
+                    const rightSpike = Math.abs(spikeAngle) > p.PI / 2 ? rightSharpness : 0;
+                    // Use sine wave for smoother spike shape
+                    const spikeShape = Math.sin(angle * 2) * 0.5 + 0.5;
+                    const spikeIntensity = (leftSpike + rightSpike) * 150 * spikeShape;
+                    radius += spikeIntensity;
+                    
+                    // Add extra fluid spike for very sharp sounds
+                    if (maxSharpness > 0.2) {
+                        radius += maxSharpness * 100 * spikeShape;
+                    }
+                }
+                
+                // L/R asymmetry with smooth wave transition
+                const lrWave = Math.sin(angle);
+                if (lrWave > 0) {
+                    // Left side - smooth wave transition
+                    radius += (leftIntensity - rightIntensity) * 80 * lrWave;
+                } else {
+                    // Right side - smooth wave transition
+                    radius += (rightIntensity - leftIntensity) * 80 * Math.abs(lrWave);
+                }
+                
+                // Add smooth pulsing effect (more wave-like)
+                const pulse = Math.sin(p.frameCount * 0.08 + angle * 2) * avgIntensity * 25;
+                radius += pulse;
+                
+                // Add secondary wave for more liquid movement
+                const secondaryWave = Math.sin(p.frameCount * 0.12 + angle * 3) * avgIntensity * 15;
+                radius += secondaryWave;
+                
+                blobVertices[i].angle = angle;
+                blobVertices[i].radius = radius;
+            }
+            
+            // Dynamic color based on intensity and frequency
+            const dominantFreq = spectrum.indexOf(Math.max(...spectrum));
+            const freqRatio = dominantFreq / spectrum.length;
+            
+            // Color gradient: blue (low) -> cyan -> green -> yellow -> red (high)
+            let r, g, b;
+            if (freqRatio < 0.2) {
+                // Low frequencies - deep blue
+                r = 30;
+                g = 100 + avgIntensity * 100;
+                b = 200 + avgIntensity * 55;
+            } else if (freqRatio < 0.4) {
+                // Low-mid - cyan
+                r = 30 + avgIntensity * 50;
+                g = 200 + avgIntensity * 55;
+                b = 255;
+            } else if (freqRatio < 0.6) {
+                // Mid - green to yellow-green
+                r = 50 + avgIntensity * 100;
+                g = 255;
+                b = 100 + avgIntensity * 50;
+            } else if (freqRatio < 0.8) {
+                // Mid-high - yellow
+                r = 200 + avgIntensity * 55;
+                g = 255;
+                b = 50;
+            } else {
+                // High - orange to red
+                r = 255;
+                g = 150 + avgIntensity * 50;
+                b = 30;
+            }
+            
+            // Boost brightness based on intensity
+            const brightnessBoost = 0.7 + avgIntensity * 0.3;
+            r = Math.min(255, Math.floor(r * brightnessBoost));
+            g = Math.min(255, Math.floor(g * brightnessBoost));
+            b = Math.min(255, Math.floor(b * brightnessBoost));
+            
+            // Draw main blob with smooth, liquid-like curves
+            // Use bezier curves for smoother, more fluid edges
+            p.fill(r, g, b, 180); // Slightly more transparent for liquid effect
+            p.stroke(r * 0.7, g * 0.7, b * 0.7, 200);
+            p.strokeWeight(2.5);
+            
+            // Use bezierVertex for smoother, more liquid curves
+            p.beginShape();
+            for (let i = 0; i < blobVertices.length; i++) {
+                const v = blobVertices[i];
+                const nextIdx = (i + 1) % blobVertices.length;
+                const prevIdx = (i - 1 + blobVertices.length) % blobVertices.length;
+                
+                const vCurr = blobVertices[i];
+                const vNext = blobVertices[nextIdx];
+                const vPrev = blobVertices[prevIdx];
+                
+                const x = centerX + Math.cos(vCurr.angle) * vCurr.radius;
+                const y = centerY + Math.sin(vCurr.angle) * vCurr.radius;
+                
+                if (i === 0) {
+                    p.vertex(x, y);
+                } else {
+                    // Calculate control points for smooth bezier curves
+                    const prevX = centerX + Math.cos(vPrev.angle) * vPrev.radius;
+                    const prevY = centerY + Math.sin(vPrev.angle) * vPrev.radius;
+                    const nextX = centerX + Math.cos(vNext.angle) * vNext.radius;
+                    const nextY = centerY + Math.sin(vNext.angle) * vNext.radius;
+                    
+                    // Control point for smooth curve (midpoint between current and next)
+                    const cp1x = x + (nextX - x) * 0.3;
+                    const cp1y = y + (nextY - y) * 0.3;
+                    
+                    p.bezierVertex(
+                        cp1x, cp1y,
+                        cp1x, cp1y,
+                        x, y
+                    );
+                }
+            }
+            p.endShape(p.CLOSE);
+            
+            // Add inner highlight for liquid shine effect
+            if (avgIntensity > 0.2) {
+                p.fill(r + 30, g + 30, b + 30, 100);
+                p.noStroke();
+                p.beginShape();
+                for (let i = 0; i < blobVertices.length; i++) {
+                    const v = blobVertices[i];
+                    const x = centerX + Math.cos(v.angle) * v.radius * 0.7;
+                    const y = centerY + Math.sin(v.angle) * v.radius * 0.7;
+                    p.curveVertex(x, y);
+                }
+                p.endShape(p.CLOSE);
+            }
+            
+            // Add multiple inner ripples for intensity (more dramatic)
+            if (avgIntensity > 0.15) {
+                p.noFill();
+                const numRipples = Math.floor(avgIntensity * 3) + 1;
+                
+                for (let ripple = 0; ripple < numRipples; ripple++) {
+                    const rippleProgress = (ripple + 1) / (numRipples + 1);
+                    const rippleRadius = baseRadius * 0.5 * rippleProgress;
+                    const rippleAlpha = 150 * (1 - rippleProgress) * avgIntensity;
+                    
+                    p.stroke(r, g, b, rippleAlpha);
+                    p.strokeWeight(2);
+                    p.circle(centerX, centerY, rippleRadius * 2);
+                }
+            }
+            
+            // Add outer glow for high intensity
+            if (avgIntensity > 0.3) {
+                p.noFill();
+                p.stroke(r, g, b, 80);
+                p.strokeWeight(1);
+                const glowRadius = baseRadius * 1.2;
+                p.circle(centerX, centerY, glowRadius * 2);
+            }
+        }
+        
+        // Particle Swarm visualization
+        function drawParticleSwarm(p) {
+            const spectrum = fft.analyze();
+            const waveform = fft.waveform();
+            
+            // Calculate intensity
+            let totalIntensity = 0;
+            for (let i = 0; i < waveform.length; i++) {
+                totalIntensity += Math.abs(waveform[i]);
+            }
+            const avgIntensity = totalIntensity / waveform.length;
+            
+            // Get stereo data
+            let leftIntensity = avgIntensity;
+            let rightIntensity = avgIntensity;
+            let leftSharpness = 0;
+            let rightSharpness = 0;
+            
+            if (window.isStereo && sound && sound.buffer && sound.buffer.numberOfChannels >= 2) {
+                try {
+                    const currentTime = sound.currentTime();
+                    const sampleRate = sound.buffer.sampleRate;
+                    const sampleIndex = Math.floor(currentTime * sampleRate);
+                    const leftChannel = sound.buffer.getChannelData(0);
+                    const rightChannel = sound.buffer.getChannelData(1);
+                    
+                    let leftSum = 0, rightSum = 0, leftMaxChange = 0, rightMaxChange = 0;
+                    let prevLeft = 0, prevRight = 0;
+                    const windowSize = 256;
+                    
+                    for (let i = 0; i < windowSize; i++) {
+                        const idx = sampleIndex - windowSize + i;
+                        if (idx >= 0 && idx < leftChannel.length) {
+                            const l = Math.abs(leftChannel[idx]);
+                            const r = Math.abs(rightChannel[idx]);
+                            leftSum += l;
+                            rightSum += r;
+                            
+                            if (i > 0) {
+                                leftMaxChange = Math.max(leftMaxChange, Math.abs(l - prevLeft));
+                                rightMaxChange = Math.max(rightMaxChange, Math.abs(r - prevRight));
+                            }
+                            prevLeft = l;
+                            prevRight = r;
+                        }
+                    }
+                    
+                    leftIntensity = leftSum / windowSize;
+                    rightIntensity = rightSum / windowSize;
+                    leftSharpness = leftMaxChange;
+                    rightSharpness = rightMaxChange;
+                } catch (e) {}
+            }
+            
+            // Particle count based on intensity (more oomph!)
+            const targetParticleCount = 100 + Math.floor(avgIntensity * 400);
+            
+            // Initialize or adjust particles
+            while (particles.length < targetParticleCount) {
+                // Determine which side based on stereo intensity
+                const sideProb = leftIntensity / (leftIntensity + rightIntensity + 0.001);
+                const side = p.random() < sideProb ? 'left' : 'right';
+                
+                // Spawn particles on their respective sides
+                let spawnX;
+                if (side === 'left') {
+                    spawnX = p.random(0, p.width * 0.4);
+                } else {
+                    spawnX = p.random(p.width * 0.6, p.width);
+                }
+                
+                particles.push({
+                    x: spawnX,
+                    y: p.random(p.height),
+                    vx: p.random(-2, 2),
+                    vy: p.random(-2, 2),
+                    size: p.random(3, 8),
+                    freqBand: Math.floor(p.random(spectrum.length)),
+                    side: side
+                });
+            }
+            
+            // Remove excess particles
+            while (particles.length > targetParticleCount) {
+                particles.pop();
+            }
+            
+            // Update and draw particles
+            const centerX = p.width / 2;
+            const centerY = p.height / 2;
+            
+            // Calculate target positions for L/R swarming
+            const leftTargetX = p.width * 0.25;
+            const rightTargetX = p.width * 0.75;
+            
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const particle = particles[i];
+                
+                // Get frequency intensity for this particle
+                const freqIntensity = spectrum[particle.freqBand] / 255;
+                
+                // Strong L/R swarming behavior
+                let targetX;
+                let channelIntensity;
+                
+                if (particle.side === 'left') {
+                    targetX = leftTargetX;
+                    channelIntensity = leftIntensity;
+                    
+                    // Strong attraction to left side when left channel is active
+                    const dx = targetX - particle.x;
+                    const attraction = 0.05 + leftIntensity * 0.1;
+                    particle.vx += dx * attraction;
+                    
+                    // Push away from right side
+                    if (particle.x > centerX) {
+                        particle.vx -= (rightIntensity * 0.15);
+                    }
+                } else {
+                    targetX = rightTargetX;
+                    channelIntensity = rightIntensity;
+                    
+                    // Strong attraction to right side when right channel is active
+                    const dx = targetX - particle.x;
+                    const attraction = 0.05 + rightIntensity * 0.1;
+                    particle.vx += dx * attraction;
+                    
+                    // Push away from left side
+                    if (particle.x < centerX) {
+                        particle.vx += (leftIntensity * 0.15);
+                    }
+                }
+                
+                // Vertical attraction to center (weaker to avoid stuck particles)
+                const dy = centerY - particle.y;
+                particle.vy += dy * 0.01; // Reduced from 0.02
+                
+                // Sharpness creates explosive bursts
+                const sharpness = particle.side === 'left' ? leftSharpness : rightSharpness;
+                if (sharpness > 0.1) {
+                    const angle = p.random(p.TWO_PI);
+                    const burstForce = sharpness * 5;
+                    particle.vx += Math.cos(angle) * burstForce;
+                    particle.vy += Math.sin(angle) * burstForce;
+                }
+                
+                // Prevent particles from getting stuck - add small random movement
+                const distFromTarget = Math.abs(targetX - particle.x) + Math.abs(centerY - particle.y);
+                if (distFromTarget < 5 && Math.abs(particle.vx) < 0.1 && Math.abs(particle.vy) < 0.1) {
+                    // Particle is stuck near target, give it a small push
+                    particle.vx += p.random(-0.5, 0.5);
+                    particle.vy += p.random(-0.5, 0.5);
+                }
+                
+                // Intensity affects particle behavior
+                const intensityBoost = channelIntensity * 2;
+                particle.vx *= (1 + intensityBoost * 0.01);
+                particle.vy *= (1 + intensityBoost * 0.01);
+                
+                // Ensure minimum velocity to prevent completely stuck particles
+                if (Math.abs(particle.vx) < 0.05 && Math.abs(particle.vy) < 0.05) {
+                    particle.vx += p.random(-0.2, 0.2);
+                    particle.vy += p.random(-0.2, 0.2);
+                }
+                
+                // Update position
+                particle.x += particle.vx;
+                particle.y += particle.vy;
+                
+                // Boundary wrapping with bounce
+                if (particle.x < 0) {
+                    particle.x = 0;
+                    particle.vx *= -0.5;
+                }
+                if (particle.x > p.width) {
+                    particle.x = p.width;
+                    particle.vx *= -0.5;
+                }
+                if (particle.y < 0) {
+                    particle.y = 0;
+                    particle.vy *= -0.5;
+                }
+                if (particle.y > p.height) {
+                    particle.y = p.height;
+                    particle.vy *= -0.5;
+                }
+                
+                // Damping
+                particle.vx *= 0.96;
+                particle.vy *= 0.96;
+                
+                // Draw particle with more visual impact
+                const hue = p.map(particle.freqBand, 0, spectrum.length, 180, 360);
+                const brightness = 60 + freqIntensity * 195 + channelIntensity * 100;
+                const alpha = 180 + freqIntensity * 75;
+                
+                // Larger, brighter particles
+                p.fill(hue, 100, brightness, alpha);
+                p.noStroke();
+                const particleSize = particle.size * (1 + freqIntensity * 0.5 + channelIntensity * 0.3);
+                p.circle(particle.x, particle.y, particleSize);
+                
+                // Add glow effect for high intensity
+                if (channelIntensity > 0.3) {
+                    p.fill(hue, 100, brightness, alpha * 0.3);
+                    p.circle(particle.x, particle.y, particleSize * 2);
+                }
+            }
+            
+            // Draw center divider line
+            p.stroke(200, 50);
+            p.strokeWeight(1);
+            p.line(centerX, 0, centerX, p.height);
+        }
+        
+        // 3D Audio Landscape visualization (2D perspective view)
+        function draw3DLandscape(p) {
+            const spectrum = fft.analyze();
+            const waveform = fft.waveform();
+            
+            // Calculate intensity
+            let totalIntensity = 0;
+            for (let i = 0; i < waveform.length; i++) {
+                totalIntensity += Math.abs(waveform[i]);
+            }
+            const avgIntensity = totalIntensity / waveform.length;
+            
+            // Get stereo data
+            let leftIntensity = avgIntensity;
+            let rightIntensity = avgIntensity;
+            
+            if (window.isStereo && sound && sound.buffer && sound.buffer.numberOfChannels >= 2) {
+                try {
+                    const currentTime = sound.currentTime();
+                    const sampleRate = sound.buffer.sampleRate;
+                    const sampleIndex = Math.floor(currentTime * sampleRate);
+                    const leftChannel = sound.buffer.getChannelData(0);
+                    const rightChannel = sound.buffer.getChannelData(1);
+                    
+                    let leftSum = 0, rightSum = 0;
+                    const windowSize = 256;
+                    
+                    for (let i = 0; i < windowSize; i++) {
+                        const idx = sampleIndex - windowSize + i;
+                        if (idx >= 0 && idx < leftChannel.length) {
+                            leftSum += Math.abs(leftChannel[idx]);
+                            rightSum += Math.abs(rightChannel[idx]);
+                        }
+                    }
+                    
+                    leftIntensity = leftSum / windowSize;
+                    rightIntensity = rightSum / windowSize;
+                } catch (e) {}
+            }
+            
+            // Draw landscape as 2D side view with perspective
+            const cols = spectrum.length;
+            const baseY = p.height * 0.8;
+            const maxHeight = p.height * 0.6;
+            
+            // Draw terrain from left to right
+            p.beginShape();
+            p.fill(100, 150, 200, 200);
+            p.stroke(80, 120, 180, 255);
+            p.strokeWeight(2);
+            
+            // Start at bottom left
+            p.vertex(0, p.height);
+            
+            // Draw terrain line
+            for (let i = 0; i < cols; i++) {
+                const freqValue = spectrum[i] / 255;
+                
+                // Calculate height
+                let height = freqValue * maxHeight;
+                height += avgIntensity * maxHeight * 0.5;
+                
+                // L/R asymmetry
+                const xRatio = i / cols;
+                if (xRatio < 0.5) {
+                    height += (leftIntensity - rightIntensity) * maxHeight * 0.3;
+                } else {
+                    height += (rightIntensity - leftIntensity) * maxHeight * 0.3;
+                }
+                
+                // Add noise
+                height += p.noise(i * 0.1, p.frameCount * 0.01) * maxHeight * 0.2;
+                
+                const x = p.map(i, 0, cols, 0, p.width);
+                const y = baseY - height;
+                
+                // Color based on frequency
+                const hue = p.map(i, 0, cols, 200, 300);
+                const brightness = 50 + freqValue * 200;
+                
+                // Draw vertical bar for this frequency
+                p.fill(hue, 100, brightness, 220);
+                p.noStroke();
+                const barWidth = p.width / cols;
+                p.rect(x, y, barWidth, p.height - y);
+                
+                // Add to shape for terrain outline
+                p.vertex(x, y);
+            }
+            
+            // End at bottom right
+            p.vertex(p.width, p.height);
+            p.endShape(p.CLOSE);
+            
+            // Draw terrain outline on top
+            p.stroke(150, 200, 255, 200);
+            p.strokeWeight(2);
+            p.noFill();
+            p.beginShape();
+            for (let i = 0; i < cols; i++) {
+                const freqValue = spectrum[i] / 255;
+                let height = freqValue * maxHeight;
+                height += avgIntensity * maxHeight * 0.5;
+                
+                const xRatio = i / cols;
+                if (xRatio < 0.5) {
+                    height += (leftIntensity - rightIntensity) * maxHeight * 0.3;
+                } else {
+                    height += (rightIntensity - leftIntensity) * maxHeight * 0.3;
+                }
+                height += p.noise(i * 0.1, p.frameCount * 0.01) * maxHeight * 0.2;
+                
+                const x = p.map(i, 0, cols, 0, p.width);
+                const y = baseY - height;
+                p.vertex(x, y);
+            }
+            p.endShape();
         }
         
         p.windowResized = function() {
