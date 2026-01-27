@@ -17,74 +17,83 @@ window.addEventListener('DOMContentLoaded', () => {
 
 // Load file list from server or static JSON file
 async function loadFileList() {
-    let response;
-    let data;
-    
     // Try API endpoint first (for local development)
     try {
-        response = await fetch('/api/list-audio-files');
-        if (response.ok) {
-            data = await response.json();
-            if (Array.isArray(data)) {
-                filesList = data;
-                renderFileList(filesList);
-                return;
+        const apiResponse = await fetch('/api/list-audio-files');
+        if (apiResponse.ok) {
+            const contentType = apiResponse.headers.get('content-type');
+            if (contentType && contentType.includes('application/json')) {
+                const data = await apiResponse.json();
+                if (Array.isArray(data)) {
+                    filesList = data;
+                    renderFileList(filesList);
+                    console.log('Loaded', filesList.length, 'files from API');
+                    return;
+                }
             }
         }
     } catch (apiError) {
-        console.log('API endpoint not available, trying static JSON file');
+        // API not available, continue to static file
+        console.log('API endpoint not available:', apiError.message);
     }
     
     // Fallback to static JSON file (for GitHub Pages)
+    // Try different paths to handle various GitHub Pages configurations
+    const basePath = window.location.pathname.replace(/\/[^/]*$/, '') || '';
     const jsonPaths = [
+        basePath + '/audio-files.json',
         './audio-files.json',
         'audio-files.json',
-        '/audio-files.json',
-        window.location.pathname.replace(/\/[^/]*$/, '/') + 'audio-files.json'
+        '/audio-files.json'
     ];
     
     for (const path of jsonPaths) {
         try {
             console.log('Trying to load from:', path);
-            response = await fetch(path);
-            if (response.ok) {
-                const contentType = response.headers.get('content-type');
-                console.log('Content-Type:', contentType);
-                
-                if (contentType && contentType.includes('application/json')) {
-                    const text = await response.text();
-                    console.log('Response received, length:', text.length, 'first 100 chars:', text.substring(0, 100));
-                    
-                    if (text.trim().startsWith('[') || text.trim().startsWith('{')) {
-                        data = JSON.parse(text);
-                        if (Array.isArray(data)) {
-                            filesList = data;
-                            renderFileList(filesList);
-                            console.log('Successfully loaded', filesList.length, 'files');
-                            return;
-                        } else {
-                            throw new Error('Invalid data format: not an array');
-                        }
-                    } else {
-                        console.error('Response is not JSON, starts with:', text.substring(0, 50));
-                        continue;
-                    }
-                } else {
-                    console.log('Response is not JSON, content-type:', contentType);
+            const response = await fetch(path);
+            
+            if (!response.ok) {
+                console.log('Response not OK, status:', response.status, 'for path:', path);
+                continue;
+            }
+            
+            const contentType = response.headers.get('content-type') || '';
+            console.log('Content-Type:', contentType, 'for path:', path);
+            
+            // Check if it's JSON
+            if (!contentType.includes('application/json') && !contentType.includes('text/json')) {
+                // Try to detect JSON by checking first character
+                const text = await response.clone().text();
+                if (!text.trim().startsWith('[') && !text.trim().startsWith('{')) {
+                    console.log('Response does not appear to be JSON, starts with:', text.substring(0, 50));
                     continue;
                 }
+            }
+            
+            // Parse as JSON
+            const data = await response.json();
+            if (Array.isArray(data) && data.length > 0) {
+                filesList = data;
+                renderFileList(filesList);
+                console.log('Successfully loaded', filesList.length, 'files from:', path);
+                return;
             } else {
-                console.log('Response not OK, status:', response.status);
+                console.log('Data is not a valid array or is empty');
+                continue;
             }
         } catch (fetchError) {
-            console.log('Failed to load from', path, ':', fetchError.message);
+            console.log('Error loading from', path, ':', fetchError.message);
+            // Continue to next path
             continue;
         }
     }
     
     // If we get here, all attempts failed
     console.error('Failed to load audio files from any source');
-    document.getElementById('fileList').innerHTML = '<p style="color: red;">Error loading files. Please check the console for details.</p>';
+    const fileListEl = document.getElementById('fileList');
+    if (fileListEl) {
+        fileListEl.innerHTML = '<p style="color: red; padding: 20px;">Error loading files. Please check the console for details.</p>';
+    }
 }
 
 // Render file list
