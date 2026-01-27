@@ -15,10 +15,18 @@ window.addEventListener('DOMContentLoaded', () => {
     setupP5Sketch();
 });
 
-// Load file list from server
+// Load file list from server or static JSON file
 async function loadFileList() {
     try {
-        const response = await fetch('/api/list-audio-files');
+        // Try API endpoint first (for local development)
+        let response = await fetch('/api/list-audio-files');
+        if (!response.ok) {
+            // Fallback to static JSON file (for GitHub Pages)
+            response = await fetch('audio-files.json');
+            if (!response.ok) {
+                throw new Error('Failed to load audio files list');
+            }
+        }
         filesList = await response.json();
         renderFileList(filesList);
     } catch (error) {
