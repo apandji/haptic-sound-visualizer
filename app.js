@@ -60,18 +60,22 @@ async function loadFileList() {
             const contentType = response.headers.get('content-type') || '';
             console.log('Content-Type:', contentType, 'for path:', path);
             
-            // Check if it's JSON
-            if (!contentType.includes('application/json') && !contentType.includes('text/json')) {
-                // Try to detect JSON by checking first character
-                const text = await response.clone().text();
-                if (!text.trim().startsWith('[') && !text.trim().startsWith('{')) {
-                    console.log('Response does not appear to be JSON, starts with:', text.substring(0, 50));
-                    continue;
-                }
+            // Get response as text first to check if it's JSON
+            const text = await response.text();
+            
+            // Check if it's JSON by content type or by content
+            const isJson = contentType.includes('application/json') || 
+                          contentType.includes('text/json') ||
+                          text.trim().startsWith('[') || 
+                          text.trim().startsWith('{');
+            
+            if (!isJson) {
+                console.log('Response does not appear to be JSON, starts with:', text.substring(0, 50));
+                continue;
             }
             
             // Parse as JSON
-            const data = await response.json();
+            const data = JSON.parse(text);
             if (Array.isArray(data) && data.length > 0) {
                 filesList = data;
                 renderFileList(filesList);
