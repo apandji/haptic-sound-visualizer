@@ -17,22 +17,57 @@ window.addEventListener('DOMContentLoaded', () => {
 
 // Load file list from server or static JSON file
 async function loadFileList() {
+    let response;
+    let data;
+    
+    // Try API endpoint first (for local development)
     try {
-        // Try API endpoint first (for local development)
-        let response = await fetch('/api/list-audio-files');
-        if (!response.ok) {
-            // Fallback to static JSON file (for GitHub Pages)
-            response = await fetch('audio-files.json');
-            if (!response.ok) {
-                throw new Error('Failed to load audio files list');
+        response = await fetch('/api/list-audio-files');
+        if (response.ok) {
+            data = await response.json();
+            if (Array.isArray(data)) {
+                filesList = data;
+                renderFileList(filesList);
+                return;
             }
         }
-        filesList = await response.json();
-        renderFileList(filesList);
-    } catch (error) {
-        console.error('Error loading files:', error);
-        document.getElementById('fileList').innerHTML = '<p style="color: red;">Error loading files</p>';
+    } catch (apiError) {
+        console.log('API endpoint not available, trying static JSON file');
     }
+    
+    // Fallback to static JSON file (for GitHub Pages)
+    const jsonPaths = [
+        './audio-files.json',
+        'audio-files.json',
+        '/audio-files.json'
+    ];
+    
+    for (const path of jsonPaths) {
+        try {
+            console.log('Trying to load from:', path);
+            response = await fetch(path);
+            if (response.ok) {
+                const text = await response.text();
+                console.log('Response received, length:', text.length);
+                data = JSON.parse(text);
+                if (Array.isArray(data)) {
+                    filesList = data;
+                    renderFileList(filesList);
+                    console.log('Successfully loaded', filesList.length, 'files');
+                    return;
+                } else {
+                    throw new Error('Invalid data format: not an array');
+                }
+            }
+        } catch (fetchError) {
+            console.log('Failed to load from', path, ':', fetchError.message);
+            continue;
+        }
+    }
+    
+    // If we get here, all attempts failed
+    console.error('Failed to load audio files from any source');
+    document.getElementById('fileList').innerHTML = '<p style="color: red;">Error loading files. Please check the console for details.</p>';
 }
 
 // Render file list
