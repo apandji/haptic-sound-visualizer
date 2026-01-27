@@ -1,0 +1,31 @@
+# Dependencies
+node_modules/
+
+# Audio files (user uploads)
+uploads/
+audio_files/*
+!audio_files/.gitkeep
+*.wav
+*.mp3
+*.ogg
+*.m4a
+*.aac
+*.flac
+*.wma
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+
+# Build outputs (if any)
+dist/
+build/
