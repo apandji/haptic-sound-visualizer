@@ -39,7 +39,8 @@ async function loadFileList() {
     const jsonPaths = [
         './audio-files.json',
         'audio-files.json',
-        '/audio-files.json'
+        '/audio-files.json',
+        window.location.pathname.replace(/\/[^/]*$/, '/') + 'audio-files.json'
     ];
     
     for (const path of jsonPaths) {
@@ -47,17 +48,33 @@ async function loadFileList() {
             console.log('Trying to load from:', path);
             response = await fetch(path);
             if (response.ok) {
-                const text = await response.text();
-                console.log('Response received, length:', text.length);
-                data = JSON.parse(text);
-                if (Array.isArray(data)) {
-                    filesList = data;
-                    renderFileList(filesList);
-                    console.log('Successfully loaded', filesList.length, 'files');
-                    return;
+                const contentType = response.headers.get('content-type');
+                console.log('Content-Type:', contentType);
+                
+                if (contentType && contentType.includes('application/json')) {
+                    const text = await response.text();
+                    console.log('Response received, length:', text.length, 'first 100 chars:', text.substring(0, 100));
+                    
+                    if (text.trim().startsWith('[') || text.trim().startsWith('{')) {
+                        data = JSON.parse(text);
+                        if (Array.isArray(data)) {
+                            filesList = data;
+                            renderFileList(filesList);
+                            console.log('Successfully loaded', filesList.length, 'files');
+                            return;
+                        } else {
+                            throw new Error('Invalid data format: not an array');
+                        }
+                    } else {
+                        console.error('Response is not JSON, starts with:', text.substring(0, 50));
+                        continue;
+                    }
                 } else {
-                    throw new Error('Invalid data format: not an array');
+                    console.log('Response is not JSON, content-type:', contentType);
+                    continue;
                 }
+            } else {
+                console.log('Response not OK, status:', response.status);
             }
         } catch (fetchError) {
             console.log('Failed to load from', path, ':', fetchError.message);
