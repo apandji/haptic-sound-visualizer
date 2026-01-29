@@ -38,10 +38,18 @@
         
         .sidebar h1 {
             font-size: 14px;
-            font-weight: 400;
-            margin-bottom: 24px;
+            font-weight: 500;
+            margin-bottom: 8px;
             color: #666;
             letter-spacing: 0.5px;
+        }
+        
+        .sidebar h2 {
+            font-size: 11px;
+            font-weight: 400;
+            margin-bottom: 24px;
+            color: #999;
+            letter-spacing: 0.3px;
         }
         
         .file-item {
@@ -80,6 +88,8 @@
             display: flex;
             align-items: center;
             gap: 12px;
+            position: relative;
+            z-index: 10000;
         }
         
         .controls button {
@@ -124,6 +134,17 @@
             background: #333;
         }
         
+        .controls .toggle-btn.abort-btn,
+        .controls .toggle-btn.abort-btn:hover {
+            background: #d32f2f;
+            color: #fff;
+        }
+        
+        .controls .toggle-btn.abort-btn:disabled {
+            background: #999;
+            opacity: 0.5;
+        }
+        
         .viz-selector {
             margin-left: auto;
             padding: 6px 12px;
@@ -148,6 +169,46 @@
         #p5-container {
             width: 100%;
             height: 100%;
+        }
+        
+        /* Test overlay */
+        .test-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 9999;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+        }
+        
+        .test-overlay.active {
+            display: flex;
+        }
+        
+        .test-overlay-content {
+            background: rgba(0, 0, 0, 0.9);
+            color: #fff;
+            padding: 24px 32px;
+            border-radius: 4px;
+            font-size: 24px;
+            font-family: inherit;
+            text-align: center;
+            pointer-events: auto;
+        }
+        
+        .test-overlay-content .phase {
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+        
+        .test-overlay-content .countdown {
+            font-size: 18px;
+            color: #999;
         }
         
         /* Dual-handle slider styles */
@@ -294,18 +355,59 @@
             margin: 2px 0;
             line-height: 1.4;
         }
+        
+        /* Filter label tooltips */
+        .filter-label-tooltip {
+            position: fixed;
+            background: #000;
+            color: #fff;
+            padding: 8px 10px;
+            border-radius: 3px;
+            font-size: 11px;
+            max-width: 250px;
+            white-space: normal;
+            z-index: 10000;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.15s ease;
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Courier New', monospace;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            line-height: 1.4;
+        }
+        
+        .filter-label-tooltip.show {
+            opacity: 1;
+        }
+        
+        .filter-label-tooltip::before {
+            content: '';
+            position: absolute;
+            top: var(--arrow-top, 50%);
+            transform: translateY(-50%);
+            border: 4px solid transparent;
+        }
+        
+        .filter-label-tooltip:not(.flipped)::before {
+            right: 100%;
+            border-right-color: #000;
+        }
+        
+        .filter-label-tooltip.flipped::before {
+            left: 100%;
+            border-left-color: #000;
+        }
     </style>
 </head>
 <body>
     <div class="sidebar">
         <h1>SAIL Pattern Library</h1>
+        <h2>v1.0</h2>
         <div id="filters">
-            <h2 style="font-size: 10px; font-weight: 400; color: #666; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Filters</h2>
             <div class="filter-group" style="margin-bottom: 12px;">
-                <input type="text" id="searchBox" placeholder="Search files..." style="width: 100%; padding: 6px 8px; border: 1px solid #e0e0e0; border-radius: 2px; font-size: 11px; font-family: inherit; color: #333; background: #fff;">
+                <input type="text" id="searchBox" placeholder="Search files..." style="width: 100%; padding: 6px 8px; border: 1px solid #e0e0e0; border-radius: 2px; font-size: 13px; font-family: inherit; color: #333; background: #fff;">
             </div>
             <div class="filter-group">
-                <label style="display: block; font-size: 9px; color: #666; margin-bottom: 4px;">RMS <span id="rms_display" style="color: #999; font-weight: normal;">(0.003-0.555)</span></label>
+                <label class="filter-label" data-tooltip="RMS Mean: Average Root Mean Square amplitude. Measures overall loudness/intensity of the audio. Higher values indicate louder audio." style="display: block; font-size: 11px; color: #666; margin-bottom: 4px; cursor: pointer; position: relative;">RMS <span id="rms_display" style="color: #999; font-weight: normal; font-size: 11px;">(0.003-0.555)</span></label>
                 <div class="dual-slider" id="rms_slider" data-min="0.003231" data-max="0.554765" data-step="0.001">
                     <div class="slider-track"></div>
                     <div class="slider-handle slider-handle-min" data-handle="min"></div>
@@ -314,7 +416,7 @@
                 </div>
             </div>
             <div class="filter-group">
-                <label style="display: block; font-size: 9px; color: #666; margin-bottom: 4px;">Duration <span id="duration_display" style="color: #999; font-weight: normal;">(1.5-35.3s)</span></label>
+                <label class="filter-label" data-tooltip="Duration: Length of the audio file in seconds." style="display: block; font-size: 11px; color: #666; margin-bottom: 4px; cursor: pointer; position: relative;">Duration <span id="duration_display" style="color: #999; font-weight: normal; font-size: 11px;">(1.5-35.3s)</span></label>
                 <div class="dual-slider" id="duration_slider" data-min="1.49" data-max="35.29" data-step="0.1">
                     <div class="slider-track"></div>
                     <div class="slider-handle slider-handle-min" data-handle="min"></div>
@@ -323,7 +425,7 @@
                 </div>
             </div>
             <div class="filter-group">
-                <label style="display: block; font-size: 9px; color: #666; margin-bottom: 4px;">Balance <span id="balance_display" style="color: #999; font-weight: normal;">(-1.0-1.0)</span></label>
+                <label class="filter-label" data-tooltip="Stereo Balance: Left/right channel balance. Range: -1.0 (fully left) to 1.0 (fully right). 0.0 = centered/mono." style="display: block; font-size: 11px; color: #666; margin-bottom: 4px; cursor: pointer; position: relative;">Balance <span id="balance_display" style="color: #999; font-weight: normal; font-size: 11px;">(-1.0-1.0)</span></label>
                 <div class="dual-slider" id="balance_slider" data-min="-1.0" data-max="1.0" data-step="0.01">
                     <div class="slider-track"></div>
                     <div class="slider-handle slider-handle-min" data-handle="min"></div>
@@ -332,7 +434,7 @@
                 </div>
             </div>
             <div class="filter-group">
-                <label style="display: block; font-size: 9px; color: #666; margin-bottom: 4px;">Movement <span id="movement_display" style="color: #999; font-weight: normal;">(0.0-0.86)</span></label>
+                <label class="filter-label" data-tooltip="Stereo Movement: How much the stereo field changes over time. Range: 0.0 (no movement) to ~0.86 (high movement). Measures variance in stereo positioning." style="display: block; font-size: 11px; color: #666; margin-bottom: 4px; cursor: pointer; position: relative;">Movement <span id="movement_display" style="color: #999; font-weight: normal; font-size: 11px;">(0.0-0.86)</span></label>
                 <div class="dual-slider" id="movement_slider" data-min="0.0" data-max="0.8556" data-step="0.01">
                     <div class="slider-track"></div>
                     <div class="slider-handle slider-handle-min" data-handle="min"></div>
@@ -351,6 +453,7 @@
             <button id="pauseBtn" style="display: none;">⏸</button>
             <button id="stopBtn">⏹</button>
             <button id="loopBtn" class="toggle-btn active">LOOP</button>
+            <button id="manualTestBtn" class="toggle-btn">MANUAL TEST</button>
             <select id="vizMode" class="viz-selector">
                 <option value="waveform">Waveform</option>
                 <option value="intensity">Intensity Bars</option>
@@ -364,6 +467,14 @@
         </div>
         <div class="visualization">
             <div id="p5-container"></div>
+        </div>
+        
+        <!-- Test overlay -->
+        <div id="testOverlay" class="test-overlay">
+            <div class="test-overlay-content">
+                <div class="phase" id="testPhase">Baselining...</div>
+                <div class="countdown" id="testCountdown">30s</div>
+            </div>
         </div>
     </div>
 

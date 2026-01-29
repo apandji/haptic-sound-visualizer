@@ -9,6 +9,13 @@ let allFilesList = []; // Store all files before filtering
 let patternMetadata = {}; // Map filename -> metadata
 let visualizationMode = 'waveform'; // 'waveform', 'intensity', 'stereo', 'spectrum', 'pulses', 'blob', 'particles', 'landscape'
 
+// Manual test state
+let testState = 'idle'; // 'idle', 'baselining', 'testing'
+let testInterval = null;
+let testTimeout = null;
+let testCountdown = 0;
+let wasPlayingBeforeTest = false;
+
 // Pulse tracking for directional pulses visualization
 let activePulses = [];
 
@@ -303,6 +310,7 @@ function renderFileList(files) {
         });
         
         item.addEventListener('click', () => {
+            if (testState !== 'idle') return; // Disabled during test
             // Remove active from all
             document.querySelectorAll('.file-item').forEach(el => el.classList.remove('active'));
             item.classList.add('active');
@@ -365,6 +373,7 @@ function setupControls() {
     const loopBtn = document.getElementById('loopBtn');
     
     playBtn.addEventListener('click', () => {
+        if (testState !== 'idle') return; // Disabled during test
         if (!sound) {
             console.log('No sound loaded');
             return;
@@ -386,6 +395,7 @@ function setupControls() {
     });
     
     pauseBtn.addEventListener('click', () => {
+        if (testState !== 'idle') return; // Disabled during test
         if (sound && sound.isLoaded()) {
             try {
                 sound.pause();
@@ -399,6 +409,7 @@ function setupControls() {
     });
     
     stopBtn.addEventListener('click', () => {
+        if (testState !== 'idle') return; // Disabled during test
         if (sound && sound.isLoaded()) {
             try {
                 sound.stop();
@@ -412,11 +423,254 @@ function setupControls() {
     });
     
     loopBtn.addEventListener('click', () => {
+        if (testState !== 'idle') return; // Disabled during test
         isLooping = !isLooping;
         loopBtn.classList.toggle('active', isLooping);
         
         if (sound && sound.isLoaded()) {
             sound.setLoop(isLooping);
+        }
+    });
+    
+    // Setup manual test button
+    setupManualTest();
+}
+
+// Enable/disable all controls except abort button
+function setControlsEnabled(enabled) {
+    const playBtn = document.getElementById('playBtn');
+    const pauseBtn = document.getElementById('pauseBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const loopBtn = document.getElementById('loopBtn');
+    const vizMode = document.getElementById('vizMode');
+    const searchBox = document.getElementById('searchBox');
+    const resetFiltersBtn = document.getElementById('resetFilters');
+    const fileItems = document.querySelectorAll('.file-item');
+    
+    [playBtn, pauseBtn, stopBtn, loopBtn, vizMode, searchBox, resetFiltersBtn].forEach(control => {
+        if (control) {
+            control.disabled = !enabled;
+            control.style.opacity = enabled ? '1' : '0.5';
+            control.style.pointerEvents = enabled ? 'auto' : 'none';
+        }
+    });
+    
+    fileItems.forEach(item => {
+        item.style.pointerEvents = enabled ? 'auto' : 'none';
+        item.style.opacity = enabled ? '1' : '0.5';
+    });
+}
+
+// Fade out audio
+function fadeOutAudio(callback) {
+    if (!sound || !sound.isLoaded() || !sound.isPlaying()) {
+        callback();
+        return;
+    }
+    
+    const fadeDuration = 2000; // 2 seconds fade for smoother transition
+    const startVolume = sound.getVolume();
+    const startTime = Date.now();
+    
+    const fadeInterval = setInterval(() => {
+        const elapsed = Date.now() - startTime;
+        const progress = Math.min(elapsed / fadeDuration, 1);
+        const volume = startVolume * (1 - progress);
+        
+        sound.setVolume(volume);
+        
+        if (progress >= 1) {
+            clearInterval(fadeInterval);
+            sound.stop();
+            sound.setVolume(startVolume); // Reset volume
+            // Add a small delay to ensure audio is completely stopped
+            setTimeout(() => {
+                callback();
+            }, 100);
+        }
+    }, 16); // ~60fps
+}
+
+// Update test overlay
+function updateTestOverlay(phase, secondsRemaining) {
+    const overlay = document.getElementById('testOverlay');
+    const phaseEl = document.getElementById('testPhase');
+    const countdownEl = document.getElementById('testCountdown');
+    
+    if (overlay && phaseEl && countdownEl) {
+        phaseEl.textContent = phase;
+        countdownEl.textContent = `${secondsRemaining}s`;
+    }
+}
+
+// Start manual test
+function startManualTest() {
+    if (!sound || !sound.isLoaded()) {
+        return;
+    }
+    
+    testState = 'baselining';
+    testCountdown = 30;
+    wasPlayingBeforeTest = isPlaying;
+    
+    // Change button to ABORT with red styling
+    const testBtn = document.getElementById('manualTestBtn');
+    if (testBtn) {
+        testBtn.textContent = 'ABORT';
+        testBtn.style.background = '#d32f2f';
+        testBtn.style.color = '#fff';
+        testBtn.classList.add('abort-btn');
+    }
+    
+    // Show overlay
+    const overlay = document.getElementById('testOverlay');
+    if (overlay) {
+        overlay.classList.add('active');
+    }
+    
+    // Disable all controls except abort button
+    setControlsEnabled(false);
+    
+    // Fade out audio if playing
+    fadeOutAudio(() => {
+        // Start baselining phase
+        updateTestOverlay('Baselining...', testCountdown);
+        
+        testInterval = setInterval(() => {
+            testCountdown--;
+            updateTestOverlay('Baselining...', testCountdown);
+            
+            if (testCountdown <= 0) {
+                clearInterval(testInterval);
+                // Start testing phase
+                testState = 'testing';
+                testCountdown = 30;
+                
+                // Play audio
+                try {
+                    sound.setLoop(false); // Don't loop during test
+                    sound.play();
+                    isPlaying = true;
+                    
+                    updateTestOverlay('Testing...', testCountdown);
+                    
+                    // Monitor audio playback to keep it playing
+                    const audioMonitor = setInterval(() => {
+                        if (testState !== 'testing') {
+                            clearInterval(audioMonitor);
+                            return;
+                        }
+                        // If audio stopped but we're still in testing phase, restart it
+                        if (sound && sound.isLoaded() && !sound.isPlaying() && testCountdown > 0) {
+                            try {
+                                sound.play();
+                            } catch (e) {
+                                console.log('Error restarting audio:', e);
+                            }
+                        }
+                    }, 100);
+                    
+                    testInterval = setInterval(() => {
+                        testCountdown--;
+                        updateTestOverlay('Testing...', testCountdown);
+                        
+                        if (testCountdown <= 0) {
+                            clearInterval(audioMonitor);
+                            endManualTest();
+                        }
+                    }, 1000);
+                } catch (error) {
+                    console.error('Error playing audio for test:', error);
+                    endManualTest();
+                }
+            }
+        }, 1000);
+    });
+}
+
+// End manual test
+function endManualTest() {
+    // Clear intervals
+    if (testInterval) {
+        clearInterval(testInterval);
+        testInterval = null;
+    }
+    if (testTimeout) {
+        clearTimeout(testTimeout);
+        testTimeout = null;
+    }
+    
+    // Stop audio
+    if (sound && sound.isLoaded()) {
+        try {
+            sound.stop();
+        } catch (e) {
+            console.log('Error stopping sound:', e);
+        }
+    }
+    
+    isPlaying = false;
+    
+    // Hide overlay
+    const overlay = document.getElementById('testOverlay');
+    if (overlay) {
+        overlay.classList.remove('active');
+    }
+    
+    // Reset button
+    const testBtn = document.getElementById('manualTestBtn');
+    if (testBtn) {
+        testBtn.textContent = 'MANUAL TEST';
+        testBtn.style.background = '';
+        testBtn.style.color = '';
+        testBtn.classList.remove('abort-btn');
+    }
+    
+    // Re-enable controls
+    setControlsEnabled(true);
+    
+    // Update play/pause button state
+    const playBtn = document.getElementById('playBtn');
+    const pauseBtn = document.getElementById('pauseBtn');
+    if (playBtn && pauseBtn) {
+        playBtn.style.display = 'inline-block';
+        pauseBtn.style.display = 'none';
+    }
+    
+    testState = 'idle';
+    testCountdown = 0;
+}
+
+// Setup manual test button
+function setupManualTest() {
+    const testBtn = document.getElementById('manualTestBtn');
+    if (!testBtn) return;
+    
+    // Update button state based on file loaded
+    function updateTestButtonState() {
+        if (!sound || !sound.isLoaded()) {
+            testBtn.disabled = true;
+            testBtn.style.opacity = '0.5';
+            testBtn.style.cursor = 'not-allowed';
+        } else {
+            testBtn.disabled = false;
+            testBtn.style.opacity = '1';
+            testBtn.style.cursor = 'pointer';
+        }
+    }
+    
+    // Initial state
+    updateTestButtonState();
+    
+    // Update state when audio loads (we'll call this from loadAudio)
+    window.updateManualTestButton = updateTestButtonState;
+    
+    testBtn.addEventListener('click', () => {
+        if (testState === 'idle') {
+            startManualTest();
+        } else {
+            // Abort test
+            endManualTest();
         }
     });
 }
@@ -431,6 +685,81 @@ function setupVizModeSelector() {
     }
 }
 
+// Global filter label tooltip element
+let filterLabelTooltip = null;
+
+// Create filter label tooltip if it doesn't exist
+function getFilterLabelTooltip() {
+    if (!filterLabelTooltip) {
+        filterLabelTooltip = document.createElement('div');
+        filterLabelTooltip.className = 'filter-label-tooltip';
+        document.body.appendChild(filterLabelTooltip);
+    }
+    return filterLabelTooltip;
+}
+
+// Position filter label tooltip
+function positionFilterLabelTooltip(label, text) {
+    const tooltip = getFilterLabelTooltip();
+    const labelRect = label.getBoundingClientRect();
+    
+    tooltip.textContent = text;
+    
+    // Position tooltip off-screen temporarily to measure it
+    tooltip.style.left = '-9999px';
+    tooltip.style.top = '0px';
+    tooltip.style.opacity = '0';
+    tooltip.style.display = 'block';
+    tooltip.style.visibility = 'hidden';
+    tooltip.classList.remove('show');
+    
+    // Force layout calculation
+    const tooltipRect = tooltip.getBoundingClientRect();
+    const spacing = 8;
+    
+    // Calculate position to the right of label
+    let left = labelRect.right + spacing;
+    let top = labelRect.top + (labelRect.height / 2) - (tooltipRect.height / 2);
+    
+    // Store the label's center Y position for arrow alignment
+    const labelCenterY = labelRect.top + (labelRect.height / 2);
+    
+    // Check if tooltip would go off the right edge
+    if (left + tooltipRect.width > window.innerWidth - 10) {
+        // Position to the left instead
+        left = labelRect.left - tooltipRect.width - spacing;
+        tooltip.classList.add('flipped');
+    } else {
+        tooltip.classList.remove('flipped');
+    }
+    
+    // Ensure tooltip doesn't go off top or bottom
+    if (top < 10) {
+        top = 10;
+    } else if (top + tooltipRect.height > window.innerHeight - 10) {
+        top = window.innerHeight - tooltipRect.height - 10;
+    }
+    
+    // Calculate arrow position relative to tooltip top
+    const arrowTop = labelCenterY - top;
+    
+    // Position and show tooltip
+    tooltip.style.left = `${left}px`;
+    tooltip.style.top = `${top}px`;
+    tooltip.style.setProperty('--arrow-top', `${arrowTop}px`);
+    tooltip.style.visibility = 'visible';
+    tooltip.style.opacity = '1';
+    tooltip.classList.add('show');
+}
+
+// Hide filter label tooltip
+function hideFilterLabelTooltip() {
+    if (filterLabelTooltip) {
+        filterLabelTooltip.classList.remove('show');
+        filterLabelTooltip.style.visibility = 'hidden';
+    }
+}
+
 // Setup filters with dual-handle sliders
 function setupFilters() {
     const sliders = [
@@ -442,6 +771,25 @@ function setupFilters() {
     
     sliders.forEach(sliderConfig => {
         initDualSlider(sliderConfig.id, sliderConfig.displayId, sliderConfig.filterKey);
+    });
+    
+    // Setup filter label tooltips
+    const filterLabels = document.querySelectorAll('.filter-label');
+    filterLabels.forEach(label => {
+        const tooltipText = label.getAttribute('data-tooltip');
+        if (tooltipText) {
+            label.addEventListener('mouseenter', () => {
+                positionFilterLabelTooltip(label, tooltipText);
+            });
+            
+            label.addEventListener('mouseleave', () => {
+                hideFilterLabelTooltip();
+            });
+            
+            label.addEventListener('mousemove', () => {
+                positionFilterLabelTooltip(label, tooltipText);
+            });
+        }
     });
     
     // Setup search box
@@ -745,6 +1093,11 @@ function setupP5Sketch() {
                             if (sound && sound.isLoaded()) {
                                 console.log('Sound is loaded, duration:', sound.duration());
                                 sound.setLoop(isLooping);
+                                
+                                // Update manual test button state
+                                if (window.updateManualTestButton) {
+                                    window.updateManualTestButton();
+                                }
                                 
                                 // Setup stereo analyzers if sound is stereo
                                 setupStereoAnalyzers(sound);
