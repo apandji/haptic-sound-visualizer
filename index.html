@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Haptic Sound Visualizer</title>
+    <title>SAIL Pattern Library</title>
     <style>
         * {
             margin: 0;
@@ -27,6 +27,13 @@
             padding: 20px;
             overflow-y: auto;
             border-right: 1px solid #e0e0e0;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        #fileList {
+            flex: 1;
+            overflow-y: auto;
         }
         
         .sidebar h1 {
@@ -46,6 +53,7 @@
             font-size: 11px;
             color: #666;
             transition: all 0.15s ease;
+            position: relative;
         }
         
         .file-item:hover {
@@ -141,11 +149,199 @@
             width: 100%;
             height: 100%;
         }
+        
+        /* Dual-handle slider styles */
+        .dual-slider {
+            position: relative;
+            width: 100%;
+            height: 20px;
+            margin: 8px 0;
+            cursor: pointer;
+        }
+        
+        .slider-track {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: #e0e0e0;
+            border-radius: 2px;
+            transform: translateY(-50%);
+        }
+        
+        .slider-range {
+            position: absolute;
+            top: 50%;
+            height: 4px;
+            background: #000;
+            border-radius: 2px;
+            transform: translateY(-50%);
+            pointer-events: none;
+        }
+        
+        .slider-handle {
+            position: absolute;
+            top: 50%;
+            width: 14px;
+            height: 14px;
+            background: #000;
+            border: 2px solid #fff;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            cursor: grab;
+            z-index: 2;
+            transition: transform 0.1s ease;
+        }
+        
+        .slider-handle:active {
+            cursor: grabbing;
+            transform: translate(-50%, -50%) scale(1.2);
+        }
+        
+        .slider-handle:hover {
+            transform: translate(-50%, -50%) scale(1.1);
+        }
+        
+        /* Sticky filters */
+        #filters {
+            position: sticky;
+            top: 0;
+            background: #fff;
+            z-index: 10;
+            padding-bottom: 12px;
+            margin-bottom: 12px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        /* Condensed filter styles */
+        .filter-group {
+            margin-top: 8px !important;
+        }
+        
+        .filter-group:first-child {
+            margin-top: 0 !important;
+        }
+        
+        .filter-group label {
+            font-size: 9px !important;
+            margin-bottom: 4px !important;
+        }
+        
+        .dual-slider {
+            height: 16px !important;
+            margin: 4px 0 !important;
+        }
+        
+        .slider-handle {
+            width: 12px !important;
+            height: 12px !important;
+        }
+        
+        .slider-track {
+            height: 3px !important;
+        }
+        
+        .slider-range {
+            height: 3px !important;
+        }
+        
+        /* Tooltip styles - positioned fixed to overlay entire interface */
+        .file-tooltip {
+            position: fixed;
+            background: #000;
+            color: #fff;
+            padding: 6px 8px;
+            border-radius: 3px;
+            font-size: 10px;
+            white-space: nowrap;
+            z-index: 10000;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.15s ease;
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Courier New', monospace;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        
+        .file-tooltip.show {
+            opacity: 1;
+        }
+        
+        .file-tooltip::before {
+            content: '';
+            position: absolute;
+            top: var(--arrow-top, 50%);
+            transform: translateY(-50%);
+            border: 4px solid transparent;
+        }
+        
+        .file-tooltip:not(.flipped)::before {
+            right: 100%;
+            border-right-color: #000;
+        }
+        
+        .file-tooltip.flipped::before {
+            left: 100%;
+            border-left-color: #000;
+        }
+        
+        /* Ensure sidebar can scroll */
+        .sidebar {
+            overflow-y: auto;
+        }
+        
+        .tooltip-row {
+            margin: 2px 0;
+            line-height: 1.4;
+        }
     </style>
 </head>
 <body>
     <div class="sidebar">
-        <h1>Haptic Sound Files</h1>
+        <h1>SAIL Pattern Library</h1>
+        <div id="filters">
+            <h2 style="font-size: 10px; font-weight: 400; color: #666; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Filters</h2>
+            <div class="filter-group" style="margin-bottom: 12px;">
+                <input type="text" id="searchBox" placeholder="Search files..." style="width: 100%; padding: 6px 8px; border: 1px solid #e0e0e0; border-radius: 2px; font-size: 11px; font-family: inherit; color: #333; background: #fff;">
+            </div>
+            <div class="filter-group">
+                <label style="display: block; font-size: 9px; color: #666; margin-bottom: 4px;">RMS <span id="rms_display" style="color: #999; font-weight: normal;">(0.003-0.555)</span></label>
+                <div class="dual-slider" id="rms_slider" data-min="0.003231" data-max="0.554765" data-step="0.001">
+                    <div class="slider-track"></div>
+                    <div class="slider-handle slider-handle-min" data-handle="min"></div>
+                    <div class="slider-handle slider-handle-max" data-handle="max"></div>
+                    <div class="slider-range"></div>
+                </div>
+            </div>
+            <div class="filter-group">
+                <label style="display: block; font-size: 9px; color: #666; margin-bottom: 4px;">Duration <span id="duration_display" style="color: #999; font-weight: normal;">(1.5-35.3s)</span></label>
+                <div class="dual-slider" id="duration_slider" data-min="1.49" data-max="35.29" data-step="0.1">
+                    <div class="slider-track"></div>
+                    <div class="slider-handle slider-handle-min" data-handle="min"></div>
+                    <div class="slider-handle slider-handle-max" data-handle="max"></div>
+                    <div class="slider-range"></div>
+                </div>
+            </div>
+            <div class="filter-group">
+                <label style="display: block; font-size: 9px; color: #666; margin-bottom: 4px;">Balance <span id="balance_display" style="color: #999; font-weight: normal;">(-1.0-1.0)</span></label>
+                <div class="dual-slider" id="balance_slider" data-min="-1.0" data-max="1.0" data-step="0.01">
+                    <div class="slider-track"></div>
+                    <div class="slider-handle slider-handle-min" data-handle="min"></div>
+                    <div class="slider-handle slider-handle-max" data-handle="max"></div>
+                    <div class="slider-range"></div>
+                </div>
+            </div>
+            <div class="filter-group">
+                <label style="display: block; font-size: 9px; color: #666; margin-bottom: 4px;">Movement <span id="movement_display" style="color: #999; font-weight: normal;">(0.0-0.86)</span></label>
+                <div class="dual-slider" id="movement_slider" data-min="0.0" data-max="0.8556" data-step="0.01">
+                    <div class="slider-track"></div>
+                    <div class="slider-handle slider-handle-min" data-handle="min"></div>
+                    <div class="slider-handle slider-handle-max" data-handle="max"></div>
+                    <div class="slider-range"></div>
+                </div>
+            </div>
+            <button id="resetFilters" style="margin-top: 8px; width: 100%; padding: 4px; background: #f5f5f5; border: 1px solid #e0e0e0; border-radius: 2px; cursor: pointer; font-size: 12px; font-family: inherit; color: #666;">RESET</button>
+        </div>
         <div id="fileList">Loading files...</div>
     </div>
     
@@ -154,7 +350,7 @@
             <button id="playBtn">▶</button>
             <button id="pauseBtn" style="display: none;">⏸</button>
             <button id="stopBtn">⏹</button>
-            <button id="loopBtn" class="toggle-btn active">Loop</button>
+            <button id="loopBtn" class="toggle-btn active">LOOP</button>
             <select id="vizMode" class="viz-selector">
                 <option value="waveform">Waveform</option>
                 <option value="intensity">Intensity Bars</option>

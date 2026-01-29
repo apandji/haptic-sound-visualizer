@@ -5,6 +5,8 @@ let isPlaying = false;
 let isLooping = true;
 let currentFilePath = null;
 let filesList = [];
+let allFilesList = []; // Store all files before filtering
+let patternMetadata = {}; // Map filename -> metadata
 let visualizationMode = 'waveform'; // 'waveform', 'intensity', 'stereo', 'spectrum', 'pulses', 'blob', 'particles', 'landscape'
 
 // Pulse tracking for directional pulses visualization
@@ -17,12 +19,35 @@ let particles = [];
 let blobVertices = [];
 
 // Load files when page loads
-window.addEventListener('DOMContentLoaded', () => {
-    loadFileList();
+window.addEventListener('DOMContentLoaded', async () => {
+    // Load metadata first, then file list (so metadata is available when rendering)
+    await loadPatternMetadata();
+    await loadFileList();
     setupControls();
     setupVizModeSelector();
+    setupFilters();
     setupP5Sketch();
 });
+
+// Load pattern metadata
+async function loadPatternMetadata() {
+    try {
+        const response = await fetch('pattern_metadata.json');
+        if (response.ok) {
+            const data = await response.json();
+            if (data.patterns && Array.isArray(data.patterns)) {
+                // Create a map from filename to metadata
+                patternMetadata = {};
+                data.patterns.forEach(pattern => {
+                    patternMetadata[pattern.filename] = pattern;
+                });
+                console.log('Loaded metadata for', Object.keys(patternMetadata).length, 'patterns');
+            }
+        }
+    } catch (error) {
+        console.warn('Could not load pattern metadata:', error);
+    }
+}
 
 // Load file list from server or static JSON file
 async function loadFileList() {
@@ -34,9 +59,9 @@ async function loadFileList() {
             if (contentType && contentType.includes('application/json')) {
                 const data = await apiResponse.json();
                 if (Array.isArray(data)) {
-                    filesList = data;
-                    renderFileList(filesList);
-                    console.log('Loaded', filesList.length, 'files from API');
+                    allFilesList = data;
+                    applyFilters();
+                    console.log('Loaded', allFilesList.length, 'files from API');
                     return;
                 }
             }
@@ -86,9 +111,9 @@ async function loadFileList() {
             // Parse as JSON
             const data = JSON.parse(text);
             if (Array.isArray(data) && data.length > 0) {
-                filesList = data;
-                renderFileList(filesList);
-                console.log('Successfully loaded', filesList.length, 'files from:', path);
+                allFilesList = data;
+                applyFilters();
+                console.log('Successfully loaded', allFilesList.length, 'files from:', path);
                 return;
             } else {
                 console.log('Data is not a valid array or is empty');
@@ -109,6 +134,139 @@ async function loadFileList() {
     }
 }
 
+// Global tooltip element (created once, reused)
+let globalTooltip = null;
+
+// Create global tooltip if it doesn't exist
+function getGlobalTooltip() {
+    if (!globalTooltip) {
+        globalTooltip = document.createElement('div');
+        globalTooltip.className = 'file-tooltip';
+        document.body.appendChild(globalTooltip);
+    }
+    return globalTooltip;
+}
+
+// Position tooltip relative to file item
+function positionTooltip(item, metadata) {
+    const tooltip = getGlobalTooltip();
+    const itemRect = item.getBoundingClientRect();
+    
+    // Set tooltip content
+    tooltip.innerHTML = `
+        <div class="tooltip-row">RMS: ${metadata.rms_mean.toFixed(3)}</div>
+        <div class="tooltip-row">Duration: ${metadata.duration.toFixed(1)}s</div>
+        <div class="tooltip-row">Balance: ${metadata.stereo_balance.toFixed(2)}</div>
+        <div class="tooltip-row">Movement: ${metadata.stereo_movement.toFixed(2)}</div>
+    `;
+    
+    // Position tooltip off-screen temporarily to measure it
+    tooltip.style.left = '-9999px';
+    tooltip.style.top = '0px';
+    tooltip.style.visibility = 'hidden';
+    tooltip.style.display = 'block';
+    tooltip.classList.remove('show'); // Ensure hidden initially
+    
+    // Force layout calculation
+    const tooltipRect = tooltip.getBoundingClientRect();
+    const spacing = 8;
+    
+    // Calculate position to the right of item
+    let left = itemRect.right + spacing;
+    let top = itemRect.top + (itemRect.height / 2) - (tooltipRect.height / 2);
+    
+    // Store the item's center Y position for arrow alignment
+    const itemCenterY = itemRect.top + (itemRect.height / 2);
+    
+    // Check if tooltip would go off the right edge
+    if (left + tooltipRect.width > window.innerWidth - 10) {
+        // Position to the left instead
+        left = itemRect.left - tooltipRect.width - spacing;
+        tooltip.classList.add('flipped');
+    } else {
+        tooltip.classList.remove('flipped');
+    }
+    
+    // Ensure tooltip doesn't go off top or bottom
+    if (top < 10) {
+        top = 10;
+    } else if (top + tooltipRect.height > window.innerHeight - 10) {
+        top = window.innerHeight - tooltipRect.height - 10;
+    }
+    
+    // Calculate arrow position relative to tooltip top
+    // Arrow should point to item's center
+    const arrowTop = itemCenterY - top;
+    
+    // Position and show tooltip
+    tooltip.style.left = `${left}px`;
+    tooltip.style.top = `${top}px`;
+    tooltip.style.setProperty('--arrow-top', `${arrowTop}px`);
+    tooltip.style.visibility = 'visible';
+    tooltip.classList.add('show');
+}
+
+// Position tooltip for files without metadata
+function positionTooltipNoMetadata(item) {
+    const tooltip = getGlobalTooltip();
+    const itemRect = item.getBoundingClientRect();
+    
+    // Set tooltip content
+    tooltip.innerHTML = `<div class="tooltip-row">No metadata available</div>`;
+    
+    // Position tooltip off-screen temporarily to measure it
+    tooltip.style.left = '-9999px';
+    tooltip.style.top = '0px';
+    tooltip.style.visibility = 'hidden';
+    tooltip.style.display = 'block';
+    tooltip.classList.remove('show');
+    
+    // Force layout calculation
+    const tooltipRect = tooltip.getBoundingClientRect();
+    const spacing = 8;
+    
+    // Calculate position to the right of item
+    let left = itemRect.right + spacing;
+    let top = itemRect.top + (itemRect.height / 2) - (tooltipRect.height / 2);
+    
+    // Store the item's center Y position for arrow alignment
+    const itemCenterY = itemRect.top + (itemRect.height / 2);
+    
+    // Check if tooltip would go off the right edge
+    if (left + tooltipRect.width > window.innerWidth - 10) {
+        // Position to the left instead
+        left = itemRect.left - tooltipRect.width - spacing;
+        tooltip.classList.add('flipped');
+    } else {
+        tooltip.classList.remove('flipped');
+    }
+    
+    // Ensure tooltip doesn't go off top or bottom
+    if (top < 10) {
+        top = 10;
+    } else if (top + tooltipRect.height > window.innerHeight - 10) {
+        top = window.innerHeight - tooltipRect.height - 10;
+    }
+    
+    // Calculate arrow position relative to tooltip top
+    const arrowTop = itemCenterY - top;
+    
+    // Position and show tooltip
+    tooltip.style.left = `${left}px`;
+    tooltip.style.top = `${top}px`;
+    tooltip.style.setProperty('--arrow-top', `${arrowTop}px`);
+    tooltip.style.visibility = 'visible';
+    tooltip.classList.add('show');
+}
+
+// Hide tooltip
+function hideTooltip() {
+    if (globalTooltip) {
+        globalTooltip.classList.remove('show');
+        globalTooltip.style.visibility = 'hidden';
+    }
+}
+
 // Render file list
 function renderFileList(files) {
     const fileList = document.getElementById('fileList');
@@ -118,6 +276,32 @@ function renderFileList(files) {
         const item = document.createElement('div');
         item.className = 'file-item';
         item.textContent = file.name;
+        
+        // Add hover handlers for tooltip (show for all files)
+        // Look up metadata dynamically when event fires (not when listener is created)
+        item.addEventListener('mouseenter', () => {
+            const metadata = patternMetadata[file.name];
+            if (metadata) {
+                positionTooltip(item, metadata);
+            } else {
+                positionTooltipNoMetadata(item);
+            }
+        });
+        
+        item.addEventListener('mouseleave', () => {
+            hideTooltip();
+        });
+        
+        // Also update position on mouse move (in case item moves while hovering)
+        item.addEventListener('mousemove', () => {
+            const metadata = patternMetadata[file.name];
+            if (metadata) {
+                positionTooltip(item, metadata);
+            } else {
+                positionTooltipNoMetadata(item);
+            }
+        });
+        
         item.addEventListener('click', () => {
             // Remove active from all
             document.querySelectorAll('.file-item').forEach(el => el.classList.remove('active'));
@@ -245,6 +429,258 @@ function setupVizModeSelector() {
             visualizationMode = e.target.value;
         });
     }
+}
+
+// Setup filters with dual-handle sliders
+function setupFilters() {
+    const sliders = [
+        { id: 'rms_slider', displayId: 'rms_display', filterKey: 'rms' },
+        { id: 'duration_slider', displayId: 'duration_display', filterKey: 'duration' },
+        { id: 'balance_slider', displayId: 'balance_display', filterKey: 'balance' },
+        { id: 'movement_slider', displayId: 'movement_display', filterKey: 'movement' }
+    ];
+    
+    sliders.forEach(sliderConfig => {
+        initDualSlider(sliderConfig.id, sliderConfig.displayId, sliderConfig.filterKey);
+    });
+    
+    // Setup search box
+    const searchBox = document.getElementById('searchBox');
+    if (searchBox) {
+        searchBox.addEventListener('input', () => {
+            applyFilters();
+        });
+    }
+    
+    const resetBtn = document.getElementById('resetFilters');
+    if (resetBtn) {
+        resetBtn.addEventListener('click', () => {
+            // Reset search box
+            if (searchBox) {
+                searchBox.value = '';
+            }
+            // Reset sliders
+            sliders.forEach(sliderConfig => {
+                resetSlider(sliderConfig.id, sliderConfig.displayId, sliderConfig.filterKey);
+            });
+            applyFilters();
+        });
+    }
+}
+
+// Initialize a dual-handle slider
+function initDualSlider(sliderId, displayId, filterKey) {
+    const slider = document.getElementById(sliderId);
+    if (!slider) return;
+    
+    const min = parseFloat(slider.dataset.min);
+    const max = parseFloat(slider.dataset.max);
+    const step = parseFloat(slider.dataset.step);
+    
+    const track = slider.querySelector('.slider-track');
+    const range = slider.querySelector('.slider-range');
+    const handleMin = slider.querySelector('.slider-handle-min');
+    const handleMax = slider.querySelector('.slider-handle-max');
+    const display = document.getElementById(displayId);
+    
+    // Store initial values in dataset (accessible from outside)
+    slider.dataset.valueMin = min;
+    slider.dataset.valueMax = max;
+    let activeHandle = null;
+    
+    // Helper to get current values
+    function getValues() {
+        return {
+            min: parseFloat(slider.dataset.valueMin),
+            max: parseFloat(slider.dataset.valueMax)
+        };
+    }
+    
+    // Helper to set values
+    function setValues(newMin, newMax) {
+        slider.dataset.valueMin = newMin;
+        slider.dataset.valueMax = newMax;
+    }
+    
+    // Update slider visual state
+    function updateSlider() {
+        const values = getValues();
+        const valueMin = values.min;
+        const valueMax = values.max;
+        
+        const minPercent = ((valueMin - min) / (max - min)) * 100;
+        const maxPercent = ((valueMax - min) / (max - min)) * 100;
+        
+        handleMin.style.left = `${minPercent}%`;
+        handleMax.style.left = `${maxPercent}%`;
+        
+        range.style.left = `${minPercent}%`;
+        range.style.width = `${maxPercent - minPercent}%`;
+        
+        // Update display
+        if (display) {
+            const formatValue = (val) => {
+                if (filterKey === 'rms') return val.toFixed(3);
+                if (filterKey === 'duration') return val.toFixed(1);
+                return val.toFixed(2);
+            };
+            // Condensed display format
+            if (filterKey === 'duration') {
+                display.textContent = `(${formatValue(valueMin)}-${formatValue(valueMax)}s)`;
+            } else {
+                display.textContent = `(${formatValue(valueMin)}-${formatValue(valueMax)})`;
+            }
+        }
+        
+        // Trigger filter update
+        applyFilters();
+    }
+    
+    // Get value from mouse position
+    function getValueFromMouse(e) {
+        const trackRect = track.getBoundingClientRect();
+        const x = e.clientX - trackRect.left;
+        const percent = Math.max(0, Math.min(1, x / trackRect.width));
+        const value = min + percent * (max - min);
+        return Math.round(value / step) * step;
+    }
+    
+    // Handle mouse down
+    function handleMouseDown(e, handle) {
+        e.preventDefault();
+        activeHandle = handle;
+        handle.classList.add('active');
+        
+        const value = getValueFromMouse(e);
+        const values = getValues();
+        if (handle === handleMin) {
+            setValues(Math.min(value, values.max - step), values.max);
+        } else {
+            setValues(values.min, Math.max(value, values.min + step));
+        }
+        updateSlider();
+    }
+    
+    // Handle mouse move
+    function handleMouseMove(e) {
+        if (!activeHandle) return;
+        e.preventDefault();
+        
+        const value = getValueFromMouse(e);
+        const values = getValues();
+        if (activeHandle === handleMin) {
+            setValues(Math.max(min, Math.min(value, values.max - step)), values.max);
+        } else {
+            setValues(values.min, Math.min(max, Math.max(value, values.min + step)));
+        }
+        updateSlider();
+    }
+    
+    // Handle mouse up
+    function handleMouseUp() {
+        if (activeHandle) {
+            activeHandle.classList.remove('active');
+            activeHandle = null;
+        }
+    }
+    
+    // Event listeners
+    handleMin.addEventListener('mousedown', (e) => handleMouseDown(e, handleMin));
+    handleMax.addEventListener('mousedown', (e) => handleMouseDown(e, handleMax));
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+    
+    // Also allow clicking on track
+    track.addEventListener('click', (e) => {
+        const value = getValueFromMouse(e);
+        const values = getValues();
+        const distToMin = Math.abs(value - values.min);
+        const distToMax = Math.abs(value - values.max);
+        
+        if (distToMin < distToMax) {
+            setValues(Math.max(min, Math.min(value, values.max - step)), values.max);
+        } else {
+            setValues(values.min, Math.min(max, Math.max(value, values.min + step)));
+        }
+        updateSlider();
+    });
+    
+    // Store update function on slider for reset
+    slider._updateSlider = updateSlider;
+    
+    // Initial update
+    updateSlider();
+}
+
+// Reset slider to full range
+function resetSlider(sliderId, displayId, filterKey) {
+    const slider = document.getElementById(sliderId);
+    if (!slider) return;
+    
+    const min = parseFloat(slider.dataset.min);
+    const max = parseFloat(slider.dataset.max);
+    
+    // Reset stored values
+    slider.dataset.valueMin = min;
+    slider.dataset.valueMax = max;
+    
+    // Call the update function if it exists
+    if (slider._updateSlider) {
+        slider._updateSlider();
+    }
+}
+
+// Apply filters to file list
+function applyFilters() {
+    if (allFilesList.length === 0) {
+        filesList = [];
+        renderFileList(filesList);
+        return;
+    }
+    
+    // Get search query
+    const searchBox = document.getElementById('searchBox');
+    const searchQuery = searchBox ? searchBox.value.trim().toLowerCase() : '';
+    
+    // Get filter values from sliders
+    const rmsSlider = document.getElementById('rms_slider');
+    const durationSlider = document.getElementById('duration_slider');
+    const balanceSlider = document.getElementById('balance_slider');
+    const movementSlider = document.getElementById('movement_slider');
+    
+    const rmsMin = rmsSlider ? parseFloat(rmsSlider.dataset.valueMin) : -Infinity;
+    const rmsMax = rmsSlider ? parseFloat(rmsSlider.dataset.valueMax) : Infinity;
+    const durationMin = durationSlider ? parseFloat(durationSlider.dataset.valueMin) : -Infinity;
+    const durationMax = durationSlider ? parseFloat(durationSlider.dataset.valueMax) : Infinity;
+    const balanceMin = balanceSlider ? parseFloat(balanceSlider.dataset.valueMin) : -Infinity;
+    const balanceMax = balanceSlider ? parseFloat(balanceSlider.dataset.valueMax) : Infinity;
+    const movementMin = movementSlider ? parseFloat(movementSlider.dataset.valueMin) : -Infinity;
+    const movementMax = movementSlider ? parseFloat(movementSlider.dataset.valueMax) : Infinity;
+    
+    // Filter files
+    filesList = allFilesList.filter(file => {
+        // Search filter (case-insensitive)
+        if (searchQuery && !file.name.toLowerCase().includes(searchQuery)) {
+            return false;
+        }
+        
+        // Match file with metadata by filename
+        const metadata = patternMetadata[file.name];
+        if (!metadata) {
+            // If no metadata, include file (don't filter it out by metadata filters)
+            return true;
+        }
+        
+        // Check all metadata filters (AND logic)
+        const rmsMatch = metadata.rms_mean >= rmsMin && metadata.rms_mean <= rmsMax;
+        const durationMatch = metadata.duration >= durationMin && metadata.duration <= durationMax;
+        const balanceMatch = metadata.stereo_balance >= balanceMin && metadata.stereo_balance <= balanceMax;
+        const movementMatch = metadata.stereo_movement >= movementMin && metadata.stereo_movement <= movementMax;
+        
+        return rmsMatch && durationMatch && balanceMatch && movementMatch;
+    });
+    
+    renderFileList(filesList);
 }
 
 // Store reference to load function

@@ -1,0 +1,3404 @@
+{
+  "patterns": [
+    {
+      "filename": "A_100_1.mp3",
+      "path": "audio_files/A_100_1.mp3",
+      "rms_mean": 0.03727120906114578,
+      "duration": 9.613061224489796,
+      "stereo_balance": -0.18240709602832794,
+      "stereo_movement": 0.272270143032074
+    },
+    {
+      "filename": "A_100_2.mp3",
+      "path": "patterns/A_100_2.mp3",
+      "rms_mean": 0.019372571,
+      "duration": 9.613061224489796,
+      "stereo_balance": -0.04693639,
+      "stereo_movement": 0.3272418
+    },
+    {
+      "filename": "A_100_3.mp3",
+      "path": "patterns/A_100_3.mp3",
+      "rms_mean": 0.012379719,
+      "duration": 9.613061224489796,
+      "stereo_balance": -0.33268136,
+      "stereo_movement": 0.16649872
+    },
+    {
+      "filename": "A_100_4.mp3",
+      "path": "patterns/A_100_4.mp3",
+      "rms_mean": 0.009300168,
+      "duration": 9.613061224489796,
+      "stereo_balance": -0.13523588,
+      "stereo_movement": 0.47121477
+    },
+    {
+      "filename": "A_100_5.mp3",
+      "path": "patterns/A_100_5.mp3",
+      "rms_mean": 0.01588718,
+      "duration": 9.613061224489796,
+      "stereo_balance": -0.20965886,
+      "stereo_movement": 0.22697876
+    },
+    {
+      "filename": "A_110_1.mp3",
+      "path": "patterns/A_110_1.mp3",
+      "rms_mean": 0.02549871,
+      "duration": 8.724897959183673,
+      "stereo_balance": -0.23366852,
+      "stereo_movement": 0.37878305
+    },
+    {
+      "filename": "A_110_2.mp3",
+      "path": "patterns/A_110_2.mp3",
+      "rms_mean": 0.021351459,
+      "duration": 8.724897959183673,
+      "stereo_balance": -0.045680746,
+      "stereo_movement": 0.2918615
+    },
+    {
+      "filename": "A_110_3.mp3",
+      "path": "patterns/A_110_3.mp3",
+      "rms_mean": 0.006980642,
+      "duration": 8.724897959183673,
+      "stereo_balance": -0.2657815,
+      "stereo_movement": 0.19674607
+    },
+    {
+      "filename": "A_110_4.mp3",
+      "path": "patterns/A_110_4.mp3",
+      "rms_mean": 0.010027836,
+      "duration": 8.724897959183673,
+      "stereo_balance": -0.114516295,
+      "stereo_movement": 0.4476008
+    },
+    {
+      "filename": "A_110_5.mp3",
+      "path": "patterns/A_110_5.mp3",
+      "rms_mean": 0.016741382,
+      "duration": 8.724897959183673,
+      "stereo_balance": -0.21440063,
+      "stereo_movement": 0.21320969
+    },
+    {
+      "filename": "A_120_1.mp3",
+      "path": "patterns/A_120_1.mp3",
+      "rms_mean": 0.035069723,
+      "duration": 8.019591836734694,
+      "stereo_balance": -0.05011401,
+      "stereo_movement": 0.36919865
+    },
+    {
+      "filename": "A_120_2.mp3",
+      "path": "patterns/A_120_2.mp3",
+      "rms_mean": 0.020762814,
+      "duration": 8.019591836734694,
+      "stereo_balance": -0.054809712,
+      "stereo_movement": 0.2738627
+    },
+    {
+      "filename": "A_120_3.mp3",
+      "path": "patterns/A_120_3.mp3",
+      "rms_mean": 0.005383776,
+      "duration": 8.019591836734694,
+      "stereo_balance": -0.42703635,
+      "stereo_movement": 0.11015131
+    },
+    {
+      "filename": "A_120_4.mp3",
+      "path": "patterns/A_120_4.mp3",
+      "rms_mean": 0.009500025,
+      "duration": 8.019591836734694,
+      "stereo_balance": -0.1417446,
+      "stereo_movement": 0.47044656
+    },
+    {
+      "filename": "A_120_5.mp3",
+      "path": "patterns/A_120_5.mp3",
+      "rms_mean": 0.019572074,
+      "duration": 8.019591836734694,
+      "stereo_balance": -0.16209882,
+      "stereo_movement": 0.22752042
+    },
+    {
+      "filename": "A_80_1.mp3",
+      "path": "patterns/A_80_1.mp3",
+      "rms_mean": 0.023367155,
+      "duration": 12.016326530612243,
+      "stereo_balance": -0.13800386,
+      "stereo_movement": 0.3938519
+    },
+    {
+      "filename": "A_80_2.mp3",
+      "path": "patterns/A_80_2.mp3",
+      "rms_mean": 0.015981821,
+      "duration": 12.016326530612243,
+      "stereo_balance": -0.047640212,
+      "stereo_movement": 0.34054857
+    },
+    {
+      "filename": "A_80_3.mp3",
+      "path": "patterns/A_80_3.mp3",
+      "rms_mean": 0.006688313,
+      "duration": 12.016326530612243,
+      "stereo_balance": -0.27023345,
+      "stereo_movement": 0.19391029
+    },
+    {
+      "filename": "A_80_4.mp3",
+      "path": "patterns/A_80_4.mp3",
+      "rms_mean": 0.008792925,
+      "duration": 12.016326530612243,
+      "stereo_balance": -0.083406806,
+      "stereo_movement": 0.45232
+    },
+    {
+      "filename": "A_80_5.mp3",
+      "path": "patterns/A_80_5.mp3",
+      "rms_mean": 0.014257456,
+      "duration": 12.016326530612243,
+      "stereo_balance": -0.18357463,
+      "stereo_movement": 0.23659098
+    },
+    {
+      "filename": "A_90_1.mp3",
+      "path": "patterns/A_90_1.mp3",
+      "rms_mean": 0.027116317,
+      "duration": 10.68408163265306,
+      "stereo_balance": -0.07817555,
+      "stereo_movement": 0.46660274
+    },
+    {
+      "filename": "A_90_2.mp3",
+      "path": "patterns/A_90_2.mp3",
+      "rms_mean": 0.01777797,
+      "duration": 10.68408163265306,
+      "stereo_balance": -0.048056684,
+      "stereo_movement": 0.31876335
+    },
+    {
+      "filename": "A_90_3.mp3",
+      "path": "patterns/A_90_3.mp3",
+      "rms_mean": 0.00795334,
+      "duration": 10.68408163265306,
+      "stereo_balance": -0.19258878,
+      "stereo_movement": 0.23379052
+    },
+    {
+      "filename": "A_90_4.mp3",
+      "path": "patterns/A_90_4.mp3",
+      "rms_mean": 0.008702939,
+      "duration": 10.68408163265306,
+      "stereo_balance": -0.14900486,
+      "stereo_movement": 0.48510534
+    },
+    {
+      "filename": "A_90_5.mp3",
+      "path": "patterns/A_90_5.mp3",
+      "rms_mean": 0.015203241,
+      "duration": 10.68408163265306,
+      "stereo_balance": -0.19713704,
+      "stereo_movement": 0.22132589
+    },
+    {
+      "filename": "Abltn_1.mp3",
+      "path": "patterns/Abltn_1.mp3",
+      "rms_mean": 0.10126983,
+      "duration": 10.213877551020408,
+      "stereo_balance": 0.37679517,
+      "stereo_movement": 0.40279996
+    },
+    {
+      "filename": "Abltn_2.mp3",
+      "path": "patterns/Abltn_2.mp3",
+      "rms_mean": 0.033347853,
+      "duration": 11.937959183673469,
+      "stereo_balance": 0.013275049,
+      "stereo_movement": 0.19985275
+    },
+    {
+      "filename": "Abltn_3.mp3",
+      "path": "patterns/Abltn_3.mp3",
+      "rms_mean": 0.0813743,
+      "duration": 17.345306122448978,
+      "stereo_balance": -0.39167967,
+      "stereo_movement": 0.42542794
+    },
+    {
+      "filename": "Abltn_4.mp3",
+      "path": "patterns/Abltn_4.mp3",
+      "rms_mean": 0.4513248,
+      "duration": 35.29142857142857,
+      "stereo_balance": -0.29146224,
+      "stereo_movement": 0.46935028
+    },
+    {
+      "filename": "P23_1.mp3",
+      "path": "patterns/P23_1.mp3",
+      "rms_mean": 0.23656562,
+      "duration": 12.146938775510204,
+      "stereo_balance": 0.0,
+      "stereo_movement": 0.0
+    },
+    {
+      "filename": "P23_2.mp3",
+      "path": "patterns/P23_2.mp3",
+      "rms_mean": 0.00883014,
+      "duration": 15.09877551020408,
+      "stereo_balance": 0.0,
+      "stereo_movement": 0.0
+    },
+    {
+      "filename": "P23_3.mp3",
+      "path": "patterns/P23_3.mp3",
+      "rms_mean": 0.010782908,
+      "duration": 13.348571428571429,
+      "stereo_balance": 0.0,
+      "stereo_movement": 0.0
+    },
+    {
+      "filename": "Poli_L_1.mp3",
+      "path": "patterns/Poli_L_1.mp3",
+      "rms_mean": 0.018471815,
+      "duration": 12.721632653061224,
+      "stereo_balance": -0.9999893,
+      "stereo_movement": 0.007277188
+    },
+    {
+      "filename": "Poli_R_1.mp3",
+      "path": "patterns/Poli_R_1.mp3",
+      "rms_mean": 0.014303183,
+      "duration": 12.721632653061224,
+      "stereo_balance": 0.99998134,
+      "stereo_movement": 0.0033876167
+    },
+    {
+      "filename": "Poli_Stereo_1.mp3",
+      "path": "patterns/Poli_Stereo_1.mp3",
+      "rms_mean": 0.022022272,
+      "duration": 12.721632653061224,
+      "stereo_balance": -0.1354253,
+      "stereo_movement": 0.26379925
+    },
+    {
+      "filename": "Poli_Swept_1.mp3",
+      "path": "patterns/Poli_Swept_1.mp3",
+      "rms_mean": 0.020068584,
+      "duration": 12.721632653061224,
+      "stereo_balance": -0.13889211,
+      "stereo_movement": 0.70916253
+    },
+    {
+      "filename": "S37_1.mp3",
+      "path": "patterns/S37_1.mp3",
+      "rms_mean": 0.21042408,
+      "duration": 15.464489795918368,
+      "stereo_balance": 0.0,
+      "stereo_movement": 0.0
+    },
+    {
+      "filename": "S37_10.mp3",
+      "path": "patterns/S37_10.mp3",
+      "rms_mean": 0.050338656,
+      "duration": 13.818775510204082,
+      "stereo_balance": 0.5658456,
+      "stereo_movement": 0.14696665
+    },
+    {
+      "filename": "S37_11.mp3",
+      "path": "patterns/S37_11.mp3",
+      "rms_mean": 0.051698435,
+      "duration": 13.818775510204082,
+      "stereo_balance": -0.5129093,
+      "stereo_movement": 0.17145064
+    },
+    {
+      "filename": "S37_12.mp3",
+      "path": "patterns/S37_12.mp3",
+      "rms_mean": 0.0042884788,
+      "duration": 28.969795918367343,
+      "stereo_balance": -0.8958114,
+      "stereo_movement": 0.44898093
+    },
+    {
+      "filename": "S37_13.mp3",
+      "path": "patterns/S37_13.mp3",
+      "rms_mean": 0.005216729,
+      "duration": 26.51428571428572,
+      "stereo_balance": 0.048133824,
+      "stereo_movement": 0.6431162
+    },
+    {
+      "filename": "S37_14.mp3",
+      "path": "patterns/S37_14.mp3",
+      "rms_mean": 0.0042185993,
+      "duration": 24.47673469387755,
+      "stereo_balance": 0.99998564,
+      "stereo_movement": 0.45357615
+    },
+    {
+      "filename": "S37_15.mp3",
+      "path": "patterns/S37_15.mp3",
+      "rms_mean": 0.018264497,
+      "duration": 21.62938775510204,
+      "stereo_balance": 0.23170595,
+      "stereo_movement": 0.53225744
+    },
+    {
+      "filename": "S37_16.mp3",
+      "path": "patterns/S37_16.mp3",
+      "rms_mean": 0.029020578,
+      "duration": 19.67020408163265,
+      "stereo_balance": 0.25136563,
+      "stereo_movement": 0.7667452
+    },
+    {
+      "filename": "S37_17.mp3",
+      "path": "patterns/S37_17.mp3",
+      "rms_mean": 0.025103666,
+      "duration": 15.62122448979592,
+      "stereo_balance": -0.05614859,
+      "stereo_movement": 0.63004136
+    },
+    {
+      "filename": "S37_18.mp3",
+      "path": "patterns/S37_18.mp3",
+      "rms_mean": 0.053244475,
+      "duration": 10.997551020408164,
+      "stereo_balance": 0.00033798907,
+      "stereo_movement": 0.005033566
+    },
+    {
+      "filename": "S37_2.mp3",
+      "path": "patterns/S37_2.mp3",
+      "rms_mean": 0.21809945,
+      "duration": 14.106122448979592,
+      "stereo_balance": 0.0,
+      "stereo_movement": 0.0
+    },
+    {
+      "filename": "S37_3.mp3",
+      "path": "patterns/S37_3.mp3",
+      "rms_mean": 0.060882684,
+      "duration": 11.284897959183674,
+      "stereo_balance": 0.0,
+      "stereo_movement": 0.0
+    },
+    {
+      "filename": "S37_4.mp3",
+      "path": "patterns/S37_4.mp3",
+      "rms_mean": 0.16783635,
+      "duration": 20.45387755102041,
+      "stereo_balance": 0.0,
+      "stereo_movement": 0.0
+    },
+    {
+      "filename": "S37_5.mp3",
+      "path": "patterns/S37_5.mp3",
+      "rms_mean": 0.038542256,
+      "duration": 11.65061224489796,
+      "stereo_balance": 0.0,
+      "stereo_movement": 0.0
+    },
+    {
+      "filename": "S37_6.mp3",
+      "path": "patterns/S37_6.mp3",
+      "rms_mean": 0.032881033,
+      "duration": 11.65061224489796,
+      "stereo_balance": -0.46598318,
+      "stereo_movement": 0.70224106
+    },
+    {
+      "filename": "S37_7.mp3",
+      "path": "patterns/S37_7.mp3",
+      "rms_mean": 0.016788991,
+      "duration": 14.262857142857143,
+      "stereo_balance": -0.7890067,
+      "stereo_movement": 0.11530646
+    },
+    {
+      "filename": "S37_8.mp3",
+      "path": "patterns/S37_8.mp3",
+      "rms_mean": 0.011979424,
+      "duration": 14.262857142857143,
+      "stereo_balance": 0.53276056,
+      "stereo_movement": 0.21079417
+    },
+    {
+      "filename": "S37_9.mp3",
+      "path": "patterns/S37_9.mp3",
+      "rms_mean": 0.041735385,
+      "duration": 25.05142857142857,
+      "stereo_balance": -0.88660777,
+      "stereo_movement": 0.026886055
+    },
+    {
+      "filename": "S37_oneshot_1.mp3",
+      "path": "patterns/S37_oneshot_1.mp3",
+      "rms_mean": 0.050145213,
+      "duration": 1.4889795918367348,
+      "stereo_balance": 0.0,
+      "stereo_movement": 0.0
+    },
+    {
+      "filename": "burst_center_pitch17.mp3",
+      "path": "patterns/burst_center_pitch17.mp3",
+      "rms_mean": 0.016513392,
+      "duration": 3.996734693877551,
+      "stereo_balance": 0.0,
+      "stereo_movement": 0.0
+    },
+    {
+      "filename": "burst_center_pitch18.mp3",
+      "path": "patterns/burst_center_pitch18.mp3",
+      "rms_mean": 0.016852105,
+      "duration": 3.996734693877551,
+      "stereo_balance": 0.0,
+      "stereo_movement": 0.0
+    },
+    {
+      "filename": "burst_center_pitch19.mp3",
+      "path": "patterns/burst_center_pitch19.mp3",
+      "rms_mean": 0.017448517,
+      "duration": 3.996734693877551,
+      "stereo_balance": 0.0,
+      "stereo_movement": 0.0
+    },
+    {
+      "filename": "burst_center_pitch20.mp3",
+      "path": "patterns/burst_center_pitch20.mp3",
+      "rms_mean": 0.016516913,
+      "duration": 3.996734693877551,
+      "stereo_balance": 0.0,
+      "stereo_movement": 0.0
+    },
+    {
+      "filename": "burst_center_pitch21.mp3",
+      "path": "patterns/burst_center_pitch21.mp3",
+      "rms_mean": 0.017384842,
+      "duration": 3.996734693877551,
+      "stereo_balance": 0.0,
+      "stereo_movement": 0.0
+    },
+    {
+      "filename": "burst_center_pitch22.mp3",
+      "path": "patterns/burst_center_pitch22.mp3",
+      "rms_mean": 0.01704421,
+      "duration": 3.996734693877551,
+      "stereo_balance": 0.0,
+      "stereo_movement": 0.0
+    },
+    {
+      "filename": "burst_center_pitch23.mp3",
+      "path": "patterns/burst_center_pitch23.mp3",
+      "rms_mean": 0.017391585,
+      "duration": 3.996734693877551,
+      "stereo_balance": 0.0,
+      "stereo_movement": 0.0
+    },
+    {
+      "filename": "burst_center_pitch24.mp3",
+      "path": "patterns/burst_center_pitch24.mp3",
+      "rms_mean": 0.01681572,
+      "duration": 3.996734693877551,
+      "stereo_balance": 0.0,
+      "stereo_movement": 0.0
+    },
+    {
+      "filename": "burst_center_pitch25.mp3",
+      "path": "patterns/burst_center_pitch25.mp3",
+      "rms_mean": 0.01726671,
+      "duration": 3.996734693877551,
+      "stereo_balance": 0.0,
+      "stereo_movement": 0.0
+    },
+    {
+      "filename": "burst_center_pitch26.mp3",
+      "path": "patterns/burst_center_pitch26.mp3",
+      "rms_mean": 0.017221509,
+      "duration": 3.996734693877551,
+      "stereo_balance": 0.0,
+      "stereo_movement": 0.0
+    },
+    {
+      "filename": "burst_center_pitch27.mp3",
+      "path": "patterns/burst_center_pitch27.mp3",
+      "rms_mean": 0.016881531,
+      "duration": 3.996734693877551,
+      "stereo_balance": 0.0,
+      "stereo_movement": 0.0
+    },
+    {
+      "filename": "burst_center_pitch28.mp3",
+      "path": "patterns/burst_center_pitch28.mp3",
+      "rms_mean": 0.017369138,
+      "duration": 3.996734693877551,
+      "stereo_balance": 0.0,
+      "stereo_movement": 0.0
+    },
+    {
+      "filename": "burst_center_pitch29.mp3",
+      "path": "patterns/burst_center_pitch29.mp3",
+      "rms_mean": 0.017333908,
+      "duration": 3.996734693877551,
+      "stereo_balance": 0.0,
+      "stereo_movement": 0.0
+    },
+    {
+      "filename": "burst_center_pitch30.mp3",
+      "path": "patterns/burst_center_pitch30.mp3",
+      "rms_mean": 0.016730096,
+      "duration": 3.996734693877551,
+      "stereo_balance": 0.0,
+      "stereo_movement": 0.0
+    },
+    {
+      "filename": "burst_center_pitch31.mp3",
+      "path": "patterns/burst_center_pitch31.mp3",
+      "rms_mean": 0.017015664,
+      "duration": 3.996734693877551,
+      "stereo_balance": 0.0,
+      "stereo_movement": 0.0
+    },
+    {
+      "filename": "burst_center_pitch32.mp3",
+      "path": "patterns/burst_center_pitch32.mp3",
+      "rms_mean": 0.017277936,
+      "duration": 3.996734693877551,
+      "stereo_balance": 0.0,
+      "stereo_movement": 0.0
+    },
+    {
+      "filename": "burst_center_pitch33.mp3",
+      "path": "patterns/burst_center_pitch33.mp3",
+      "rms_mean": 0.016943665,
+      "duration": 3.996734693877551,
+      "stereo_balance": 0.0,
+      "stereo_movement": 0.0
+    },
+    {
+      "filename": "burst_center_pitch34.mp3",
+      "path": "patterns/burst_center_pitch34.mp3",
+      "rms_mean": 0.01690935,
+      "duration": 3.996734693877551,
+      "stereo_balance": 0.0,
+      "stereo_movement": 0.0
+    },
+    {
+      "filename": "burst_center_pitch35.mp3",
+      "path": "patterns/burst_center_pitch35.mp3",
+      "rms_mean": 0.017234216,
+      "duration": 3.996734693877551,
+      "stereo_balance": 0.0,
+      "stereo_movement": 0.0
+    },
+    {
+      "filename": "burst_center_pitch36.mp3",
+      "path": "patterns/burst_center_pitch36.mp3",
+      "rms_mean": 0.017203104,
+      "duration": 3.996734693877551,
+      "stereo_balance": 0.0,
+      "stereo_movement": 0.0
+    },
+    {
+      "filename": "burst_center_pitch37.mp3",
+      "path": "patterns/burst_center_pitch37.mp3",
+      "rms_mean": 0.017150331,
+      "duration": 3.996734693877551,
+      "stereo_balance": 0.0,
+      "stereo_movement": 0.0
+    },
+    {
+      "filename": "burst_center_pitch38.mp3",
+      "path": "patterns/burst_center_pitch38.mp3",
+      "rms_mean": 0.01715888,
+      "duration": 3.996734693877551,
+      "stereo_balance": 0.0,
+      "stereo_movement": 0.0
+    },
+    {
+      "filename": "burst_center_pitch39.mp3",
+      "path": "patterns/burst_center_pitch39.mp3",
+      "rms_mean": 0.017146027,
+      "duration": 3.996734693877551,
+      "stereo_balance": 0.0,
+      "stereo_movement": 0.0
+    },
+    {
+      "filename": "burst_center_pitch40.mp3",
+      "path": "patterns/burst_center_pitch40.mp3",
+      "rms_mean": 0.017178923,
+      "duration": 3.996734693877551,
+      "stereo_balance": 0.0,
+      "stereo_movement": 0.0
+    },
+    {
+      "filename": "burst_center_pitch41.mp3",
+      "path": "patterns/burst_center_pitch41.mp3",
+      "rms_mean": 0.017153779,
+      "duration": 3.996734693877551,
+      "stereo_balance": 0.0,
+      "stereo_movement": 0.0
+    },
+    {
+      "filename": "burst_center_pitch42.mp3",
+      "path": "patterns/burst_center_pitch42.mp3",
+      "rms_mean": 0.016978834,
+      "duration": 3.996734693877551,
+      "stereo_balance": 0.0,
+      "stereo_movement": 0.0
+    },
+    {
+      "filename": "burst_center_pitch43.mp3",
+      "path": "patterns/burst_center_pitch43.mp3",
+      "rms_mean": 0.017003134,
+      "duration": 3.996734693877551,
+      "stereo_balance": 0.0,
+      "stereo_movement": 0.0
+    },
+    {
+      "filename": "burst_center_pitch44.mp3",
+      "path": "patterns/burst_center_pitch44.mp3",
+      "rms_mean": 0.017052524,
+      "duration": 3.996734693877551,
+      "stereo_balance": 0.0,
+      "stereo_movement": 0.0
+    },
+    {
+      "filename": "burst_center_pitch45.mp3",
+      "path": "patterns/burst_center_pitch45.mp3",
+      "rms_mean": 0.017182996,
+      "duration": 3.996734693877551,
+      "stereo_balance": 0.0,
+      "stereo_movement": 0.0
+    },
+    {
+      "filename": "burst_center_pitch46.mp3",
+      "path": "patterns/burst_center_pitch46.mp3",
+      "rms_mean": 0.017018402,
+      "duration": 3.996734693877551,
+      "stereo_balance": 0.0,
+      "stereo_movement": 0.0
+    },
+    {
+      "filename": "burst_center_pitch47.mp3",
+      "path": "patterns/burst_center_pitch47.mp3",
+      "rms_mean": 0.017034415,
+      "duration": 3.996734693877551,
+      "stereo_balance": 0.0,
+      "stereo_movement": 0.0
+    },
+    {
+      "filename": "burst_center_pitch48.mp3",
+      "path": "patterns/burst_center_pitch48.mp3",
+      "rms_mean": 0.01701524,
+      "duration": 3.996734693877551,
+      "stereo_balance": 0.0,
+      "stereo_movement": 0.0
+    },
+    {
+      "filename": "burst_center_pitch49.mp3",
+      "path": "patterns/burst_center_pitch49.mp3",
+      "rms_mean": 0.017053612,
+      "duration": 3.996734693877551,
+      "stereo_balance": 0.0,
+      "stereo_movement": 0.0
+    },
+    {
+      "filename": "burst_center_pitch50.mp3",
+      "path": "patterns/burst_center_pitch50.mp3",
+      "rms_mean": 0.017024348,
+      "duration": 3.996734693877551,
+      "stereo_balance": 0.0,
+      "stereo_movement": 0.0
+    },
+    {
+      "filename": "burst_center_pitch51.mp3",
+      "path": "patterns/burst_center_pitch51.mp3",
+      "rms_mean": 0.01703573,
+      "duration": 3.996734693877551,
+      "stereo_balance": 0.0,
+      "stereo_movement": 0.0
+    },
+    {
+      "filename": "burst_left_pitch17.mp3",
+      "path": "patterns/burst_left_pitch17.mp3",
+      "rms_mean": 0.012273492,
+      "duration": 3.996734693877551,
+      "stereo_balance": -0.9999858,
+      "stereo_movement": 0.002344557
+    },
+    {
+      "filename": "burst_left_pitch18.mp3",
+      "path": "patterns/burst_left_pitch18.mp3",
+      "rms_mean": 0.011658442,
+      "duration": 3.996734693877551,
+      "stereo_balance": -0.99998593,
+      "stereo_movement": 0.0020632406
+    },
+    {
+      "filename": "burst_left_pitch19.mp3",
+      "path": "patterns/burst_left_pitch19.mp3",
+      "rms_mean": 0.011710104,
+      "duration": 3.996734693877551,
+      "stereo_balance": -0.9999859,
+      "stereo_movement": 0.0020738095
+    },
+    {
+      "filename": "burst_left_pitch20.mp3",
+      "path": "patterns/burst_left_pitch20.mp3",
+      "rms_mean": 0.011775878,
+      "duration": 3.996734693877551,
+      "stereo_balance": -0.99998593,
+      "stereo_movement": 0.002173987
+    },
+    {
+      "filename": "burst_left_pitch21.mp3",
+      "path": "patterns/burst_left_pitch21.mp3",
+      "rms_mean": 0.012249653,
+      "duration": 3.996734693877551,
+      "stereo_balance": -0.9999858,
+      "stereo_movement": 0.0022664173
+    },
+    {
+      "filename": "burst_left_pitch22.mp3",
+      "path": "patterns/burst_left_pitch22.mp3",
+      "rms_mean": 0.012253395,
+      "duration": 3.996734693877551,
+      "stereo_balance": -0.9999859,
+      "stereo_movement": 0.0022563734
+    },
+    {
+      "filename": "burst_left_pitch23.mp3",
+      "path": "patterns/burst_left_pitch23.mp3",
+      "rms_mean": 0.012329315,
+      "duration": 3.996734693877551,
+      "stereo_balance": -0.9999858,
+      "stereo_movement": 0.002342469
+    },
+    {
+      "filename": "burst_left_pitch24.mp3",
+      "path": "patterns/burst_left_pitch24.mp3",
+      "rms_mean": 0.011836452,
+      "duration": 3.996734693877551,
+      "stereo_balance": -0.9999859,
+      "stereo_movement": 0.0022861431
+    },
+    {
+      "filename": "burst_left_pitch25.mp3",
+      "path": "patterns/burst_left_pitch25.mp3",
+      "rms_mean": 0.01194314,
+      "duration": 3.996734693877551,
+      "stereo_balance": -0.9999859,
+      "stereo_movement": 0.0021236062
+    },
+    {
+      "filename": "burst_left_pitch26.mp3",
+      "path": "patterns/burst_left_pitch26.mp3",
+      "rms_mean": 0.0119023295,
+      "duration": 3.996734693877551,
+      "stereo_balance": -0.9999858,
+      "stereo_movement": 0.0022623995
+    },
+    {
+      "filename": "burst_left_pitch27.mp3",
+      "path": "patterns/burst_left_pitch27.mp3",
+      "rms_mean": 0.011974817,
+      "duration": 3.996734693877551,
+      "stereo_balance": -0.99998593,
+      "stereo_movement": 0.0022087828
+    },
+    {
+      "filename": "burst_left_pitch28.mp3",
+      "path": "patterns/burst_left_pitch28.mp3",
+      "rms_mean": 0.011979372,
+      "duration": 3.996734693877551,
+      "stereo_balance": -0.99998593,
+      "stereo_movement": 0.0021798816
+    },
+    {
+      "filename": "burst_left_pitch29.mp3",
+      "path": "patterns/burst_left_pitch29.mp3",
+      "rms_mean": 0.011891846,
+      "duration": 3.996734693877551,
+      "stereo_balance": -0.9999858,
+      "stereo_movement": 0.0021313983
+    },
+    {
+      "filename": "burst_left_pitch30.mp3",
+      "path": "patterns/burst_left_pitch30.mp3",
+      "rms_mean": 0.012158394,
+      "duration": 3.996734693877551,
+      "stereo_balance": -0.9999859,
+      "stereo_movement": 0.0021269359
+    },
+    {
+      "filename": "burst_left_pitch31.mp3",
+      "path": "patterns/burst_left_pitch31.mp3",
+      "rms_mean": 0.012197214,
+      "duration": 3.996734693877551,
+      "stereo_balance": -0.9999858,
+      "stereo_movement": 0.002268417
+    },
+    {
+      "filename": "burst_left_pitch32.mp3",
+      "path": "patterns/burst_left_pitch32.mp3",
+      "rms_mean": 0.012145313,
+      "duration": 3.996734693877551,
+      "stereo_balance": -0.9999858,
+      "stereo_movement": 0.0021156643
+    },
+    {
+      "filename": "burst_left_pitch33.mp3",
+      "path": "patterns/burst_left_pitch33.mp3",
+      "rms_mean": 0.01220359,
+      "duration": 3.996734693877551,
+      "stereo_balance": -0.9999858,
+      "stereo_movement": 0.0022473116
+    },
+    {
+      "filename": "burst_left_pitch34.mp3",
+      "path": "patterns/burst_left_pitch34.mp3",
+      "rms_mean": 0.0119541595,
+      "duration": 3.996734693877551,
+      "stereo_balance": -0.9999859,
+      "stereo_movement": 0.0022189282
+    },
+    {
+      "filename": "burst_left_pitch35.mp3",
+      "path": "patterns/burst_left_pitch35.mp3",
+      "rms_mean": 0.011961748,
+      "duration": 3.996734693877551,
+      "stereo_balance": -0.9999858,
+      "stereo_movement": 0.0022258202
+    },
+    {
+      "filename": "burst_left_pitch36.mp3",
+      "path": "patterns/burst_left_pitch36.mp3",
+      "rms_mean": 0.0119824745,
+      "duration": 3.996734693877551,
+      "stereo_balance": -0.9999859,
+      "stereo_movement": 0.0021815125
+    },
+    {
+      "filename": "burst_left_pitch37.mp3",
+      "path": "patterns/burst_left_pitch37.mp3",
+      "rms_mean": 0.01217049,
+      "duration": 3.996734693877551,
+      "stereo_balance": -0.9999859,
+      "stereo_movement": 0.002234277
+    },
+    {
+      "filename": "burst_left_pitch38.mp3",
+      "path": "patterns/burst_left_pitch38.mp3",
+      "rms_mean": 0.012142962,
+      "duration": 3.996734693877551,
+      "stereo_balance": -0.9999859,
+      "stereo_movement": 0.002218027
+    },
+    {
+      "filename": "burst_left_pitch39.mp3",
+      "path": "patterns/burst_left_pitch39.mp3",
+      "rms_mean": 0.012121444,
+      "duration": 3.996734693877551,
+      "stereo_balance": -0.99998593,
+      "stereo_movement": 0.002232348
+    },
+    {
+      "filename": "burst_left_pitch40.mp3",
+      "path": "patterns/burst_left_pitch40.mp3",
+      "rms_mean": 0.012103859,
+      "duration": 3.996734693877551,
+      "stereo_balance": -0.9999858,
+      "stereo_movement": 0.0021889638
+    },
+    {
+      "filename": "burst_left_pitch41.mp3",
+      "path": "patterns/burst_left_pitch41.mp3",
+      "rms_mean": 0.012059489,
+      "duration": 3.996734693877551,
+      "stereo_balance": -0.99998593,
+      "stereo_movement": 0.0021506255
+    },
+    {
+      "filename": "burst_left_pitch42.mp3",
+      "path": "patterns/burst_left_pitch42.mp3",
+      "rms_mean": 0.011975069,
+      "duration": 3.996734693877551,
+      "stereo_balance": -0.99998593,
+      "stereo_movement": 0.0021552474
+    },
+    {
+      "filename": "burst_left_pitch43.mp3",
+      "path": "patterns/burst_left_pitch43.mp3",
+      "rms_mean": 0.011999956,
+      "duration": 3.996734693877551,
+      "stereo_balance": -0.99998593,
+      "stereo_movement": 0.0021680163
+    },
+    {
+      "filename": "burst_left_pitch44.mp3",
+      "path": "patterns/burst_left_pitch44.mp3",
+      "rms_mean": 0.01200029,
+      "duration": 3.996734693877551,
+      "stereo_balance": -0.9999858,
+      "stereo_movement": 0.0021556478
+    },
+    {
+      "filename": "burst_left_pitch45.mp3",
+      "path": "patterns/burst_left_pitch45.mp3",
+      "rms_mean": 0.01215284,
+      "duration": 3.996734693877551,
+      "stereo_balance": -0.9999858,
+      "stereo_movement": 0.0021668347
+    },
+    {
+      "filename": "burst_left_pitch46.mp3",
+      "path": "patterns/burst_left_pitch46.mp3",
+      "rms_mean": 0.012082256,
+      "duration": 3.996734693877551,
+      "stereo_balance": -0.9999859,
+      "stereo_movement": 0.0021556837
+    },
+    {
+      "filename": "burst_left_pitch47.mp3",
+      "path": "patterns/burst_left_pitch47.mp3",
+      "rms_mean": 0.012137071,
+      "duration": 3.996734693877551,
+      "stereo_balance": -0.9999858,
+      "stereo_movement": 0.0021784122
+    },
+    {
+      "filename": "burst_left_pitch48.mp3",
+      "path": "patterns/burst_left_pitch48.mp3",
+      "rms_mean": 0.012116146,
+      "duration": 3.996734693877551,
+      "stereo_balance": -0.99998593,
+      "stereo_movement": 0.0022056296
+    },
+    {
+      "filename": "burst_left_pitch49.mp3",
+      "path": "patterns/burst_left_pitch49.mp3",
+      "rms_mean": 0.012045874,
+      "duration": 3.996734693877551,
+      "stereo_balance": -0.9999858,
+      "stereo_movement": 0.0021864306
+    },
+    {
+      "filename": "burst_left_pitch50.mp3",
+      "path": "patterns/burst_left_pitch50.mp3",
+      "rms_mean": 0.0120963445,
+      "duration": 3.996734693877551,
+      "stereo_balance": -0.9999858,
+      "stereo_movement": 0.002184476
+    },
+    {
+      "filename": "burst_left_pitch51.mp3",
+      "path": "patterns/burst_left_pitch51.mp3",
+      "rms_mean": 0.012113012,
+      "duration": 3.996734693877551,
+      "stereo_balance": -0.9999858,
+      "stereo_movement": 0.0021849084
+    },
+    {
+      "filename": "burst_right_pitch17.mp3",
+      "path": "patterns/burst_right_pitch17.mp3",
+      "rms_mean": 0.011761656,
+      "duration": 3.996734693877551,
+      "stereo_balance": 0.99998593,
+      "stereo_movement": 0.0022153927
+    },
+    {
+      "filename": "burst_right_pitch18.mp3",
+      "path": "patterns/burst_right_pitch18.mp3",
+      "rms_mean": 0.012409469,
+      "duration": 3.996734693877551,
+      "stereo_balance": 0.9999858,
+      "stereo_movement": 0.002278227
+    },
+    {
+      "filename": "burst_right_pitch19.mp3",
+      "path": "patterns/burst_right_pitch19.mp3",
+      "rms_mean": 0.012328673,
+      "duration": 3.996734693877551,
+      "stereo_balance": 0.9999858,
+      "stereo_movement": 0.0021713472
+    },
+    {
+      "filename": "burst_right_pitch20.mp3",
+      "path": "patterns/burst_right_pitch20.mp3",
+      "rms_mean": 0.012191008,
+      "duration": 3.996734693877551,
+      "stereo_balance": 0.9999858,
+      "stereo_movement": 0.0023441336
+    },
+    {
+      "filename": "burst_right_pitch21.mp3",
+      "path": "patterns/burst_right_pitch21.mp3",
+      "rms_mean": 0.012034481,
+      "duration": 3.996734693877551,
+      "stereo_balance": 0.9999859,
+      "stereo_movement": 0.0023712707
+    },
+    {
+      "filename": "burst_right_pitch22.mp3",
+      "path": "patterns/burst_right_pitch22.mp3",
+      "rms_mean": 0.012222415,
+      "duration": 3.996734693877551,
+      "stereo_balance": 0.9999858,
+      "stereo_movement": 0.0022371314
+    },
+    {
+      "filename": "burst_right_pitch23.mp3",
+      "path": "patterns/burst_right_pitch23.mp3",
+      "rms_mean": 0.012333198,
+      "duration": 3.996734693877551,
+      "stereo_balance": 0.99998593,
+      "stereo_movement": 0.0023410686
+    },
+    {
+      "filename": "burst_right_pitch24.mp3",
+      "path": "patterns/burst_right_pitch24.mp3",
+      "rms_mean": 0.012323099,
+      "duration": 3.996734693877551,
+      "stereo_balance": 0.99998593,
+      "stereo_movement": 0.0022020303
+    },
+    {
+      "filename": "burst_right_pitch25.mp3",
+      "path": "patterns/burst_right_pitch25.mp3",
+      "rms_mean": 0.012270818,
+      "duration": 3.996734693877551,
+      "stereo_balance": 0.9999859,
+      "stereo_movement": 0.0022127163
+    },
+    {
+      "filename": "burst_right_pitch26.mp3",
+      "path": "patterns/burst_right_pitch26.mp3",
+      "rms_mean": 0.0117536895,
+      "duration": 3.996734693877551,
+      "stereo_balance": 0.9999859,
+      "stereo_movement": 0.002167655
+    },
+    {
+      "filename": "burst_right_pitch27.mp3",
+      "path": "patterns/burst_right_pitch27.mp3",
+      "rms_mean": 0.011824671,
+      "duration": 3.996734693877551,
+      "stereo_balance": 0.99998593,
+      "stereo_movement": 0.0021589396
+    },
+    {
+      "filename": "burst_right_pitch28.mp3",
+      "path": "patterns/burst_right_pitch28.mp3",
+      "rms_mean": 0.012140733,
+      "duration": 3.996734693877551,
+      "stereo_balance": 0.9999859,
+      "stereo_movement": 0.0021275638
+    },
+    {
+      "filename": "burst_right_pitch29.mp3",
+      "path": "patterns/burst_right_pitch29.mp3",
+      "rms_mean": 0.012132593,
+      "duration": 3.996734693877551,
+      "stereo_balance": 0.9999859,
+      "stereo_movement": 0.0022623488
+    },
+    {
+      "filename": "burst_right_pitch30.mp3",
+      "path": "patterns/burst_right_pitch30.mp3",
+      "rms_mean": 0.012103544,
+      "duration": 3.996734693877551,
+      "stereo_balance": 0.9999859,
+      "stereo_movement": 0.002269587
+    },
+    {
+      "filename": "burst_right_pitch31.mp3",
+      "path": "patterns/burst_right_pitch31.mp3",
+      "rms_mean": 0.011888015,
+      "duration": 3.996734693877551,
+      "stereo_balance": 0.9999858,
+      "stereo_movement": 0.0021383606
+    },
+    {
+      "filename": "burst_right_pitch32.mp3",
+      "path": "patterns/burst_right_pitch32.mp3",
+      "rms_mean": 0.011982646,
+      "duration": 3.996734693877551,
+      "stereo_balance": 0.9999859,
+      "stereo_movement": 0.0021438403
+    },
+    {
+      "filename": "burst_right_pitch33.mp3",
+      "path": "patterns/burst_right_pitch33.mp3",
+      "rms_mean": 0.012046491,
+      "duration": 3.996734693877551,
+      "stereo_balance": 0.9999858,
+      "stereo_movement": 0.0022101174
+    },
+    {
+      "filename": "burst_right_pitch34.mp3",
+      "path": "patterns/burst_right_pitch34.mp3",
+      "rms_mean": 0.0121302055,
+      "duration": 3.996734693877551,
+      "stereo_balance": 0.9999859,
+      "stereo_movement": 0.0021333504
+    },
+    {
+      "filename": "burst_right_pitch35.mp3",
+      "path": "patterns/burst_right_pitch35.mp3",
+      "rms_mean": 0.012084844,
+      "duration": 3.996734693877551,
+      "stereo_balance": 0.9999859,
+      "stereo_movement": 0.0022218195
+    },
+    {
+      "filename": "burst_right_pitch36.mp3",
+      "path": "patterns/burst_right_pitch36.mp3",
+      "rms_mean": 0.012061564,
+      "duration": 3.996734693877551,
+      "stereo_balance": 0.9999859,
+      "stereo_movement": 0.002148809
+    },
+    {
+      "filename": "burst_right_pitch37.mp3",
+      "path": "patterns/burst_right_pitch37.mp3",
+      "rms_mean": 0.012068514,
+      "duration": 3.996734693877551,
+      "stereo_balance": 0.9999859,
+      "stereo_movement": 0.002197412
+    },
+    {
+      "filename": "burst_right_pitch38.mp3",
+      "path": "patterns/burst_right_pitch38.mp3",
+      "rms_mean": 0.012168938,
+      "duration": 3.996734693877551,
+      "stereo_balance": 0.9999859,
+      "stereo_movement": 0.0022297297
+    },
+    {
+      "filename": "burst_right_pitch39.mp3",
+      "path": "patterns/burst_right_pitch39.mp3",
+      "rms_mean": 0.012022215,
+      "duration": 3.996734693877551,
+      "stereo_balance": 0.9999859,
+      "stereo_movement": 0.0022209738
+    },
+    {
+      "filename": "burst_right_pitch40.mp3",
+      "path": "patterns/burst_right_pitch40.mp3",
+      "rms_mean": 0.012149691,
+      "duration": 3.996734693877551,
+      "stereo_balance": 0.9999859,
+      "stereo_movement": 0.0021469968
+    },
+    {
+      "filename": "burst_right_pitch41.mp3",
+      "path": "patterns/burst_right_pitch41.mp3",
+      "rms_mean": 0.01204045,
+      "duration": 3.996734693877551,
+      "stereo_balance": 0.9999858,
+      "stereo_movement": 0.0021535226
+    },
+    {
+      "filename": "burst_right_pitch42.mp3",
+      "path": "patterns/burst_right_pitch42.mp3",
+      "rms_mean": 0.012030592,
+      "duration": 3.996734693877551,
+      "stereo_balance": 0.9999858,
+      "stereo_movement": 0.0021604358
+    },
+    {
+      "filename": "burst_right_pitch43.mp3",
+      "path": "patterns/burst_right_pitch43.mp3",
+      "rms_mean": 0.012155405,
+      "duration": 3.996734693877551,
+      "stereo_balance": 0.9999858,
+      "stereo_movement": 0.0021654326
+    },
+    {
+      "filename": "burst_right_pitch44.mp3",
+      "path": "patterns/burst_right_pitch44.mp3",
+      "rms_mean": 0.012079473,
+      "duration": 3.996734693877551,
+      "stereo_balance": 0.9999859,
+      "stereo_movement": 0.0021833775
+    },
+    {
+      "filename": "burst_right_pitch45.mp3",
+      "path": "patterns/burst_right_pitch45.mp3",
+      "rms_mean": 0.012006283,
+      "duration": 3.996734693877551,
+      "stereo_balance": 0.9999858,
+      "stereo_movement": 0.0021650763
+    },
+    {
+      "filename": "burst_right_pitch46.mp3",
+      "path": "patterns/burst_right_pitch46.mp3",
+      "rms_mean": 0.012127926,
+      "duration": 3.996734693877551,
+      "stereo_balance": 0.9999858,
+      "stereo_movement": 0.0021613045
+    },
+    {
+      "filename": "burst_right_pitch47.mp3",
+      "path": "patterns/burst_right_pitch47.mp3",
+      "rms_mean": 0.012180328,
+      "duration": 3.996734693877551,
+      "stereo_balance": 0.9999858,
+      "stereo_movement": 0.00219572
+    },
+    {
+      "filename": "burst_right_pitch48.mp3",
+      "path": "patterns/burst_right_pitch48.mp3",
+      "rms_mean": 0.012145537,
+      "duration": 3.996734693877551,
+      "stereo_balance": 0.9999858,
+      "stereo_movement": 0.002184255
+    },
+    {
+      "filename": "burst_right_pitch49.mp3",
+      "path": "patterns/burst_right_pitch49.mp3",
+      "rms_mean": 0.012116629,
+      "duration": 3.996734693877551,
+      "stereo_balance": 0.9999858,
+      "stereo_movement": 0.002162954
+    },
+    {
+      "filename": "burst_right_pitch50.mp3",
+      "path": "patterns/burst_right_pitch50.mp3",
+      "rms_mean": 0.012114287,
+      "duration": 3.996734693877551,
+      "stereo_balance": 0.9999858,
+      "stereo_movement": 0.0021621012
+    },
+    {
+      "filename": "burst_right_pitch51.mp3",
+      "path": "patterns/burst_right_pitch51.mp3",
+      "rms_mean": 0.012048181,
+      "duration": 3.996734693877551,
+      "stereo_balance": 0.9999858,
+      "stereo_movement": 0.002172326
+    },
+    {
+      "filename": "harmonicdrone1.mp3",
+      "path": "patterns/harmonicdrone1.mp3",
+      "rms_mean": 0.005946618,
+      "duration": 5.511836734693878,
+      "stereo_balance": -0.4061819,
+      "stereo_movement": 0.55385906
+    },
+    {
+      "filename": "harmonicdrone10.mp3",
+      "path": "patterns/harmonicdrone10.mp3",
+      "rms_mean": 0.009877161,
+      "duration": 4.754285714285714,
+      "stereo_balance": -0.42343155,
+      "stereo_movement": 0.47096384
+    },
+    {
+      "filename": "harmonicdrone11.mp3",
+      "path": "patterns/harmonicdrone11.mp3",
+      "rms_mean": 0.017474495,
+      "duration": 4.25795918367347,
+      "stereo_balance": 0.3912761,
+      "stereo_movement": 0.43738753
+    },
+    {
+      "filename": "harmonicdrone12.mp3",
+      "path": "patterns/harmonicdrone12.mp3",
+      "rms_mean": 0.01606512,
+      "duration": 4.754285714285714,
+      "stereo_balance": -0.39170924,
+      "stereo_movement": 0.46164966
+    },
+    {
+      "filename": "harmonicdrone13.mp3",
+      "path": "patterns/harmonicdrone13.mp3",
+      "rms_mean": 0.017227098,
+      "duration": 4.519183673469388,
+      "stereo_balance": -0.17655884,
+      "stereo_movement": 0.62056863
+    },
+    {
+      "filename": "harmonicdrone14.mp3",
+      "path": "patterns/harmonicdrone14.mp3",
+      "rms_mean": 0.016047087,
+      "duration": 4.519183673469388,
+      "stereo_balance": 0.20208555,
+      "stereo_movement": 0.60663986
+    },
+    {
+      "filename": "harmonicdrone15.mp3",
+      "path": "patterns/harmonicdrone15.mp3",
+      "rms_mean": 0.017068872,
+      "duration": 4.754285714285714,
+      "stereo_balance": -0.3689907,
+      "stereo_movement": 0.52297163
+    },
+    {
+      "filename": "harmonicdrone16.mp3",
+      "path": "patterns/harmonicdrone16.mp3",
+      "rms_mean": 0.016046807,
+      "duration": 4.25795918367347,
+      "stereo_balance": 0.39437646,
+      "stereo_movement": 0.41385823
+    },
+    {
+      "filename": "harmonicdrone17.mp3",
+      "path": "patterns/harmonicdrone17.mp3",
+      "rms_mean": 0.017232446,
+      "duration": 4.519183673469388,
+      "stereo_balance": -0.34105182,
+      "stereo_movement": 0.5315412
+    },
+    {
+      "filename": "harmonicdrone18.mp3",
+      "path": "patterns/harmonicdrone18.mp3",
+      "rms_mean": 0.015590407,
+      "duration": 4.754285714285714,
+      "stereo_balance": 0.32918668,
+      "stereo_movement": 0.49757454
+    },
+    {
+      "filename": "harmonicdrone19.mp3",
+      "path": "patterns/harmonicdrone19.mp3",
+      "rms_mean": 0.012508035,
+      "duration": 5.98204081632653,
+      "stereo_balance": -0.40696314,
+      "stereo_movement": 0.57139
+    },
+    {
+      "filename": "harmonicdrone2.mp3",
+      "path": "patterns/harmonicdrone2.mp3",
+      "rms_mean": 0.005425764,
+      "duration": 5.015510204081632,
+      "stereo_balance": -0.076277375,
+      "stereo_movement": 0.6430286
+    },
+    {
+      "filename": "harmonicdrone3.mp3",
+      "path": "patterns/harmonicdrone3.mp3",
+      "rms_mean": 0.0060478505,
+      "duration": 5.015510204081632,
+      "stereo_balance": -0.16128029,
+      "stereo_movement": 0.62895685
+    },
+    {
+      "filename": "harmonicdrone4.mp3",
+      "path": "patterns/harmonicdrone4.mp3",
+      "rms_mean": 0.003787814,
+      "duration": 4.519183673469388,
+      "stereo_balance": 0.1984917,
+      "stereo_movement": 0.57695717
+    },
+    {
+      "filename": "harmonicdrone5.mp3",
+      "path": "patterns/harmonicdrone5.mp3",
+      "rms_mean": 0.0032310255,
+      "duration": 4.754285714285714,
+      "stereo_balance": -0.046230074,
+      "stereo_movement": 0.6299784
+    },
+    {
+      "filename": "harmonicdrone6.mp3",
+      "path": "patterns/harmonicdrone6.mp3",
+      "rms_mean": 0.00446773,
+      "duration": 4.754285714285714,
+      "stereo_balance": -0.1327822,
+      "stereo_movement": 0.63306963
+    },
+    {
+      "filename": "harmonicdrone7.mp3",
+      "path": "patterns/harmonicdrone7.mp3",
+      "rms_mean": 0.0063395738,
+      "duration": 3.500408163265306,
+      "stereo_balance": 0.12949294,
+      "stereo_movement": 0.5852152
+    },
+    {
+      "filename": "harmonicdrone8.mp3",
+      "path": "patterns/harmonicdrone8.mp3",
+      "rms_mean": 0.0047900705,
+      "duration": 4.25795918367347,
+      "stereo_balance": -0.044373386,
+      "stereo_movement": 0.64116687
+    },
+    {
+      "filename": "harmonicdrone9.mp3",
+      "path": "patterns/harmonicdrone9.mp3",
+      "rms_mean": 0.0076609575,
+      "duration": 4.754285714285714,
+      "stereo_balance": 0.3930155,
+      "stereo_movement": 0.48391065
+    },
+    {
+      "filename": "pansweep_leftright_pitch21.mp3",
+      "path": "patterns/pansweep_leftright_pitch21.mp3",
+      "rms_mean": 0.4637937,
+      "duration": 2.011428571428572,
+      "stereo_balance": 0.025605949,
+      "stereo_movement": 0.8526781
+    },
+    {
+      "filename": "pansweep_leftright_pitch22.mp3",
+      "path": "patterns/pansweep_leftright_pitch22.mp3",
+      "rms_mean": 0.4639946,
+      "duration": 2.011428571428572,
+      "stereo_balance": 0.025601666,
+      "stereo_movement": 0.85256994
+    },
+    {
+      "filename": "pansweep_leftright_pitch23.mp3",
+      "path": "patterns/pansweep_leftright_pitch23.mp3",
+      "rms_mean": 0.4642442,
+      "duration": 2.011428571428572,
+      "stereo_balance": 0.025719188,
+      "stereo_movement": 0.8525612
+    },
+    {
+      "filename": "pansweep_leftright_pitch24.mp3",
+      "path": "patterns/pansweep_leftright_pitch24.mp3",
+      "rms_mean": 0.46428138,
+      "duration": 2.011428571428572,
+      "stereo_balance": 0.025795994,
+      "stereo_movement": 0.8527026
+    },
+    {
+      "filename": "pansweep_leftright_pitch25.mp3",
+      "path": "patterns/pansweep_leftright_pitch25.mp3",
+      "rms_mean": 0.4641428,
+      "duration": 2.011428571428572,
+      "stereo_balance": 0.025741113,
+      "stereo_movement": 0.85198313
+    },
+    {
+      "filename": "pansweep_leftright_pitch26.mp3",
+      "path": "patterns/pansweep_leftright_pitch26.mp3",
+      "rms_mean": 0.46401018,
+      "duration": 2.011428571428572,
+      "stereo_balance": 0.025675323,
+      "stereo_movement": 0.85272384
+    },
+    {
+      "filename": "pansweep_leftright_pitch27.mp3",
+      "path": "patterns/pansweep_leftright_pitch27.mp3",
+      "rms_mean": 0.4639889,
+      "duration": 2.011428571428572,
+      "stereo_balance": 0.025741702,
+      "stereo_movement": 0.85275364
+    },
+    {
+      "filename": "pansweep_leftright_pitch28.mp3",
+      "path": "patterns/pansweep_leftright_pitch28.mp3",
+      "rms_mean": 0.46435437,
+      "duration": 2.011428571428572,
+      "stereo_balance": 0.025626585,
+      "stereo_movement": 0.85278463
+    },
+    {
+      "filename": "pansweep_leftright_pitch29.mp3",
+      "path": "patterns/pansweep_leftright_pitch29.mp3",
+      "rms_mean": 0.4642624,
+      "duration": 2.011428571428572,
+      "stereo_balance": 0.025630316,
+      "stereo_movement": 0.85272485
+    },
+    {
+      "filename": "pansweep_leftright_pitch30.mp3",
+      "path": "patterns/pansweep_leftright_pitch30.mp3",
+      "rms_mean": 0.46432897,
+      "duration": 2.011428571428572,
+      "stereo_balance": 0.025698733,
+      "stereo_movement": 0.852654
+    },
+    {
+      "filename": "pansweep_leftright_pitch31.mp3",
+      "path": "patterns/pansweep_leftright_pitch31.mp3",
+      "rms_mean": 0.46409822,
+      "duration": 2.011428571428572,
+      "stereo_balance": 0.02562825,
+      "stereo_movement": 0.8526639
+    },
+    {
+      "filename": "pansweep_leftright_pitch32.mp3",
+      "path": "patterns/pansweep_leftright_pitch32.mp3",
+      "rms_mean": 0.4641919,
+      "duration": 2.011428571428572,
+      "stereo_balance": 0.02566578,
+      "stereo_movement": 0.85269773
+    },
+    {
+      "filename": "pansweep_leftright_pitch33.mp3",
+      "path": "patterns/pansweep_leftright_pitch33.mp3",
+      "rms_mean": 0.46423984,
+      "duration": 2.011428571428572,
+      "stereo_balance": 0.025661007,
+      "stereo_movement": 0.8526307
+    },
+    {
+      "filename": "pansweep_leftright_pitch34.mp3",
+      "path": "patterns/pansweep_leftright_pitch34.mp3",
+      "rms_mean": 0.4641529,
+      "duration": 2.011428571428572,
+      "stereo_balance": 0.025654715,
+      "stereo_movement": 0.85271055
+    },
+    {
+      "filename": "pansweep_leftright_pitch35.mp3",
+      "path": "patterns/pansweep_leftright_pitch35.mp3",
+      "rms_mean": 0.4641996,
+      "duration": 2.011428571428572,
+      "stereo_balance": 0.025687927,
+      "stereo_movement": 0.8527127
+    },
+    {
+      "filename": "pansweep_leftright_pitch36.mp3",
+      "path": "patterns/pansweep_leftright_pitch36.mp3",
+      "rms_mean": 0.46424428,
+      "duration": 2.011428571428572,
+      "stereo_balance": 0.025684936,
+      "stereo_movement": 0.85285074
+    },
+    {
+      "filename": "pansweep_leftright_pitch37.mp3",
+      "path": "patterns/pansweep_leftright_pitch37.mp3",
+      "rms_mean": 0.46417937,
+      "duration": 2.011428571428572,
+      "stereo_balance": 0.025664272,
+      "stereo_movement": 0.8527794
+    },
+    {
+      "filename": "pansweep_leftright_pitch38.mp3",
+      "path": "patterns/pansweep_leftright_pitch38.mp3",
+      "rms_mean": 0.46424484,
+      "duration": 2.011428571428572,
+      "stereo_balance": 0.02566676,
+      "stereo_movement": 0.85271
+    },
+    {
+      "filename": "pansweep_leftright_pitch39.mp3",
+      "path": "patterns/pansweep_leftright_pitch39.mp3",
+      "rms_mean": 0.46423963,
+      "duration": 2.011428571428572,
+      "stereo_balance": 0.025674328,
+      "stereo_movement": 0.85269576
+    },
+    {
+      "filename": "pansweep_leftright_pitch40.mp3",
+      "path": "patterns/pansweep_leftright_pitch40.mp3",
+      "rms_mean": 0.46417797,
+      "duration": 2.011428571428572,
+      "stereo_balance": 0.02566525,
+      "stereo_movement": 0.852696
+    },
+    {
+      "filename": "pansweep_leftright_pitch41.mp3",
+      "path": "patterns/pansweep_leftright_pitch41.mp3",
+      "rms_mean": 0.46421415,
+      "duration": 2.011428571428572,
+      "stereo_balance": 0.02567022,
+      "stereo_movement": 0.8526973
+    },
+    {
+      "filename": "pansweep_leftright_pitch42.mp3",
+      "path": "patterns/pansweep_leftright_pitch42.mp3",
+      "rms_mean": 0.46421972,
+      "duration": 2.011428571428572,
+      "stereo_balance": 0.025672127,
+      "stereo_movement": 0.8526922
+    },
+    {
+      "filename": "pansweep_leftright_pitch43.mp3",
+      "path": "patterns/pansweep_leftright_pitch43.mp3",
+      "rms_mean": 0.46428597,
+      "duration": 2.011428571428572,
+      "stereo_balance": 0.02567084,
+      "stereo_movement": 0.8526894
+    },
+    {
+      "filename": "pansweep_leftright_pitch44.mp3",
+      "path": "patterns/pansweep_leftright_pitch44.mp3",
+      "rms_mean": 0.46427768,
+      "duration": 2.011428571428572,
+      "stereo_balance": 0.025671411,
+      "stereo_movement": 0.8527318
+    },
+    {
+      "filename": "pansweep_leftright_pitch45.mp3",
+      "path": "patterns/pansweep_leftright_pitch45.mp3",
+      "rms_mean": 0.46430215,
+      "duration": 2.011428571428572,
+      "stereo_balance": 0.025676759,
+      "stereo_movement": 0.8527366
+    },
+    {
+      "filename": "pansweep_leftright_pitch46.mp3",
+      "path": "patterns/pansweep_leftright_pitch46.mp3",
+      "rms_mean": 0.4643136,
+      "duration": 2.011428571428572,
+      "stereo_balance": 0.025674053,
+      "stereo_movement": 0.852685
+    },
+    {
+      "filename": "pansweep_rightleft_pitch22.mp3",
+      "path": "patterns/pansweep_rightleft_pitch22.mp3",
+      "rms_mean": 0.46244866,
+      "duration": 2.011428571428572,
+      "stereo_balance": -0.025695115,
+      "stereo_movement": 0.85498095
+    },
+    {
+      "filename": "pansweep_rightleft_pitch23.mp3",
+      "path": "patterns/pansweep_rightleft_pitch23.mp3",
+      "rms_mean": 0.46261558,
+      "duration": 2.011428571428572,
+      "stereo_balance": -0.025520764,
+      "stereo_movement": 0.85502934
+    },
+    {
+      "filename": "pansweep_rightleft_pitch24.mp3",
+      "path": "patterns/pansweep_rightleft_pitch24.mp3",
+      "rms_mean": 0.46269727,
+      "duration": 2.011428571428572,
+      "stereo_balance": -0.02574894,
+      "stereo_movement": 0.85489476
+    },
+    {
+      "filename": "pansweep_rightleft_pitch25.mp3",
+      "path": "patterns/pansweep_rightleft_pitch25.mp3",
+      "rms_mean": 0.4626043,
+      "duration": 2.011428571428572,
+      "stereo_balance": -0.025555149,
+      "stereo_movement": 0.85560167
+    },
+    {
+      "filename": "pansweep_rightleft_pitch26.mp3",
+      "path": "patterns/pansweep_rightleft_pitch26.mp3",
+      "rms_mean": 0.46251696,
+      "duration": 2.011428571428572,
+      "stereo_balance": -0.025555803,
+      "stereo_movement": 0.85485435
+    },
+    {
+      "filename": "pansweep_rightleft_pitch27.mp3",
+      "path": "patterns/pansweep_rightleft_pitch27.mp3",
+      "rms_mean": 0.46257997,
+      "duration": 2.011428571428572,
+      "stereo_balance": -0.025567384,
+      "stereo_movement": 0.8548657
+    },
+    {
+      "filename": "pansweep_rightleft_pitch28.mp3",
+      "path": "patterns/pansweep_rightleft_pitch28.mp3",
+      "rms_mean": 0.46259028,
+      "duration": 2.011428571428572,
+      "stereo_balance": -0.025630012,
+      "stereo_movement": 0.85481226
+    },
+    {
+      "filename": "pansweep_rightleft_pitch29.mp3",
+      "path": "patterns/pansweep_rightleft_pitch29.mp3",
+      "rms_mean": 0.46268064,
+      "duration": 2.011428571428572,
+      "stereo_balance": -0.025681604,
+      "stereo_movement": 0.85485363
+    },
+    {
+      "filename": "pansweep_rightleft_pitch30.mp3",
+      "path": "patterns/pansweep_rightleft_pitch30.mp3",
+      "rms_mean": 0.4624141,
+      "duration": 2.011428571428572,
+      "stereo_balance": -0.025597094,
+      "stereo_movement": 0.85492796
+    },
+    {
+      "filename": "pansweep_rightleft_pitch31.mp3",
+      "path": "patterns/pansweep_rightleft_pitch31.mp3",
+      "rms_mean": 0.46257037,
+      "duration": 2.011428571428572,
+      "stereo_balance": -0.025676636,
+      "stereo_movement": 0.85489553
+    },
+    {
+      "filename": "pansweep_rightleft_pitch32.mp3",
+      "path": "patterns/pansweep_rightleft_pitch32.mp3",
+      "rms_mean": 0.4626413,
+      "duration": 2.011428571428572,
+      "stereo_balance": -0.025625655,
+      "stereo_movement": 0.8548816
+    },
+    {
+      "filename": "pansweep_rightleft_pitch33.mp3",
+      "path": "patterns/pansweep_rightleft_pitch33.mp3",
+      "rms_mean": 0.46264464,
+      "duration": 2.011428571428572,
+      "stereo_balance": -0.025609203,
+      "stereo_movement": 0.8548188
+    },
+    {
+      "filename": "pansweep_rightleft_pitch34.mp3",
+      "path": "patterns/pansweep_rightleft_pitch34.mp3",
+      "rms_mean": 0.46257967,
+      "duration": 2.011428571428572,
+      "stereo_balance": -0.025651459,
+      "stereo_movement": 0.85486704
+    },
+    {
+      "filename": "pansweep_rightleft_pitch35.mp3",
+      "path": "patterns/pansweep_rightleft_pitch35.mp3",
+      "rms_mean": 0.46262786,
+      "duration": 2.011428571428572,
+      "stereo_balance": -0.025651697,
+      "stereo_movement": 0.8548867
+    },
+    {
+      "filename": "pansweep_rightleft_pitch36.mp3",
+      "path": "patterns/pansweep_rightleft_pitch36.mp3",
+      "rms_mean": 0.46265748,
+      "duration": 2.011428571428572,
+      "stereo_balance": -0.025630878,
+      "stereo_movement": 0.85527456
+    },
+    {
+      "filename": "pansweep_rightleft_pitch37.mp3",
+      "path": "patterns/pansweep_rightleft_pitch37.mp3",
+      "rms_mean": 0.46259785,
+      "duration": 2.011428571428572,
+      "stereo_balance": -0.025613403,
+      "stereo_movement": 0.85486656
+    },
+    {
+      "filename": "pansweep_rightleft_pitch38.mp3",
+      "path": "patterns/pansweep_rightleft_pitch38.mp3",
+      "rms_mean": 0.46266404,
+      "duration": 2.011428571428572,
+      "stereo_balance": -0.025630834,
+      "stereo_movement": 0.8548891
+    },
+    {
+      "filename": "pansweep_rightleft_pitch39.mp3",
+      "path": "patterns/pansweep_rightleft_pitch39.mp3",
+      "rms_mean": 0.4626489,
+      "duration": 2.011428571428572,
+      "stereo_balance": -0.025633313,
+      "stereo_movement": 0.8548874
+    },
+    {
+      "filename": "pansweep_rightleft_pitch40.mp3",
+      "path": "patterns/pansweep_rightleft_pitch40.mp3",
+      "rms_mean": 0.46259692,
+      "duration": 2.011428571428572,
+      "stereo_balance": -0.02561848,
+      "stereo_movement": 0.8548813
+    },
+    {
+      "filename": "pansweep_rightleft_pitch41.mp3",
+      "path": "patterns/pansweep_rightleft_pitch41.mp3",
+      "rms_mean": 0.46269414,
+      "duration": 2.011428571428572,
+      "stereo_balance": -0.02562462,
+      "stereo_movement": 0.8548845
+    },
+    {
+      "filename": "pansweep_rightleft_pitch42.mp3",
+      "path": "patterns/pansweep_rightleft_pitch42.mp3",
+      "rms_mean": 0.46266103,
+      "duration": 2.011428571428572,
+      "stereo_balance": -0.025619913,
+      "stereo_movement": 0.8548786
+    },
+    {
+      "filename": "pansweep_rightleft_pitch43.mp3",
+      "path": "patterns/pansweep_rightleft_pitch43.mp3",
+      "rms_mean": 0.46270955,
+      "duration": 2.011428571428572,
+      "stereo_balance": -0.025633216,
+      "stereo_movement": 0.8548771
+    },
+    {
+      "filename": "pansweep_rightleft_pitch44.mp3",
+      "path": "patterns/pansweep_rightleft_pitch44.mp3",
+      "rms_mean": 0.4626854,
+      "duration": 2.011428571428572,
+      "stereo_balance": -0.025621997,
+      "stereo_movement": 0.8548533
+    },
+    {
+      "filename": "pansweep_rightleft_pitch45.mp3",
+      "path": "patterns/pansweep_rightleft_pitch45.mp3",
+      "rms_mean": 0.46271506,
+      "duration": 2.011428571428572,
+      "stereo_balance": -0.025627868,
+      "stereo_movement": 0.8549256
+    },
+    {
+      "filename": "pansweep_rightleft_pitch46.mp3",
+      "path": "patterns/pansweep_rightleft_pitch46.mp3",
+      "rms_mean": 0.46273068,
+      "duration": 2.011428571428572,
+      "stereo_balance": -0.025633976,
+      "stereo_movement": 0.85488975
+    },
+    {
+      "filename": "swelldual1.mp3",
+      "path": "patterns/swelldual1.mp3",
+      "rms_mean": 0.004853752,
+      "duration": 4.25795918367347,
+      "stereo_balance": -0.040115718,
+      "stereo_movement": 0.17336
+    },
+    {
+      "filename": "swelldual10.mp3",
+      "path": "patterns/swelldual10.mp3",
+      "rms_mean": 0.012043619,
+      "duration": 3.996734693877551,
+      "stereo_balance": -0.33025002,
+      "stereo_movement": 0.10712262
+    },
+    {
+      "filename": "swelldual11.mp3",
+      "path": "patterns/swelldual11.mp3",
+      "rms_mean": 0.0076087234,
+      "duration": 3.996734693877551,
+      "stereo_balance": -0.21961348,
+      "stereo_movement": 0.16556948
+    },
+    {
+      "filename": "swelldual12.mp3",
+      "path": "patterns/swelldual12.mp3",
+      "rms_mean": 0.0065168543,
+      "duration": 3.500408163265306,
+      "stereo_balance": 0.08836552,
+      "stereo_movement": 0.10045537
+    },
+    {
+      "filename": "swelldual13.mp3",
+      "path": "patterns/swelldual13.mp3",
+      "rms_mean": 0.0072474885,
+      "duration": 3.0040816326530613,
+      "stereo_balance": 0.113338515,
+      "stereo_movement": 0.13064629
+    },
+    {
+      "filename": "swelldual14.mp3",
+      "path": "patterns/swelldual14.mp3",
+      "rms_mean": 0.01449897,
+      "duration": 5.015510204081632,
+      "stereo_balance": -0.09191784,
+      "stereo_movement": 0.19464469
+    },
+    {
+      "filename": "swelldual15.mp3",
+      "path": "patterns/swelldual15.mp3",
+      "rms_mean": 0.010298386,
+      "duration": 3.500408163265306,
+      "stereo_balance": 0.20932624,
+      "stereo_movement": 0.28705952
+    },
+    {
+      "filename": "swelldual16.mp3",
+      "path": "patterns/swelldual16.mp3",
+      "rms_mean": 0.007979901,
+      "duration": 3.0040816326530613,
+      "stereo_balance": -0.06348894,
+      "stereo_movement": 0.21479245
+    },
+    {
+      "filename": "swelldual17.mp3",
+      "path": "patterns/swelldual17.mp3",
+      "rms_mean": 0.016002286,
+      "duration": 4.25795918367347,
+      "stereo_balance": -0.2596688,
+      "stereo_movement": 0.3810674
+    },
+    {
+      "filename": "swelldual2.mp3",
+      "path": "patterns/swelldual2.mp3",
+      "rms_mean": 0.010189533,
+      "duration": 3.26530612244898,
+      "stereo_balance": 0.021397693,
+      "stereo_movement": 0.2656128
+    },
+    {
+      "filename": "swelldual3.mp3",
+      "path": "patterns/swelldual3.mp3",
+      "rms_mean": 0.008284329,
+      "duration": 3.761632653061224,
+      "stereo_balance": 0.0834423,
+      "stereo_movement": 0.1651365
+    },
+    {
+      "filename": "swelldual4.mp3",
+      "path": "patterns/swelldual4.mp3",
+      "rms_mean": 0.003729818,
+      "duration": 4.754285714285714,
+      "stereo_balance": -0.0134871295,
+      "stereo_movement": 0.20638423
+    },
+    {
+      "filename": "swelldual5.mp3",
+      "path": "patterns/swelldual5.mp3",
+      "rms_mean": 0.011848397,
+      "duration": 3.761632653061224,
+      "stereo_balance": 0.003041881,
+      "stereo_movement": 0.07763344
+    },
+    {
+      "filename": "swelldual6.mp3",
+      "path": "patterns/swelldual6.mp3",
+      "rms_mean": 0.012150591,
+      "duration": 3.761632653061224,
+      "stereo_balance": -0.014363969,
+      "stereo_movement": 0.10918316
+    },
+    {
+      "filename": "swelldual7.mp3",
+      "path": "patterns/swelldual7.mp3",
+      "rms_mean": 0.0152737945,
+      "duration": 3.996734693877551,
+      "stereo_balance": -0.009083594,
+      "stereo_movement": 0.13959996
+    },
+    {
+      "filename": "swelldual8.mp3",
+      "path": "patterns/swelldual8.mp3",
+      "rms_mean": 0.012836711,
+      "duration": 3.26530612244898,
+      "stereo_balance": -0.26868457,
+      "stereo_movement": 0.19612339
+    },
+    {
+      "filename": "swelldual9.mp3",
+      "path": "patterns/swelldual9.mp3",
+      "rms_mean": 0.006366084,
+      "duration": 3.500408163265306,
+      "stereo_balance": -0.16883457,
+      "stereo_movement": 0.16827498
+    },
+    {
+      "filename": "treetoneswells1.mp3",
+      "path": "patterns/treetoneswells1.mp3",
+      "rms_mean": 0.057179566,
+      "duration": 4.25795918367347,
+      "stereo_balance": -0.22282507,
+      "stereo_movement": 0.26022717
+    },
+    {
+      "filename": "treetoneswells10.mp3",
+      "path": "patterns/treetoneswells10.mp3",
+      "rms_mean": 0.06814595,
+      "duration": 3.761632653061224,
+      "stereo_balance": -0.10836873,
+      "stereo_movement": 0.21317242
+    },
+    {
+      "filename": "treetoneswells11.mp3",
+      "path": "patterns/treetoneswells11.mp3",
+      "rms_mean": 0.05981911,
+      "duration": 3.996734693877551,
+      "stereo_balance": -0.1783366,
+      "stereo_movement": 0.14315234
+    },
+    {
+      "filename": "treetoneswells12.mp3",
+      "path": "patterns/treetoneswells12.mp3",
+      "rms_mean": 0.12223391,
+      "duration": 3.26530612244898,
+      "stereo_balance": -0.06316331,
+      "stereo_movement": 0.17181325
+    },
+    {
+      "filename": "treetoneswells13.mp3",
+      "path": "patterns/treetoneswells13.mp3",
+      "rms_mean": 0.04367056,
+      "duration": 3.5526530612244898,
+      "stereo_balance": -0.20229532,
+      "stereo_movement": 0.18090533
+    },
+    {
+      "filename": "treetoneswells2.mp3",
+      "path": "patterns/treetoneswells2.mp3",
+      "rms_mean": 0.08229668,
+      "duration": 4.519183673469388,
+      "stereo_balance": 0.0763989,
+      "stereo_movement": 0.20101151
+    },
+    {
+      "filename": "treetoneswells3.mp3",
+      "path": "patterns/treetoneswells3.mp3",
+      "rms_mean": 0.049882386,
+      "duration": 3.996734693877551,
+      "stereo_balance": 0.20096672,
+      "stereo_movement": 0.1811959
+    },
+    {
+      "filename": "treetoneswells4.mp3",
+      "path": "patterns/treetoneswells4.mp3",
+      "rms_mean": 0.09954439,
+      "duration": 4.25795918367347,
+      "stereo_balance": 0.020767372,
+      "stereo_movement": 0.119833544
+    },
+    {
+      "filename": "treetoneswells5.mp3",
+      "path": "patterns/treetoneswells5.mp3",
+      "rms_mean": 0.05895642,
+      "duration": 4.25795918367347,
+      "stereo_balance": -0.008392076,
+      "stereo_movement": 0.13213286
+    },
+    {
+      "filename": "treetoneswells6.mp3",
+      "path": "patterns/treetoneswells6.mp3",
+      "rms_mean": 0.085935354,
+      "duration": 4.754285714285714,
+      "stereo_balance": 0.0125093935,
+      "stereo_movement": 0.19976111
+    },
+    {
+      "filename": "treetoneswells7.mp3",
+      "path": "patterns/treetoneswells7.mp3",
+      "rms_mean": 0.0948709,
+      "duration": 5.015510204081632,
+      "stereo_balance": 0.025628112,
+      "stereo_movement": 0.10023378
+    },
+    {
+      "filename": "treetoneswells8.mp3",
+      "path": "patterns/treetoneswells8.mp3",
+      "rms_mean": 0.09424014,
+      "duration": 3.996734693877551,
+      "stereo_balance": 0.15265198,
+      "stereo_movement": 0.1466569
+    },
+    {
+      "filename": "treetoneswells9.mp3",
+      "path": "patterns/treetoneswells9.mp3",
+      "rms_mean": 0.073328435,
+      "duration": 3.500408163265306,
+      "stereo_balance": -0.056411937,
+      "stereo_movement": 0.16547097
+    },
+    {
+      "filename": "treetoneswells_left1.mp3",
+      "path": "patterns/treetoneswells_left1.mp3",
+      "rms_mean": 0.05086139,
+      "duration": 4.25795918367347,
+      "stereo_balance": -0.99999106,
+      "stereo_movement": 0.005417953
+    },
+    {
+      "filename": "treetoneswells_left10.mp3",
+      "path": "patterns/treetoneswells_left10.mp3",
+      "rms_mean": 0.055082455,
+      "duration": 3.761632653061224,
+      "stereo_balance": -0.99998856,
+      "stereo_movement": 0.02817126
+    },
+    {
+      "filename": "treetoneswells_left11.mp3",
+      "path": "patterns/treetoneswells_left11.mp3",
+      "rms_mean": 0.052032735,
+      "duration": 3.996734693877551,
+      "stereo_balance": -0.99999017,
+      "stereo_movement": 0.00037905635
+    },
+    {
+      "filename": "treetoneswells_left12.mp3",
+      "path": "patterns/treetoneswells_left12.mp3",
+      "rms_mean": 0.09729702,
+      "duration": 3.26530612244898,
+      "stereo_balance": -0.99998754,
+      "stereo_movement": 0.0032907848
+    },
+    {
+      "filename": "treetoneswells_left13.mp3",
+      "path": "patterns/treetoneswells_left13.mp3",
+      "rms_mean": 0.037929114,
+      "duration": 3.5526530612244898,
+      "stereo_balance": -0.99999064,
+      "stereo_movement": 0.0015194331
+    },
+    {
+      "filename": "treetoneswells_left2.mp3",
+      "path": "patterns/treetoneswells_left2.mp3",
+      "rms_mean": 0.05705658,
+      "duration": 4.519183673469388,
+      "stereo_balance": -0.9999836,
+      "stereo_movement": 0.043744616
+    },
+    {
+      "filename": "treetoneswells_left3.mp3",
+      "path": "patterns/treetoneswells_left3.mp3",
+      "rms_mean": 0.030647747,
+      "duration": 3.996734693877551,
+      "stereo_balance": -0.99997866,
+      "stereo_movement": 0.006343318
+    },
+    {
+      "filename": "treetoneswells_left4.mp3",
+      "path": "patterns/treetoneswells_left4.mp3",
+      "rms_mean": 0.07167143,
+      "duration": 4.25795918367347,
+      "stereo_balance": -0.9999853,
+      "stereo_movement": 0.00093770353
+    },
+    {
+      "filename": "treetoneswells_left5.mp3",
+      "path": "patterns/treetoneswells_left5.mp3",
+      "rms_mean": 0.04367389,
+      "duration": 4.25795918367347,
+      "stereo_balance": -0.9999861,
+      "stereo_movement": 0.12993717
+    },
+    {
+      "filename": "treetoneswells_left6.mp3",
+      "path": "patterns/treetoneswells_left6.mp3",
+      "rms_mean": 0.06364977,
+      "duration": 4.754285714285714,
+      "stereo_balance": -0.9999855,
+      "stereo_movement": 0.00040069042
+    },
+    {
+      "filename": "treetoneswells_left7.mp3",
+      "path": "patterns/treetoneswells_left7.mp3",
+      "rms_mean": 0.067966856,
+      "duration": 5.015510204081632,
+      "stereo_balance": -0.9999851,
+      "stereo_movement": 0.0004961642
+    },
+    {
+      "filename": "treetoneswells_left8.mp3",
+      "path": "patterns/treetoneswells_left8.mp3",
+      "rms_mean": 0.058086418,
+      "duration": 3.996734693877551,
+      "stereo_balance": -0.9999807,
+      "stereo_movement": 0.06713312
+    },
+    {
+      "filename": "treetoneswells_left9.mp3",
+      "path": "patterns/treetoneswells_left9.mp3",
+      "rms_mean": 0.058706775,
+      "duration": 3.500408163265306,
+      "stereo_balance": -0.9999874,
+      "stereo_movement": 0.009007967
+    },
+    {
+      "filename": "treetoneswells_lr1.mp3",
+      "path": "patterns/treetoneswells_lr1.mp3",
+      "rms_mean": 0.052699514,
+      "duration": 4.25795918367347,
+      "stereo_balance": -0.08852332,
+      "stereo_movement": 0.6383646
+    },
+    {
+      "filename": "treetoneswells_lr10.mp3",
+      "path": "patterns/treetoneswells_lr10.mp3",
+      "rms_mean": 0.066935435,
+      "duration": 3.761632653061224,
+      "stereo_balance": -0.15186416,
+      "stereo_movement": 0.7252505
+    },
+    {
+      "filename": "treetoneswells_lr11.mp3",
+      "path": "patterns/treetoneswells_lr11.mp3",
+      "rms_mean": 0.057361647,
+      "duration": 3.996734693877551,
+      "stereo_balance": -0.24058518,
+      "stereo_movement": 0.66568625
+    },
+    {
+      "filename": "treetoneswells_lr12.mp3",
+      "path": "patterns/treetoneswells_lr12.mp3",
+      "rms_mean": 0.11619483,
+      "duration": 3.26530612244898,
+      "stereo_balance": 0.09495639,
+      "stereo_movement": 0.71718466
+    },
+    {
+      "filename": "treetoneswells_lr13.mp3",
+      "path": "patterns/treetoneswells_lr13.mp3",
+      "rms_mean": 0.042004164,
+      "duration": 3.5526530612244898,
+      "stereo_balance": -0.15189774,
+      "stereo_movement": 0.70861524
+    },
+    {
+      "filename": "treetoneswells_lr2.mp3",
+      "path": "patterns/treetoneswells_lr2.mp3",
+      "rms_mean": 0.079686984,
+      "duration": 4.519183673469388,
+      "stereo_balance": 0.09139458,
+      "stereo_movement": 0.70180166
+    },
+    {
+      "filename": "treetoneswells_lr3.mp3",
+      "path": "patterns/treetoneswells_lr3.mp3",
+      "rms_mean": 0.044309385,
+      "duration": 3.996734693877551,
+      "stereo_balance": -0.1063759,
+      "stereo_movement": 0.6666912
+    },
+    {
+      "filename": "treetoneswells_lr4.mp3",
+      "path": "patterns/treetoneswells_lr4.mp3",
+      "rms_mean": 0.094138056,
+      "duration": 4.25795918367347,
+      "stereo_balance": -0.14656703,
+      "stereo_movement": 0.6965392
+    },
+    {
+      "filename": "treetoneswells_lr5.mp3",
+      "path": "patterns/treetoneswells_lr5.mp3",
+      "rms_mean": 0.05756427,
+      "duration": 4.25795918367347,
+      "stereo_balance": -0.006534035,
+      "stereo_movement": 0.7041806
+    },
+    {
+      "filename": "treetoneswells_lr6.mp3",
+      "path": "patterns/treetoneswells_lr6.mp3",
+      "rms_mean": 0.08212247,
+      "duration": 4.754285714285714,
+      "stereo_balance": -0.05507509,
+      "stereo_movement": 0.69886875
+    },
+    {
+      "filename": "treetoneswells_lr7.mp3",
+      "path": "patterns/treetoneswells_lr7.mp3",
+      "rms_mean": 0.09133317,
+      "duration": 5.015510204081632,
+      "stereo_balance": -0.005744579,
+      "stereo_movement": 0.7090697
+    },
+    {
+      "filename": "treetoneswells_lr8.mp3",
+      "path": "patterns/treetoneswells_lr8.mp3",
+      "rms_mean": 0.090612814,
+      "duration": 3.996734693877551,
+      "stereo_balance": 0.14416738,
+      "stereo_movement": 0.6606765
+    },
+    {
+      "filename": "treetoneswells_lr9.mp3",
+      "path": "patterns/treetoneswells_lr9.mp3",
+      "rms_mean": 0.07116049,
+      "duration": 3.500408163265306,
+      "stereo_balance": -0.084366,
+      "stereo_movement": 0.694037
+    },
+    {
+      "filename": "treetoneswells_right1.mp3",
+      "path": "patterns/treetoneswells_right1.mp3",
+      "rms_mean": 0.034463767,
+      "duration": 4.25795918367347,
+      "stereo_balance": 0.99997777,
+      "stereo_movement": 0.007831916
+    },
+    {
+      "filename": "treetoneswells_right10.mp3",
+      "path": "patterns/treetoneswells_right10.mp3",
+      "rms_mean": 0.046468534,
+      "duration": 3.761632653061224,
+      "stereo_balance": 0.9999825,
+      "stereo_movement": 0.039201446
+    },
+    {
+      "filename": "treetoneswells_right11.mp3",
+      "path": "patterns/treetoneswells_right11.mp3",
+      "rms_mean": 0.03664163,
+      "duration": 3.996734693877551,
+      "stereo_balance": 0.9999798,
+      "stereo_movement": 0.00048129354
+    },
+    {
+      "filename": "treetoneswells_right12.mp3",
+      "path": "patterns/treetoneswells_right12.mp3",
+      "rms_mean": 0.08459961,
+      "duration": 3.26530612244898,
+      "stereo_balance": 0.99998397,
+      "stereo_movement": 0.005375937
+    },
+    {
+      "filename": "treetoneswells_right13.mp3",
+      "path": "patterns/treetoneswells_right13.mp3",
+      "rms_mean": 0.02629121,
+      "duration": 3.5526530612244898,
+      "stereo_balance": 0.99997866,
+      "stereo_movement": 0.0032878118
+    },
+    {
+      "filename": "treetoneswells_right2.mp3",
+      "path": "patterns/treetoneswells_right2.mp3",
+      "rms_mean": 0.0675647,
+      "duration": 4.519183673469388,
+      "stereo_balance": 0.9999879,
+      "stereo_movement": 0.02300952
+    },
+    {
+      "filename": "treetoneswells_right3.mp3",
+      "path": "patterns/treetoneswells_right3.mp3",
+      "rms_mean": 0.044838086,
+      "duration": 3.996734693877551,
+      "stereo_balance": 0.9999905,
+      "stereo_movement": 0.0034929046
+    },
+    {
+      "filename": "treetoneswells_right4.mp3",
+      "path": "patterns/treetoneswells_right4.mp3",
+      "rms_mean": 0.07445393,
+      "duration": 4.25795918367347,
+      "stereo_balance": 0.9999865,
+      "stereo_movement": 0.00074953627
+    },
+    {
+      "filename": "treetoneswells_right5.mp3",
+      "path": "patterns/treetoneswells_right5.mp3",
+      "rms_mean": 0.04292212,
+      "duration": 4.25795918367347,
+      "stereo_balance": 0.99998564,
+      "stereo_movement": 0.12767774
+    },
+    {
+      "filename": "treetoneswells_right6.mp3",
+      "path": "patterns/treetoneswells_right6.mp3",
+      "rms_mean": 0.06512884,
+      "duration": 4.754285714285714,
+      "stereo_balance": 0.99998623,
+      "stereo_movement": 0.00035867825
+    },
+    {
+      "filename": "treetoneswells_right7.mp3",
+      "path": "patterns/treetoneswells_right7.mp3",
+      "rms_mean": 0.07154822,
+      "duration": 5.015510204081632,
+      "stereo_balance": 0.9999865,
+      "stereo_movement": 0.00041634263
+    },
+    {
+      "filename": "treetoneswells_right8.mp3",
+      "path": "patterns/treetoneswells_right8.mp3",
+      "rms_mean": 0.081184894,
+      "duration": 3.996734693877551,
+      "stereo_balance": 0.9999896,
+      "stereo_movement": 0.033150837
+    },
+    {
+      "filename": "treetoneswells_right9.mp3",
+      "path": "patterns/treetoneswells_right9.mp3",
+      "rms_mean": 0.050676275,
+      "duration": 3.500408163265306,
+      "stereo_balance": 0.99998415,
+      "stereo_movement": 0.012029815
+    },
+    {
+      "filename": "treetoneswells_rl1.mp3",
+      "path": "patterns/treetoneswells_rl1.mp3",
+      "rms_mean": 0.05715974,
+      "duration": 4.25795918367347,
+      "stereo_balance": -0.3423782,
+      "stereo_movement": 0.7579568
+    },
+    {
+      "filename": "treetoneswells_rl10.mp3",
+      "path": "patterns/treetoneswells_rl10.mp3",
+      "rms_mean": 0.06520373,
+      "duration": 3.761632653061224,
+      "stereo_balance": -0.06099044,
+      "stereo_movement": 0.6781339
+    },
+    {
+      "filename": "treetoneswells_rl11.mp3",
+      "path": "patterns/treetoneswells_rl11.mp3",
+      "rms_mean": 0.057072416,
+      "duration": 3.996734693877551,
+      "stereo_balance": -0.11799879,
+      "stereo_movement": 0.7154696
+    },
+    {
+      "filename": "treetoneswells_rl12.mp3",
+      "path": "patterns/treetoneswells_rl12.mp3",
+      "rms_mean": 0.115017205,
+      "duration": 3.26530612244898,
+      "stereo_balance": -0.23602149,
+      "stereo_movement": 0.68767
+    },
+    {
+      "filename": "treetoneswells_rl13.mp3",
+      "path": "patterns/treetoneswells_rl13.mp3",
+      "rms_mean": 0.041895837,
+      "duration": 3.5526530612244898,
+      "stereo_balance": -0.25309485,
+      "stereo_movement": 0.6908409
+    },
+    {
+      "filename": "treetoneswells_rl2.mp3",
+      "path": "patterns/treetoneswells_rl2.mp3",
+      "rms_mean": 0.07811345,
+      "duration": 4.519183673469388,
+      "stereo_balance": 0.061439198,
+      "stereo_movement": 0.6790168
+    },
+    {
+      "filename": "treetoneswells_rl3.mp3",
+      "path": "patterns/treetoneswells_rl3.mp3",
+      "rms_mean": 0.049435027,
+      "duration": 3.996734693877551,
+      "stereo_balance": 0.25896034,
+      "stereo_movement": 0.7241397
+    },
+    {
+      "filename": "treetoneswells_rl4.mp3",
+      "path": "patterns/treetoneswells_rl4.mp3",
+      "rms_mean": 0.09539011,
+      "duration": 4.25795918367347,
+      "stereo_balance": 0.1839639,
+      "stereo_movement": 0.7080312
+    },
+    {
+      "filename": "treetoneswells_rl5.mp3",
+      "path": "patterns/treetoneswells_rl5.mp3",
+      "rms_mean": 0.05683561,
+      "duration": 4.25795918367347,
+      "stereo_balance": -0.010227755,
+      "stereo_movement": 0.6614076
+    },
+    {
+      "filename": "treetoneswells_rl6.mp3",
+      "path": "patterns/treetoneswells_rl6.mp3",
+      "rms_mean": 0.082941905,
+      "duration": 4.754285714285714,
+      "stereo_balance": 0.079820484,
+      "stereo_movement": 0.71074945
+    },
+    {
+      "filename": "treetoneswells_rl7.mp3",
+      "path": "patterns/treetoneswells_rl7.mp3",
+      "rms_mean": 0.09128599,
+      "duration": 5.015510204081632,
+      "stereo_balance": 0.057107277,
+      "stereo_movement": 0.70265996
+    },
+    {
+      "filename": "treetoneswells_rl8.mp3",
+      "path": "patterns/treetoneswells_rl8.mp3",
+      "rms_mean": 0.090569235,
+      "duration": 3.996734693877551,
+      "stereo_balance": 0.16129059,
+      "stereo_movement": 0.6729201
+    },
+    {
+      "filename": "treetoneswells_rl9.mp3",
+      "path": "patterns/treetoneswells_rl9.mp3",
+      "rms_mean": 0.07067322,
+      "duration": 3.500408163265306,
+      "stereo_balance": -0.027677154,
+      "stereo_movement": 0.6956459
+    },
+    {
+      "filename": "volswell_center_pitch17.mp3",
+      "path": "patterns/volswell_center_pitch17.mp3",
+      "rms_mean": 0.061853252,
+      "duration": 6.0081632653061225,
+      "stereo_balance": 0.0,
+      "stereo_movement": 0.0
+    },
+    {
+      "filename": "volswell_center_pitch18.mp3",
+      "path": "patterns/volswell_center_pitch18.mp3",
+      "rms_mean": 0.06183092,
+      "duration": 6.0081632653061225,
+      "stereo_balance": 0.0,
+      "stereo_movement": 0.0
+    },
+    {
+      "filename": "volswell_center_pitch19.mp3",
+      "path": "patterns/volswell_center_pitch19.mp3",
+      "rms_mean": 0.061810657,
+      "duration": 6.0081632653061225,
+      "stereo_balance": 0.0,
+      "stereo_movement": 0.0
+    },
+    {
+      "filename": "volswell_center_pitch20.mp3",
+      "path": "patterns/volswell_center_pitch20.mp3",
+      "rms_mean": 0.061782993,
+      "duration": 6.0081632653061225,
+      "stereo_balance": 0.0,
+      "stereo_movement": 0.0
+    },
+    {
+      "filename": "volswell_center_pitch21.mp3",
+      "path": "patterns/volswell_center_pitch21.mp3",
+      "rms_mean": 0.061807066,
+      "duration": 6.0081632653061225,
+      "stereo_balance": 0.0,
+      "stereo_movement": 0.0
+    },
+    {
+      "filename": "volswell_center_pitch22.mp3",
+      "path": "patterns/volswell_center_pitch22.mp3",
+      "rms_mean": 0.061818767,
+      "duration": 6.0081632653061225,
+      "stereo_balance": 0.0,
+      "stereo_movement": 0.0
+    },
+    {
+      "filename": "volswell_center_pitch23.mp3",
+      "path": "patterns/volswell_center_pitch23.mp3",
+      "rms_mean": 0.061841633,
+      "duration": 6.0081632653061225,
+      "stereo_balance": 0.0,
+      "stereo_movement": 0.0
+    },
+    {
+      "filename": "volswell_center_pitch24.mp3",
+      "path": "patterns/volswell_center_pitch24.mp3",
+      "rms_mean": 0.06184985,
+      "duration": 6.0081632653061225,
+      "stereo_balance": 0.0,
+      "stereo_movement": 0.0
+    },
+    {
+      "filename": "volswell_center_pitch25.mp3",
+      "path": "patterns/volswell_center_pitch25.mp3",
+      "rms_mean": 0.061842147,
+      "duration": 6.0081632653061225,
+      "stereo_balance": 0.0,
+      "stereo_movement": 0.0
+    },
+    {
+      "filename": "volswell_center_pitch26.mp3",
+      "path": "patterns/volswell_center_pitch26.mp3",
+      "rms_mean": 0.06182191,
+      "duration": 6.0081632653061225,
+      "stereo_balance": 0.0,
+      "stereo_movement": 0.0
+    },
+    {
+      "filename": "volswell_center_pitch27.mp3",
+      "path": "patterns/volswell_center_pitch27.mp3",
+      "rms_mean": 0.061830595,
+      "duration": 6.0081632653061225,
+      "stereo_balance": 0.0,
+      "stereo_movement": 0.0
+    },
+    {
+      "filename": "volswell_center_pitch28.mp3",
+      "path": "patterns/volswell_center_pitch28.mp3",
+      "rms_mean": 0.061878107,
+      "duration": 6.0081632653061225,
+      "stereo_balance": 0.0,
+      "stereo_movement": 0.0
+    },
+    {
+      "filename": "volswell_center_pitch29.mp3",
+      "path": "patterns/volswell_center_pitch29.mp3",
+      "rms_mean": 0.061915778,
+      "duration": 6.0081632653061225,
+      "stereo_balance": 0.0,
+      "stereo_movement": 0.0
+    },
+    {
+      "filename": "volswell_center_pitch30.mp3",
+      "path": "patterns/volswell_center_pitch30.mp3",
+      "rms_mean": 0.06183968,
+      "duration": 6.0081632653061225,
+      "stereo_balance": 0.0,
+      "stereo_movement": 0.0
+    },
+    {
+      "filename": "volswell_center_pitch31.mp3",
+      "path": "patterns/volswell_center_pitch31.mp3",
+      "rms_mean": 0.061830528,
+      "duration": 6.0081632653061225,
+      "stereo_balance": 0.0,
+      "stereo_movement": 0.0
+    },
+    {
+      "filename": "volswell_center_pitch32.mp3",
+      "path": "patterns/volswell_center_pitch32.mp3",
+      "rms_mean": 0.061840758,
+      "duration": 6.0081632653061225,
+      "stereo_balance": 0.0,
+      "stereo_movement": 0.0
+    },
+    {
+      "filename": "volswell_center_pitch33.mp3",
+      "path": "patterns/volswell_center_pitch33.mp3",
+      "rms_mean": 0.061847605,
+      "duration": 6.0081632653061225,
+      "stereo_balance": 0.0,
+      "stereo_movement": 0.0
+    },
+    {
+      "filename": "volswell_center_pitch34.mp3",
+      "path": "patterns/volswell_center_pitch34.mp3",
+      "rms_mean": 0.061840653,
+      "duration": 6.0081632653061225,
+      "stereo_balance": 0.0,
+      "stereo_movement": 0.0
+    },
+    {
+      "filename": "volswell_center_pitch35.mp3",
+      "path": "patterns/volswell_center_pitch35.mp3",
+      "rms_mean": 0.061841097,
+      "duration": 6.0081632653061225,
+      "stereo_balance": 0.0,
+      "stereo_movement": 0.0
+    },
+    {
+      "filename": "volswell_center_pitch36.mp3",
+      "path": "patterns/volswell_center_pitch36.mp3",
+      "rms_mean": 0.06184871,
+      "duration": 6.0081632653061225,
+      "stereo_balance": 0.0,
+      "stereo_movement": 0.0
+    },
+    {
+      "filename": "volswell_center_pitch37.mp3",
+      "path": "patterns/volswell_center_pitch37.mp3",
+      "rms_mean": 0.06183952,
+      "duration": 6.0081632653061225,
+      "stereo_balance": 0.0,
+      "stereo_movement": 0.0
+    },
+    {
+      "filename": "volswell_center_pitch38.mp3",
+      "path": "patterns/volswell_center_pitch38.mp3",
+      "rms_mean": 0.06184722,
+      "duration": 6.0081632653061225,
+      "stereo_balance": 0.0,
+      "stereo_movement": 0.0
+    },
+    {
+      "filename": "volswell_center_pitch39.mp3",
+      "path": "patterns/volswell_center_pitch39.mp3",
+      "rms_mean": 0.061846495,
+      "duration": 6.0081632653061225,
+      "stereo_balance": 0.0,
+      "stereo_movement": 0.0
+    },
+    {
+      "filename": "volswell_center_pitch40.mp3",
+      "path": "patterns/volswell_center_pitch40.mp3",
+      "rms_mean": 0.061849095,
+      "duration": 6.0081632653061225,
+      "stereo_balance": 0.0,
+      "stereo_movement": 0.0
+    },
+    {
+      "filename": "volswell_center_pitch41.mp3",
+      "path": "patterns/volswell_center_pitch41.mp3",
+      "rms_mean": 0.061851494,
+      "duration": 6.0081632653061225,
+      "stereo_balance": 0.0,
+      "stereo_movement": 0.0
+    },
+    {
+      "filename": "volswell_center_pitch42.mp3",
+      "path": "patterns/volswell_center_pitch42.mp3",
+      "rms_mean": 0.061847202,
+      "duration": 6.0081632653061225,
+      "stereo_balance": 0.0,
+      "stereo_movement": 0.0
+    },
+    {
+      "filename": "volswell_center_pitch43.mp3",
+      "path": "patterns/volswell_center_pitch43.mp3",
+      "rms_mean": 0.061852835,
+      "duration": 6.0081632653061225,
+      "stereo_balance": 0.0,
+      "stereo_movement": 0.0
+    },
+    {
+      "filename": "volswell_center_pitch44.mp3",
+      "path": "patterns/volswell_center_pitch44.mp3",
+      "rms_mean": 0.06185249,
+      "duration": 6.0081632653061225,
+      "stereo_balance": 0.0,
+      "stereo_movement": 0.0
+    },
+    {
+      "filename": "volswell_center_pitch45.mp3",
+      "path": "patterns/volswell_center_pitch45.mp3",
+      "rms_mean": 0.061855484,
+      "duration": 6.0081632653061225,
+      "stereo_balance": 0.0,
+      "stereo_movement": 0.0
+    },
+    {
+      "filename": "volswell_center_pitch46.mp3",
+      "path": "patterns/volswell_center_pitch46.mp3",
+      "rms_mean": 0.061857674,
+      "duration": 6.0081632653061225,
+      "stereo_balance": 0.0,
+      "stereo_movement": 0.0
+    },
+    {
+      "filename": "volswell_center_pitch47.mp3",
+      "path": "patterns/volswell_center_pitch47.mp3",
+      "rms_mean": 0.06185757,
+      "duration": 6.0081632653061225,
+      "stereo_balance": 0.0,
+      "stereo_movement": 0.0
+    },
+    {
+      "filename": "volswell_center_pitch48.mp3",
+      "path": "patterns/volswell_center_pitch48.mp3",
+      "rms_mean": 0.061850756,
+      "duration": 6.0081632653061225,
+      "stereo_balance": 0.0,
+      "stereo_movement": 0.0
+    },
+    {
+      "filename": "volswell_center_pitch49.mp3",
+      "path": "patterns/volswell_center_pitch49.mp3",
+      "rms_mean": 0.061859787,
+      "duration": 6.0081632653061225,
+      "stereo_balance": 0.0,
+      "stereo_movement": 0.0
+    },
+    {
+      "filename": "volswell_center_pitch50.mp3",
+      "path": "patterns/volswell_center_pitch50.mp3",
+      "rms_mean": 0.061858032,
+      "duration": 6.0081632653061225,
+      "stereo_balance": 0.0,
+      "stereo_movement": 0.0
+    },
+    {
+      "filename": "volswell_center_pitch51.mp3",
+      "path": "patterns/volswell_center_pitch51.mp3",
+      "rms_mean": 0.06185693,
+      "duration": 6.0081632653061225,
+      "stereo_balance": 0.0,
+      "stereo_movement": 0.0
+    },
+    {
+      "filename": "volswell_left_pitch17.mp3",
+      "path": "patterns/volswell_left_pitch17.mp3",
+      "rms_mean": 0.04373698,
+      "duration": 6.0081632653061225,
+      "stereo_balance": -0.9999858,
+      "stereo_movement": 0.0035039692
+    },
+    {
+      "filename": "volswell_left_pitch18.mp3",
+      "path": "patterns/volswell_left_pitch18.mp3",
+      "rms_mean": 0.04372292,
+      "duration": 6.0081632653061225,
+      "stereo_balance": -0.9999859,
+      "stereo_movement": 0.0030854957
+    },
+    {
+      "filename": "volswell_left_pitch19.mp3",
+      "path": "patterns/volswell_left_pitch19.mp3",
+      "rms_mean": 0.043704934,
+      "duration": 6.0081632653061225,
+      "stereo_balance": -0.9999858,
+      "stereo_movement": 0.0029396017
+    },
+    {
+      "filename": "volswell_left_pitch20.mp3",
+      "path": "patterns/volswell_left_pitch20.mp3",
+      "rms_mean": 0.0436955,
+      "duration": 6.0081632653061225,
+      "stereo_balance": -0.9999859,
+      "stereo_movement": 0.0026160963
+    },
+    {
+      "filename": "volswell_left_pitch21.mp3",
+      "path": "patterns/volswell_left_pitch21.mp3",
+      "rms_mean": 0.043688234,
+      "duration": 6.0081632653061225,
+      "stereo_balance": -0.9999858,
+      "stereo_movement": 0.0031818184
+    },
+    {
+      "filename": "volswell_left_pitch22.mp3",
+      "path": "patterns/volswell_left_pitch22.mp3",
+      "rms_mean": 0.04370994,
+      "duration": 6.0081632653061225,
+      "stereo_balance": -0.9999858,
+      "stereo_movement": 0.0029831496
+    },
+    {
+      "filename": "volswell_left_pitch23.mp3",
+      "path": "patterns/volswell_left_pitch23.mp3",
+      "rms_mean": 0.043727174,
+      "duration": 6.0081632653061225,
+      "stereo_balance": -0.9999858,
+      "stereo_movement": 0.0027327423
+    },
+    {
+      "filename": "volswell_left_pitch24.mp3",
+      "path": "patterns/volswell_left_pitch24.mp3",
+      "rms_mean": 0.043734424,
+      "duration": 6.0081632653061225,
+      "stereo_balance": -0.9999858,
+      "stereo_movement": 0.0028918064
+    },
+    {
+      "filename": "volswell_left_pitch25.mp3",
+      "path": "patterns/volswell_left_pitch25.mp3",
+      "rms_mean": 0.043723714,
+      "duration": 6.0081632653061225,
+      "stereo_balance": -0.9999858,
+      "stereo_movement": 0.00318492
+    },
+    {
+      "filename": "volswell_left_pitch26.mp3",
+      "path": "patterns/volswell_left_pitch26.mp3",
+      "rms_mean": 0.043714784,
+      "duration": 6.0081632653061225,
+      "stereo_balance": -0.9999858,
+      "stereo_movement": 0.0029402329
+    },
+    {
+      "filename": "volswell_left_pitch27.mp3",
+      "path": "patterns/volswell_left_pitch27.mp3",
+      "rms_mean": 0.043716628,
+      "duration": 6.0081632653061225,
+      "stereo_balance": -0.9999859,
+      "stereo_movement": 0.0030317535
+    },
+    {
+      "filename": "volswell_left_pitch28.mp3",
+      "path": "patterns/volswell_left_pitch28.mp3",
+      "rms_mean": 0.04371199,
+      "duration": 6.0081632653061225,
+      "stereo_balance": -0.9999858,
+      "stereo_movement": 0.0026559562
+    },
+    {
+      "filename": "volswell_left_pitch29.mp3",
+      "path": "patterns/volswell_left_pitch29.mp3",
+      "rms_mean": 0.043709904,
+      "duration": 6.0081632653061225,
+      "stereo_balance": -0.9999858,
+      "stereo_movement": 0.0029811894
+    },
+    {
+      "filename": "volswell_left_pitch30.mp3",
+      "path": "patterns/volswell_left_pitch30.mp3",
+      "rms_mean": 0.0437229,
+      "duration": 6.0081632653061225,
+      "stereo_balance": -0.9999858,
+      "stereo_movement": 0.0026361442
+    },
+    {
+      "filename": "volswell_left_pitch31.mp3",
+      "path": "patterns/volswell_left_pitch31.mp3",
+      "rms_mean": 0.043719783,
+      "duration": 6.0081632653061225,
+      "stereo_balance": -0.9999858,
+      "stereo_movement": 0.0028183628
+    },
+    {
+      "filename": "volswell_left_pitch32.mp3",
+      "path": "patterns/volswell_left_pitch32.mp3",
+      "rms_mean": 0.043730352,
+      "duration": 6.0081632653061225,
+      "stereo_balance": -0.9999858,
+      "stereo_movement": 0.0028131804
+    },
+    {
+      "filename": "volswell_left_pitch33.mp3",
+      "path": "patterns/volswell_left_pitch33.mp3",
+      "rms_mean": 0.043729123,
+      "duration": 6.0081632653061225,
+      "stereo_balance": -0.9999858,
+      "stereo_movement": 0.0030269495
+    },
+    {
+      "filename": "volswell_left_pitch34.mp3",
+      "path": "patterns/volswell_left_pitch34.mp3",
+      "rms_mean": 0.043724287,
+      "duration": 6.0081632653061225,
+      "stereo_balance": -0.9999858,
+      "stereo_movement": 0.0030490444
+    },
+    {
+      "filename": "volswell_left_pitch35.mp3",
+      "path": "patterns/volswell_left_pitch35.mp3",
+      "rms_mean": 0.043729134,
+      "duration": 6.0081632653061225,
+      "stereo_balance": -0.9999858,
+      "stereo_movement": 0.0026993186
+    },
+    {
+      "filename": "volswell_left_pitch36.mp3",
+      "path": "patterns/volswell_left_pitch36.mp3",
+      "rms_mean": 0.043734424,
+      "duration": 6.0081632653061225,
+      "stereo_balance": -0.9999858,
+      "stereo_movement": 0.0027048013
+    },
+    {
+      "filename": "volswell_left_pitch37.mp3",
+      "path": "patterns/volswell_left_pitch37.mp3",
+      "rms_mean": 0.043727323,
+      "duration": 6.0081632653061225,
+      "stereo_balance": -0.9999858,
+      "stereo_movement": 0.0029453249
+    },
+    {
+      "filename": "volswell_left_pitch38.mp3",
+      "path": "patterns/volswell_left_pitch38.mp3",
+      "rms_mean": 0.04373328,
+      "duration": 6.0081632653061225,
+      "stereo_balance": -0.9999858,
+      "stereo_movement": 0.0028491078
+    },
+    {
+      "filename": "volswell_left_pitch39.mp3",
+      "path": "patterns/volswell_left_pitch39.mp3",
+      "rms_mean": 0.043732375,
+      "duration": 6.0081632653061225,
+      "stereo_balance": -0.9999858,
+      "stereo_movement": 0.0027252908
+    },
+    {
+      "filename": "volswell_left_pitch40.mp3",
+      "path": "patterns/volswell_left_pitch40.mp3",
+      "rms_mean": 0.04372842,
+      "duration": 6.0081632653061225,
+      "stereo_balance": -0.9999858,
+      "stereo_movement": 0.0028349317
+    },
+    {
+      "filename": "volswell_left_pitch41.mp3",
+      "path": "patterns/volswell_left_pitch41.mp3",
+      "rms_mean": 0.043752547,
+      "duration": 6.0081632653061225,
+      "stereo_balance": -0.9999858,
+      "stereo_movement": 0.0027434393
+    },
+    {
+      "filename": "volswell_left_pitch42.mp3",
+      "path": "patterns/volswell_left_pitch42.mp3",
+      "rms_mean": 0.043733746,
+      "duration": 6.0081632653061225,
+      "stereo_balance": -0.9999858,
+      "stereo_movement": 0.00296532
+    },
+    {
+      "filename": "volswell_left_pitch43.mp3",
+      "path": "patterns/volswell_left_pitch43.mp3",
+      "rms_mean": 0.04373716,
+      "duration": 6.0081632653061225,
+      "stereo_balance": -0.9999858,
+      "stereo_movement": 0.0029118871
+    },
+    {
+      "filename": "volswell_left_pitch44.mp3",
+      "path": "patterns/volswell_left_pitch44.mp3",
+      "rms_mean": 0.04373616,
+      "duration": 6.0081632653061225,
+      "stereo_balance": -0.9999858,
+      "stereo_movement": 0.002879198
+    },
+    {
+      "filename": "volswell_left_pitch45.mp3",
+      "path": "patterns/volswell_left_pitch45.mp3",
+      "rms_mean": 0.043737907,
+      "duration": 6.0081632653061225,
+      "stereo_balance": -0.9999858,
+      "stereo_movement": 0.0027949605
+    },
+    {
+      "filename": "volswell_left_pitch46.mp3",
+      "path": "patterns/volswell_left_pitch46.mp3",
+      "rms_mean": 0.043739915,
+      "duration": 6.0081632653061225,
+      "stereo_balance": -0.9999859,
+      "stereo_movement": 0.0028949785
+    },
+    {
+      "filename": "volswell_left_pitch47.mp3",
+      "path": "patterns/volswell_left_pitch47.mp3",
+      "rms_mean": 0.043738946,
+      "duration": 6.0081632653061225,
+      "stereo_balance": -0.9999859,
+      "stereo_movement": 0.0028730307
+    },
+    {
+      "filename": "volswell_left_pitch48.mp3",
+      "path": "patterns/volswell_left_pitch48.mp3",
+      "rms_mean": 0.043748107,
+      "duration": 6.0081632653061225,
+      "stereo_balance": -0.9999859,
+      "stereo_movement": 0.002892325
+    },
+    {
+      "filename": "volswell_left_pitch49.mp3",
+      "path": "patterns/volswell_left_pitch49.mp3",
+      "rms_mean": 0.043742128,
+      "duration": 6.0081632653061225,
+      "stereo_balance": -0.9999859,
+      "stereo_movement": 0.0028759576
+    },
+    {
+      "filename": "volswell_left_pitch50.mp3",
+      "path": "patterns/volswell_left_pitch50.mp3",
+      "rms_mean": 0.043740965,
+      "duration": 6.0081632653061225,
+      "stereo_balance": -0.9999859,
+      "stereo_movement": 0.002926922
+    },
+    {
+      "filename": "volswell_left_pitch51.mp3",
+      "path": "patterns/volswell_left_pitch51.mp3",
+      "rms_mean": 0.04373892,
+      "duration": 6.0081632653061225,
+      "stereo_balance": -0.9999859,
+      "stereo_movement": 0.0028477947
+    },
+    {
+      "filename": "volswell_right_pitch17.mp3",
+      "path": "patterns/volswell_right_pitch17.mp3",
+      "rms_mean": 0.043737292,
+      "duration": 6.0081632653061225,
+      "stereo_balance": 0.9999858,
+      "stereo_movement": 0.002572708
+    },
+    {
+      "filename": "volswell_right_pitch18.mp3",
+      "path": "patterns/volswell_right_pitch18.mp3",
+      "rms_mean": 0.043729022,
+      "duration": 6.0081632653061225,
+      "stereo_balance": 0.9999858,
+      "stereo_movement": 0.0027000185
+    },
+    {
+      "filename": "volswell_right_pitch19.mp3",
+      "path": "patterns/volswell_right_pitch19.mp3",
+      "rms_mean": 0.04370707,
+      "duration": 6.0081632653061225,
+      "stereo_balance": 0.9999858,
+      "stereo_movement": 0.0025819077
+    },
+    {
+      "filename": "volswell_right_pitch20.mp3",
+      "path": "patterns/volswell_right_pitch20.mp3",
+      "rms_mean": 0.04369153,
+      "duration": 6.0081632653061225,
+      "stereo_balance": 0.9999858,
+      "stereo_movement": 0.0027995866
+    },
+    {
+      "filename": "volswell_right_pitch21.mp3",
+      "path": "patterns/volswell_right_pitch21.mp3",
+      "rms_mean": 0.04370409,
+      "duration": 6.0081632653061225,
+      "stereo_balance": 0.9999859,
+      "stereo_movement": 0.002553355
+    },
+    {
+      "filename": "volswell_right_pitch22.mp3",
+      "path": "patterns/volswell_right_pitch22.mp3",
+      "rms_mean": 0.043715067,
+      "duration": 6.0081632653061225,
+      "stereo_balance": 0.9999859,
+      "stereo_movement": 0.0031401392
+    },
+    {
+      "filename": "volswell_right_pitch23.mp3",
+      "path": "patterns/volswell_right_pitch23.mp3",
+      "rms_mean": 0.04373638,
+      "duration": 6.0081632653061225,
+      "stereo_balance": 0.9999859,
+      "stereo_movement": 0.0027740453
+    },
+    {
+      "filename": "volswell_right_pitch24.mp3",
+      "path": "patterns/volswell_right_pitch24.mp3",
+      "rms_mean": 0.043738738,
+      "duration": 6.0081632653061225,
+      "stereo_balance": 0.9999859,
+      "stereo_movement": 0.0025758622
+    },
+    {
+      "filename": "volswell_right_pitch25.mp3",
+      "path": "patterns/volswell_right_pitch25.mp3",
+      "rms_mean": 0.043729767,
+      "duration": 6.0081632653061225,
+      "stereo_balance": 0.9999859,
+      "stereo_movement": 0.0025945911
+    },
+    {
+      "filename": "volswell_right_pitch26.mp3",
+      "path": "patterns/volswell_right_pitch26.mp3",
+      "rms_mean": 0.043715276,
+      "duration": 6.0081632653061225,
+      "stereo_balance": 0.9999858,
+      "stereo_movement": 0.0031485166
+    },
+    {
+      "filename": "volswell_right_pitch27.mp3",
+      "path": "patterns/volswell_right_pitch27.mp3",
+      "rms_mean": 0.043715317,
+      "duration": 6.0081632653061225,
+      "stereo_balance": 0.9999859,
+      "stereo_movement": 0.0029390345
+    },
+    {
+      "filename": "volswell_right_pitch28.mp3",
+      "path": "patterns/volswell_right_pitch28.mp3",
+      "rms_mean": 0.043731287,
+      "duration": 6.0081632653061225,
+      "stereo_balance": 0.9999858,
+      "stereo_movement": 0.0026525087
+    },
+    {
+      "filename": "volswell_right_pitch29.mp3",
+      "path": "patterns/volswell_right_pitch29.mp3",
+      "rms_mean": 0.043680713,
+      "duration": 6.0081632653061225,
+      "stereo_balance": 0.9999858,
+      "stereo_movement": 0.0027228226
+    },
+    {
+      "filename": "volswell_right_pitch30.mp3",
+      "path": "patterns/volswell_right_pitch30.mp3",
+      "rms_mean": 0.043732405,
+      "duration": 6.0081632653061225,
+      "stereo_balance": 0.9999858,
+      "stereo_movement": 0.0030486258
+    },
+    {
+      "filename": "volswell_right_pitch31.mp3",
+      "path": "patterns/volswell_right_pitch31.mp3",
+      "rms_mean": 0.04372187,
+      "duration": 6.0081632653061225,
+      "stereo_balance": 0.9999858,
+      "stereo_movement": 0.003027075
+    },
+    {
+      "filename": "volswell_right_pitch32.mp3",
+      "path": "patterns/volswell_right_pitch32.mp3",
+      "rms_mean": 0.0437343,
+      "duration": 6.0081632653061225,
+      "stereo_balance": 0.9999859,
+      "stereo_movement": 0.0029896526
+    },
+    {
+      "filename": "volswell_right_pitch33.mp3",
+      "path": "patterns/volswell_right_pitch33.mp3",
+      "rms_mean": 0.043736227,
+      "duration": 6.0081632653061225,
+      "stereo_balance": 0.9999858,
+      "stereo_movement": 0.002771686
+    },
+    {
+      "filename": "volswell_right_pitch34.mp3",
+      "path": "patterns/volswell_right_pitch34.mp3",
+      "rms_mean": 0.043727864,
+      "duration": 6.0081632653061225,
+      "stereo_balance": 0.9999858,
+      "stereo_movement": 0.0027555542
+    },
+    {
+      "filename": "volswell_right_pitch35.mp3",
+      "path": "patterns/volswell_right_pitch35.mp3",
+      "rms_mean": 0.04373058,
+      "duration": 6.0081632653061225,
+      "stereo_balance": 0.9999858,
+      "stereo_movement": 0.003037487
+    },
+    {
+      "filename": "volswell_right_pitch35_51_35.mp3",
+      "path": "patterns/volswell_right_pitch35_51_35.mp3",
+      "rms_mean": 0.5547191,
+      "duration": 2.011428571428572,
+      "stereo_balance": 0.0,
+      "stereo_movement": 0.0
+    },
+    {
+      "filename": "volswell_right_pitch36.mp3",
+      "path": "patterns/volswell_right_pitch36.mp3",
+      "rms_mean": 0.04373421,
+      "duration": 6.0081632653061225,
+      "stereo_balance": 0.9999858,
+      "stereo_movement": 0.0028897582
+    },
+    {
+      "filename": "volswell_right_pitch36_48_36.mp3",
+      "path": "patterns/volswell_right_pitch36_48_36.mp3",
+      "rms_mean": 0.55470914,
+      "duration": 2.011428571428572,
+      "stereo_balance": 0.0,
+      "stereo_movement": 0.0
+    },
+    {
+      "filename": "volswell_right_pitch37.mp3",
+      "path": "patterns/volswell_right_pitch37.mp3",
+      "rms_mean": 0.043727618,
+      "duration": 6.0081632653061225,
+      "stereo_balance": 0.9999858,
+      "stereo_movement": 0.0029937474
+    },
+    {
+      "filename": "volswell_right_pitch38.mp3",
+      "path": "patterns/volswell_right_pitch38.mp3",
+      "rms_mean": 0.043733176,
+      "duration": 6.0081632653061225,
+      "stereo_balance": 0.9999858,
+      "stereo_movement": 0.0028563032
+    },
+    {
+      "filename": "volswell_right_pitch39.mp3",
+      "path": "patterns/volswell_right_pitch39.mp3",
+      "rms_mean": 0.043731704,
+      "duration": 6.0081632653061225,
+      "stereo_balance": 0.9999858,
+      "stereo_movement": 0.002813613
+    },
+    {
+      "filename": "volswell_right_pitch40.mp3",
+      "path": "patterns/volswell_right_pitch40.mp3",
+      "rms_mean": 0.043729022,
+      "duration": 6.0081632653061225,
+      "stereo_balance": 0.9999858,
+      "stereo_movement": 0.0028766636
+    },
+    {
+      "filename": "volswell_right_pitch40_50_40.mp3",
+      "path": "patterns/volswell_right_pitch40_50_40.mp3",
+      "rms_mean": 0.5547488,
+      "duration": 2.011428571428572,
+      "stereo_balance": 0.0,
+      "stereo_movement": 0.0
+    },
+    {
+      "filename": "volswell_right_pitch41.mp3",
+      "path": "patterns/volswell_right_pitch41.mp3",
+      "rms_mean": 0.043732323,
+      "duration": 6.0081632653061225,
+      "stereo_balance": 0.9999858,
+      "stereo_movement": 0.0029272377
+    },
+    {
+      "filename": "volswell_right_pitch42.mp3",
+      "path": "patterns/volswell_right_pitch42.mp3",
+      "rms_mean": 0.043733355,
+      "duration": 6.0081632653061225,
+      "stereo_balance": 0.9999858,
+      "stereo_movement": 0.0029109118
+    },
+    {
+      "filename": "volswell_right_pitch43.mp3",
+      "path": "patterns/volswell_right_pitch43.mp3",
+      "rms_mean": 0.043738205,
+      "duration": 6.0081632653061225,
+      "stereo_balance": 0.9999858,
+      "stereo_movement": 0.002950184
+    },
+    {
+      "filename": "volswell_right_pitch44.mp3",
+      "path": "patterns/volswell_right_pitch44.mp3",
+      "rms_mean": 0.043736715,
+      "duration": 6.0081632653061225,
+      "stereo_balance": 0.9999858,
+      "stereo_movement": 0.0029549114
+    },
+    {
+      "filename": "volswell_right_pitch45.mp3",
+      "path": "patterns/volswell_right_pitch45.mp3",
+      "rms_mean": 0.04373812,
+      "duration": 6.0081632653061225,
+      "stereo_balance": 0.9999858,
+      "stereo_movement": 0.0028247351
+    },
+    {
+      "filename": "volswell_right_pitch46.mp3",
+      "path": "patterns/volswell_right_pitch46.mp3",
+      "rms_mean": 0.043740284,
+      "duration": 6.0081632653061225,
+      "stereo_balance": 0.9999859,
+      "stereo_movement": 0.0028594881
+    },
+    {
+      "filename": "volswell_right_pitch47.mp3",
+      "path": "patterns/volswell_right_pitch47.mp3",
+      "rms_mean": 0.043739792,
+      "duration": 6.0081632653061225,
+      "stereo_balance": 0.9999859,
+      "stereo_movement": 0.0029409686
+    },
+    {
+      "filename": "volswell_right_pitch48.mp3",
+      "path": "patterns/volswell_right_pitch48.mp3",
+      "rms_mean": 0.04374838,
+      "duration": 6.0081632653061225,
+      "stereo_balance": 0.9999859,
+      "stereo_movement": 0.00289752
+    },
+    {
+      "filename": "volswell_right_pitch49.mp3",
+      "path": "patterns/volswell_right_pitch49.mp3",
+      "rms_mean": 0.043741807,
+      "duration": 6.0081632653061225,
+      "stereo_balance": 0.9999859,
+      "stereo_movement": 0.0029137076
+    },
+    {
+      "filename": "volswell_right_pitch50.mp3",
+      "path": "patterns/volswell_right_pitch50.mp3",
+      "rms_mean": 0.04374075,
+      "duration": 6.0081632653061225,
+      "stereo_balance": 0.9999859,
+      "stereo_movement": 0.0029251894
+    },
+    {
+      "filename": "volswell_right_pitch51.mp3",
+      "path": "patterns/volswell_right_pitch51.mp3",
+      "rms_mean": 0.04373969,
+      "duration": 6.0081632653061225,
+      "stereo_balance": 0.9999859,
+      "stereo_movement": 0.0029138492
+    },
+    {
+      "filename": "volswell_right_pitch51_32_51.mp3",
+      "path": "patterns/volswell_right_pitch51_32_51.mp3",
+      "rms_mean": 0.55476457,
+      "duration": 2.011428571428572,
+      "stereo_balance": 0.0,
+      "stereo_movement": 0.0
+    },
+    {
+      "filename": "volswell_right_pitch51_34_51.mp3",
+      "path": "patterns/volswell_right_pitch51_34_51.mp3",
+      "rms_mean": 0.55471313,
+      "duration": 2.011428571428572,
+      "stereo_balance": 0.0,
+      "stereo_movement": 0.0
+    },
+    {
+      "filename": "volswell_right_pitch51_36_51.mp3",
+      "path": "patterns/volswell_right_pitch51_36_51.mp3",
+      "rms_mean": 0.5547562,
+      "duration": 2.011428571428572,
+      "stereo_balance": 0.0,
+      "stereo_movement": 0.0
+    },
+    {
+      "filename": "volswell_right_pitch51_37_51.mp3",
+      "path": "patterns/volswell_right_pitch51_37_51.mp3",
+      "rms_mean": 0.55471677,
+      "duration": 2.011428571428572,
+      "stereo_balance": 0.0,
+      "stereo_movement": 0.0
+    },
+    {
+      "filename": "volswell_right_pitch51_38_51.mp3",
+      "path": "patterns/volswell_right_pitch51_38_51.mp3",
+      "rms_mean": 0.5547256,
+      "duration": 2.011428571428572,
+      "stereo_balance": 0.0,
+      "stereo_movement": 0.0
+    }
+  ]
+}
