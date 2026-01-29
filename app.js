@@ -499,7 +499,12 @@ function updateTestOverlay(phase, secondsRemaining) {
     
     if (overlay && phaseEl && countdownEl) {
         phaseEl.textContent = phase;
-        countdownEl.textContent = `${secondsRemaining}s`;
+        if (secondsRemaining !== '') {
+            countdownEl.textContent = `${secondsRemaining}s`;
+            countdownEl.style.display = 'block';
+        } else {
+            countdownEl.style.display = 'none';
+        }
     }
 }
 
@@ -589,7 +594,7 @@ function startManualTest() {
 }
 
 // End manual test
-function endManualTest() {
+function endManualTest(showComplete = true) {
     // Clear intervals
     if (testInterval) {
         clearInterval(testInterval);
@@ -611,12 +616,31 @@ function endManualTest() {
     
     isPlaying = false;
     
-    // Hide overlay
     const overlay = document.getElementById('testOverlay');
-    if (overlay) {
-        overlay.classList.remove('active');
-    }
     
+    if (showComplete && overlay) {
+        // Show "Test Complete" message
+        updateTestOverlay('Test Complete', '');
+        overlay.classList.add('active');
+        
+        // Hide overlay after 2 seconds
+        setTimeout(() => {
+            if (overlay) {
+                overlay.classList.remove('active');
+            }
+            cleanupAfterTest();
+        }, 2000);
+    } else {
+        // Hide overlay immediately (for abort)
+        if (overlay) {
+            overlay.classList.remove('active');
+        }
+        cleanupAfterTest();
+    }
+}
+
+// Cleanup after test completes
+function cleanupAfterTest() {
     // Reset button
     const testBtn = document.getElementById('manualTestBtn');
     if (testBtn) {
@@ -669,8 +693,8 @@ function setupManualTest() {
         if (testState === 'idle') {
             startManualTest();
         } else {
-            // Abort test
-            endManualTest();
+            // Abort test (don't show "Test Complete")
+            endManualTest(false);
         }
     });
 }
