@@ -50,6 +50,13 @@ haptic-sound-visualizer/
 ├── app.js              # Application logic
 ├── server.py           # Python HTTP server
 ├── audio_files/        # Audio files directory (add your files here)
+├── data/               # Data files (JSON metadata, etc.)
+├── docs/               # Documentation files
+├── scripts/            # Utility scripts (Python)
+├── backups/            # Backup files
+├── js/                 # JavaScript modules
+│   ├── ui/            # UI components
+│   └── visualizations/ # Visualization modules
 └── README.md
 ```
 

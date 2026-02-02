@@ -1,4 +1,254 @@
 // Simple Haptic Sound Visualizer
+
+// ============================================================================
+// MODE MANAGEMENT
+// ============================================================================
+
+const AppModes = {
+    LIBRARY: 'library',
+    TEST: 'test',
+    ANALYSIS: 'analysis'
+};
+
+let currentMode = AppModes.LIBRARY;
+
+// Initialize mode from URL hash, default to Library
+function initializeMode() {
+    const hash = window.location.hash.slice(1); // Remove '#'
+    
+    // Only use hash if it's a valid mode, otherwise default to Library
+    if (hash && Object.values(AppModes).includes(hash)) {
+        switchMode(hash);
+    } else {
+        // Default to Library mode on initial load
+        switchMode(AppModes.LIBRARY);
+    }
+}
+
+// Switch between modes
+function switchMode(mode) {
+    if (!Object.values(AppModes).includes(mode)) {
+        console.warn('Invalid mode:', mode);
+        return;
+    }
+    
+    currentMode = mode;
+    
+    // Update URL hash
+    window.location.hash = mode;
+    
+    // Save to localStorage
+    localStorage.setItem('lastMode', mode);
+    
+    // Hide all mode containers
+    document.querySelectorAll('.mode-container').forEach(container => {
+        container.classList.remove('active');
+    });
+    
+    // Show selected mode container
+    const modeContainer = document.getElementById(`${mode}-mode`);
+    if (modeContainer) {
+        modeContainer.classList.add('active');
+    }
+    
+    // Update navigation buttons
+    document.querySelectorAll('.mode-nav button').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.dataset.mode === mode) {
+            btn.classList.add('active');
+        }
+    });
+    
+    // Initialize mode-specific functionality
+    if (mode === AppModes.LIBRARY) {
+        // Library mode is already initialized
+    } else if (mode === AppModes.TEST) {
+        initializeTestMode();
+    } else if (mode === AppModes.ANALYSIS) {
+        initializeAnalysisMode();
+    }
+}
+
+// Test Mode State
+let testQueue = []; // Array of file objects to test
+let currentSession = null; // { session_id, created_at, tests: [] }
+
+// Initialize Test Mode
+function initializeTestMode() {
+    // Set up test queue
+    setupTestQueue();
+    
+    // Set up session management
+    setupSessionManagement();
+    
+    // Render file list for Test mode if files are already loaded
+    if (filesList.length > 0) {
+        renderFileList(filesList);
+    }
+    
+    console.log('Test mode initialized');
+}
+
+// Setup test queue functionality
+function setupTestQueue() {
+    const queueList = document.getElementById('testQueueList');
+    if (!queueList) return;
+    
+    // Render queue
+    renderTestQueue();
+}
+
+// Render test queue
+function renderTestQueue() {
+    const queueList = document.getElementById('testQueueList');
+    if (!queueList) return;
+    
+    if (testQueue.length === 0) {
+        queueList.innerHTML = '<p style="color: #ccc; font-size: 11px; text-align: center; padding: 40px;">No files in queue</p>';
+        return;
+    }
+    
+    queueList.innerHTML = testQueue.map((file, index) => `
+        <div class="queue-item" data-index="${index}" style="padding: 8px 12px; margin: 4px 0; background: #fff; border: 1px solid #e0e0e0; border-radius: 3px; display: flex; align-items: center; justify-content: space-between; cursor: move;">
+            <span style="font-size: 11px; color: #666;">${index + 1}. ${file.name}</span>
+            <button class="remove-queue-item" data-index="${index}" style="background: transparent; border: none; color: #999; cursor: pointer; font-size: 14px; padding: 0 4px;">×</button>
+        </div>
+    `).join('');
+    
+    // Add remove handlers
+    queueList.querySelectorAll('.remove-queue-item').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const index = parseInt(btn.dataset.index);
+            testQueue.splice(index, 1);
+            renderTestQueue();
+        });
+    });
+}
+
+// Add file to test queue
+function addToTestQueue(file) {
+    // Check if already in queue
+    if (testQueue.some(f => f.path === file.path)) {
+        console.log('File already in queue');
+        return;
+    }
+    
+    testQueue.push(file);
+    renderTestQueue();
+}
+
+// Setup session management
+function setupSessionManagement() {
+    const startBtn = document.getElementById('startSessionBtn');
+    const endBtn = document.getElementById('endSessionBtn');
+    const sessionInfo = document.getElementById('sessionInfo');
+    
+    if (startBtn) {
+        startBtn.addEventListener('click', () => {
+            startSession();
+        });
+    }
+    
+    if (endBtn) {
+        endBtn.addEventListener('click', () => {
+            endSession();
+        });
+    }
+    
+    updateSessionInfo();
+}
+
+// Start a new session
+function startSession() {
+    if (currentSession) {
+        if (!confirm('End current session and start a new one?')) {
+            return;
+        }
+        endSession();
+    }
+    
+    currentSession = {
+        session_id: generateUUID(),
+        created_at: new Date().toISOString(),
+        ended_at: null,
+        tests: []
+    };
+    
+    const startBtn = document.getElementById('startSessionBtn');
+    const endBtn = document.getElementById('endSessionBtn');
+    
+    if (startBtn) startBtn.style.display = 'none';
+    if (endBtn) endBtn.style.display = 'block';
+    
+    updateSessionInfo();
+    
+    // TODO: Save to IndexedDB or server
+    console.log('Session started:', currentSession.session_id);
+}
+
+// End current session
+function endSession() {
+    if (!currentSession) return;
+    
+    if (!confirm('End current session? You can still analyze it later.')) {
+        return;
+    }
+    
+    currentSession.ended_at = new Date().toISOString();
+    
+    const startBtn = document.getElementById('startSessionBtn');
+    const endBtn = document.getElementById('endSessionBtn');
+    
+    if (startBtn) startBtn.style.display = 'block';
+    if (endBtn) endBtn.style.display = 'none';
+    
+    // TODO: Save to IndexedDB or server
+    console.log('Session ended:', currentSession.session_id);
+    
+    currentSession = null;
+    updateSessionInfo();
+}
+
+// Update session info display
+function updateSessionInfo() {
+    const sessionInfo = document.getElementById('sessionInfo');
+    if (!sessionInfo) return;
+    
+    if (!currentSession) {
+        sessionInfo.innerHTML = '<p>No active session</p>';
+        return;
+    }
+    
+    const createdDate = new Date(currentSession.created_at);
+    sessionInfo.innerHTML = `
+        <p><strong>Session ID:</strong> <span style="font-family: monospace; font-size: 10px;">${currentSession.session_id}</span></p>
+        <p><strong>Started:</strong> ${createdDate.toLocaleString()}</p>
+        <p><strong>Tests completed:</strong> ${currentSession.tests.length}</p>
+        <p><strong>Queue length:</strong> ${testQueue.length}</p>
+    `;
+}
+
+// Generate UUID v4
+function generateUUID() {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        const r = Math.random() * 16 | 0;
+        const v = c === 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+    });
+}
+
+// Initialize Analysis Mode
+function initializeAnalysisMode() {
+    // TODO: Initialize analysis mode specific functionality
+    // - Load sessions from storage
+    // - Set up session browser
+    console.log('Analysis mode initialized');
+}
+
+// ============================================================================
+// APPLICATION STATE
+// ============================================================================
+
 let sound = null;
 let fft = null;
 let isPlaying = false;
@@ -27,6 +277,10 @@ let blobVertices = [];
 
 // Load files when page loads
 window.addEventListener('DOMContentLoaded', async () => {
+    // Initialize mode management first
+    setupModeNavigation();
+    initializeMode();
+    
     // Load metadata first, then file list (so metadata is available when rendering)
     await loadPatternMetadata();
     await loadFileList();
@@ -36,10 +290,28 @@ window.addEventListener('DOMContentLoaded', async () => {
     setupP5Sketch();
 });
 
+// Setup mode navigation
+function setupModeNavigation() {
+    document.querySelectorAll('.mode-nav button').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const mode = btn.dataset.mode;
+            switchMode(mode);
+        });
+    });
+    
+    // Listen for hash changes (back/forward buttons)
+    window.addEventListener('hashchange', () => {
+        const hash = window.location.hash.slice(1);
+        if (Object.values(AppModes).includes(hash)) {
+            switchMode(hash);
+        }
+    });
+}
+
 // Load pattern metadata
 async function loadPatternMetadata() {
     try {
-        const response = await fetch('pattern_metadata.json');
+        const response = await fetch('data/pattern_metadata.json');
         if (response.ok) {
             const data = await response.json();
             if (data.patterns && Array.isArray(data.patterns)) {
@@ -82,6 +354,10 @@ async function loadFileList() {
     // Try different paths to handle various GitHub Pages configurations
     const basePath = window.location.pathname.replace(/\/[^/]*$/, '') || '';
     const jsonPaths = [
+        basePath + '/data/audio-files.json',
+        './data/audio-files.json',
+        'data/audio-files.json',
+        '/data/audio-files.json',
         basePath + '/audio-files.json',
         './audio-files.json',
         'audio-files.json',
@@ -276,7 +552,37 @@ function hideTooltip() {
 
 // Render file list
 function renderFileList(files) {
-    const fileList = document.getElementById('fileList');
+    // Render for Library mode
+    renderFileListForMode(files, 'fileList', (file, item) => {
+        // Library mode: click to load audio
+        item.addEventListener('click', () => {
+            if (testState !== 'idle') return; // Disabled during test
+            // Remove active from all in Library mode
+            document.querySelectorAll('#fileList .file-item').forEach(el => el.classList.remove('active'));
+            item.classList.add('active');
+            loadAudio(file.path);
+        });
+    });
+    
+    // Render for Test mode
+    renderFileListForMode(files, 'fileList-test', (file, item) => {
+        // Test mode: click to add to queue
+        item.addEventListener('click', () => {
+            addToTestQueue(file);
+            // Visual feedback
+            item.style.background = '#e8f5e9';
+            setTimeout(() => {
+                item.style.background = '';
+            }, 300);
+        });
+    });
+}
+
+// Render file list for a specific mode
+function renderFileListForMode(files, containerId, clickHandler) {
+    const fileList = document.getElementById(containerId);
+    if (!fileList) return; // Container doesn't exist (mode not loaded yet)
+    
     fileList.innerHTML = '';
     
     files.forEach(file => {
@@ -309,13 +615,9 @@ function renderFileList(files) {
             }
         });
         
-        item.addEventListener('click', () => {
-            if (testState !== 'idle') return; // Disabled during test
-            // Remove active from all
-            document.querySelectorAll('.file-item').forEach(el => el.classList.remove('active'));
-            item.classList.add('active');
-            loadAudio(file.path);
-        });
+        // Add mode-specific click handler
+        clickHandler(file, item);
+        
         fileList.appendChild(item);
     });
 }

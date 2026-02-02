@@ -25,7 +25,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 AUDIO_DIR = 'audio_files'
-METADATA_FILE = 'pattern_metadata.json'
+METADATA_FILE = 'data/pattern_metadata.json'
 
 
 def calculate_rms_mean(y, sr):
@@ -166,9 +166,13 @@ def save_metadata(data):
     """Save metadata to pattern_metadata.json."""
     metadata_file = Path(METADATA_FILE)
     
+    # Ensure data directory exists
+    metadata_file.parent.mkdir(parents=True, exist_ok=True)
+    
     # Create backup
     if metadata_file.exists():
-        backup_file = metadata_file.with_suffix('.json.backup')
+        backup_file = Path('backups') / metadata_file.name.replace('.json', '.json.backup')
+        backup_file.parent.mkdir(parents=True, exist_ok=True)
         import shutil
         shutil.copy2(metadata_file, backup_file)
         logger.info(f"Created backup: {backup_file}")
