@@ -6,10 +6,21 @@
     top: 0;
     background: #fff !important; /* Ensure solid background */
     z-index: 1000 !important; /* Much higher z-index to prevent files from showing behind */
-    padding-bottom: 8px; /* More condensed */
+    padding: 16px 20px 8px 20px; /* Top padding for header, horizontal padding, bottom padding */
     margin-bottom: 8px; /* More condensed */
     border-bottom: 1px solid #e0e0e0; /* Border separates from file list */
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05); /* Subtle shadow to ensure it's above content */
+    flex-shrink: 0; /* Don't shrink - fixed height */
+}
+
+/* Ensure parent container (sidebar) doesn't scroll - only file list does */
+/* Target parent containers that have the sticky wrapper */
+:has(> .pattern-explorer-sticky-wrapper) {
+    display: flex !important;
+    flex-direction: column !important;
+    overflow-y: hidden !important; /* Parent doesn't scroll */
+    overflow-x: hidden !important;
+    height: 100% !important;
 }
 
 /* Pattern Explorer Header (inside sticky wrapper, no longer sticky itself) */
@@ -17,7 +28,8 @@
     font-size: 13px;
     font-weight: 500;
     margin-bottom: 16px;
-    padding: 0;
+    margin-top: 0;
+    padding: 0; /* No padding - wrapper handles it */
     color: #000;
     letter-spacing: 0.5px;
     text-transform: uppercase;
@@ -179,10 +191,12 @@ input.pattern-explorer-search-input:focus,
 .filter-panel__label {
     display: block;
     font-size: 11px;
-    color: #666;
-    margin-bottom: 4px;
+    color: #333; /* Darker for better legibility */
+    margin-bottom: 6px; /* Slightly more space for legibility */
     cursor: pointer;
     position: relative;
+    font-weight: 500; /* Slightly bolder for better readability */
+    line-height: 1.5; /* Better line height for readability */
 }
 
 .filter-panel__label-text {
@@ -190,10 +204,11 @@ input.pattern-explorer-search-input:focus,
 }
 
 .filter-panel__display {
-    color: #999;
-    font-weight: normal;
+    color: #555; /* Darker for better legibility */
+    font-weight: 400; /* Normal weight */
     font-size: 11px;
-    margin-left: 4px;
+    margin-left: 6px; /* Slightly more space */
+    letter-spacing: 0.3px; /* Slight letter spacing for readability */
 }
 
 .filter-panel__reset {
@@ -345,16 +360,19 @@ input.pattern-explorer-search-input:focus,
 }
 
 .filter-panel--compact .filter-panel__label {
-    font-size: 9px; /* More compact */
-    margin-bottom: 4px; /* More compact */
-    font-weight: 400; /* Normal weight for compact */
+    font-size: 10px; /* Slightly larger for better legibility */
+    margin-bottom: 6px; /* Slightly more space for legibility */
+    font-weight: 500; /* Slightly bolder for readability */
+    color: #333; /* Darker for better legibility */
+    line-height: 1.5; /* Better line height for readability */
 }
 
 .filter-panel--compact .filter-panel__display {
-    font-size: 9px; /* More compact */
-    font-weight: normal; /* Normal weight */
-    color: #999; /* Lighter for compact */
-    margin-left: 4px; /* More compact */
+    font-size: 10px; /* Slightly larger for legibility */
+    font-weight: 400; /* Normal weight */
+    color: #555; /* Darker for better legibility */
+    margin-left: 6px; /* Slightly more space */
+    letter-spacing: 0.3px; /* Slight letter spacing for readability */
 }
 
 .filter-panel--compact .filter-panel__reset {

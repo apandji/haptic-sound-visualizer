@@ -6,8 +6,37 @@
     position: relative;
     z-index: 1 !important; /* Below sticky wrapper */
     background: #fff !important; /* Ensure background */
-    padding: 0; /* No padding - let sidebar handle it */
+    padding: 0 20px; /* Horizontal padding to match sticky wrapper */
     margin: 0; /* No margin */
+    flex: 1; /* Take remaining space */
+    overflow-y: auto; /* Only file list scrolls */
+    overflow-x: hidden;
+    min-height: 0; /* Important for flex children to scroll */
+    /* Ensure scrollbar styling */
+    scrollbar-width: thin;
+    scrollbar-color: #ccc transparent;
+}
+
+/* Webkit scrollbar styling for file list */
+#fileList::-webkit-scrollbar,
+[id*="fileList"]::-webkit-scrollbar {
+    width: 8px;
+}
+
+#fileList::-webkit-scrollbar-track,
+[id*="fileList"]::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+#fileList::-webkit-scrollbar-thumb,
+[id*="fileList"]::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 4px;
+}
+
+#fileList::-webkit-scrollbar-thumb:hover,
+[id*="fileList"]::-webkit-scrollbar-thumb:hover {
+    background: #999;
 }
 
 .panel-header {
