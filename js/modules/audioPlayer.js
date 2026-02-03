@@ -346,9 +346,14 @@ class AudioPlayer {
         if (enabled) {
             this.testStartTime = Date.now();
             this.testPhase = 'baseline';
-            // Don't play audio yet - wait for stimulation phase
-            if (this.soundFile && this.soundFile.isPlaying()) {
-                this.soundFile.pause();
+            // Reset audio to beginning and stop - wait for stimulation phase
+            if (this.soundFile && this.soundFile.isLoaded()) {
+                if (this.soundFile.isPlaying()) {
+                    this.soundFile.stop(); // Stop and reset to beginning
+                } else {
+                    // If paused, also reset to beginning
+                    this.soundFile.stop();
+                }
             }
         } else {
             this.testStartTime = null;
@@ -411,10 +416,14 @@ class AudioPlayer {
         if (elapsed < 60) {
             if (this.testPhase !== 'stimulating') {
                 this.testPhase = 'stimulating';
-                // Start playing audio for stimulation phase
-                if (this.soundFile && this.soundFile.isLoaded() && !this.soundFile.isPlaying()) {
+                // Start playing audio from the beginning for stimulation phase
+                if (this.soundFile && this.soundFile.isLoaded()) {
+                    // Ensure audio is stopped and reset to beginning before starting
+                    if (this.soundFile.isPlaying()) {
+                        this.soundFile.stop();
+                    }
                     this.soundFile.setLoop(true); // Loop during stimulation
-                    this.soundFile.play();
+                    this.soundFile.play(); // Start from beginning
                     if (this.onPlay) {
                         this.onPlay();
                     }

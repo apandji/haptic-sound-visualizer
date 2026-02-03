@@ -202,6 +202,11 @@ class AudioControls {
 
         // Apply to AudioPlayer
         this.applyLoopMode();
+        
+        // Immediately update progress bar to reflect new mode (especially for TEST mode marker)
+        if (this.audioPlayer && this.audioPlayer.isLoaded()) {
+            this.updateProgress();
+        }
 
         // Call callback
         if (this.onLoopModeChange) {
