@@ -408,10 +408,11 @@
             // Keep original path for PatternExplorer matching
             const originalPath = file.path || `audio_files/${file.name}`;
             
-            // URL path for audio loading (with leading slash)
+            // URL path for audio loading (relative path for GitHub Pages compatibility)
             let audioUrl = originalPath;
-            if (!audioUrl.startsWith('/')) {
-                audioUrl = '/' + audioUrl;
+            // Remove leading slash if present to keep path relative
+            if (audioUrl.startsWith('/')) {
+                audioUrl = audioUrl.substring(1);
             }
             
             // Show visualizer FIRST (so container has dimensions for p5.js)
