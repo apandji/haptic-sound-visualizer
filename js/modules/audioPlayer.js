@@ -144,6 +144,12 @@ class AudioPlayer {
             return false;
         }
 
+        // Prevent double playback - if already playing, do nothing
+        if (this.soundFile.isPlaying()) {
+            console.log('Audio already playing, ignoring play() call');
+            return true;
+        }
+
         try {
             // Track start time for loop duration feature
             if (this.loopDuration !== null) {
@@ -177,6 +183,12 @@ class AudioPlayer {
         if (!this.soundFile || !this.soundFile.isLoaded()) {
             console.warn('Cannot pause: sound not loaded');
             return false;
+        }
+
+        // Prevent double pause - if not playing, do nothing
+        if (!this.soundFile.isPlaying()) {
+            console.log('Audio not playing, ignoring pause() call');
+            return true;
         }
 
         try {

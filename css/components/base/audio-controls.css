@@ -145,17 +145,17 @@
 }
 
 /* Audio position marker (current position within audio file in 30s mode) */
-.audio-controls__progress-audio-marker {
+.audio-controls__progress-marker {
     display: none;
     position: absolute;
-    top: -5px;
-    width: 3px;
-    height: 16px;
+    top: -4px;
+    width: 2px;
+    height: 14px;
     background: #e53935;
     border-radius: 1px;
     z-index: 3;
     transform: translateX(-50%);
-    box-shadow: 0 0 2px rgba(229, 57, 53, 0.5);
+    pointer-events: none;
 }
 
 /* Tick marks showing audio file loop boundaries */

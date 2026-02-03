@@ -1,8 +1,8 @@
 /**
  * AudioControls Component
  * 
- * Control bar with stop button, loop mode selector, visualization mode selector,
- * and progress bar. Play/Pause is handled separately by PatternExplorer.
+ * Provides audio playback controls: stop, loop modes (OFF/LOOP/30s), 
+ * visualization mode selector, and progress bar with seeking.
  * 
  * Requires AudioPlayer module and Visualizer component.
  */
@@ -104,8 +104,8 @@ class AudioControls {
                 <div class="audio-controls__progress">
                     <div class="audio-controls__progress-bar">
                         <div class="audio-controls__progress-fill"></div>
-                        <div class="audio-controls__progress-audio-marker"></div>
                         <div class="audio-controls__progress-ticks"></div>
+                        <div class="audio-controls__progress-marker"></div>
                     </div>
                     <div class="audio-controls__progress-time">
                         <span class="audio-controls__time-current">0:00</span>
@@ -124,8 +124,8 @@ class AudioControls {
         this.modeSelector = this.container.querySelector('.audio-controls__mode-selector');
         this.progressBar = this.container.querySelector('.audio-controls__progress-bar');
         this.progressFill = this.container.querySelector('.audio-controls__progress-fill');
-        this.progressAudioMarker = this.container.querySelector('.audio-controls__progress-audio-marker');
         this.progressTicks = this.container.querySelector('.audio-controls__progress-ticks');
+        this.progressMarker = this.container.querySelector('.audio-controls__progress-marker');
         this.timeCurrent = this.container.querySelector('.audio-controls__time-current');
         this.timeTotal = this.container.querySelector('.audio-controls__time-total');
     }
@@ -165,29 +165,9 @@ class AudioControls {
         if (this.audioPlayer) {
             this.audioPlayer.stop();
         }
-        
-        // Force reset progress display
-        this.resetProgressDisplay();
-        
+        this.updateProgress();
         if (this.onStop) {
             this.onStop();
-        }
-    }
-
-    /**
-     * Reset progress bar display to beginning
-     */
-    resetProgressDisplay() {
-        this.progressFill.style.width = '0%';
-        this.progressAudioMarker.style.left = '0%';
-        this.timeCurrent.textContent = '0:00';
-        
-        if (this.loopMode === 'loop30s') {
-            this.timeTotal.textContent = '0:30';
-        } else if (this.audioPlayer && this.audioPlayer.isLoaded()) {
-            this.timeTotal.textContent = this.formatTime(this.audioPlayer.getDuration());
-        } else {
-            this.timeTotal.textContent = '0:00';
         }
     }
 
@@ -203,18 +183,8 @@ class AudioControls {
         this.loopBtn.classList.toggle('active', mode === 'loop');
         this.loop30sBtn.classList.toggle('active', mode === 'loop30s');
 
-        // Clear 30s mode elements immediately when switching away
-        if (mode !== 'loop30s') {
-            this.progressAudioMarker.style.display = 'none';
-            this.progressTicks.innerHTML = '';
-            this.progressTicks.dataset.tickKey = ''; // Clear cache so ticks re-render when switching back
-        }
-
         // Apply to AudioPlayer
         this.applyLoopMode();
-
-        // Update progress immediately
-        this.updateProgress();
 
         // Call callback
         if (this.onLoopModeChange) {
@@ -310,7 +280,7 @@ class AudioControls {
     updateProgress() {
         if (!this.audioPlayer || !this.audioPlayer.isLoaded()) {
             this.progressFill.style.width = '0%';
-            this.progressAudioMarker.style.display = 'none';
+            this.progressMarker.style.display = 'none';
             this.progressTicks.innerHTML = '';
             this.timeCurrent.textContent = '0:00';
             this.timeTotal.textContent = '0:00';
@@ -318,94 +288,74 @@ class AudioControls {
         }
 
         const currentTime = this.audioPlayer.getCurrentTime();
-        const duration = this.audioPlayer.getDuration();
-        const isPlaying = this.audioPlayer.isPlaying();
+        const audioDuration = this.audioPlayer.getDuration();
         
-        // If stopped (not playing and at beginning), keep progress at 0
-        if (!isPlaying && currentTime < 0.1) {
-            this.progressFill.style.width = '0%';
-            this.progressAudioMarker.style.left = '0%';
-            this.timeCurrent.textContent = '0:00';
-            if (this.loopMode === 'loop30s') {
-                this.timeTotal.textContent = '0:30';
-                // Still show tick marks in 30s mode
-                this.progressAudioMarker.style.display = 'block';
-                this.updateTickMarks(duration, 30);
-            } else {
-                this.timeTotal.textContent = this.formatTime(duration);
-                this.progressAudioMarker.style.display = 'none';
-                this.progressTicks.innerHTML = '';
-                this.progressTicks.dataset.tickKey = '';
-            }
-            return;
-        }
-        
+        // Handle 30s loop mode differently
         if (this.loopMode === 'loop30s') {
-            // 30s mode: Show progress relative to 30 seconds
             const loopDuration = 30;
-            const elapsed = this.audioPlayer.getElapsedTime();
+            const elapsed = this.audioPlayer.getElapsedTime() || 0;
             
             // Progress fill shows elapsed time out of 30s
-            const percentage = Math.min((elapsed / loopDuration) * 100, 100);
-            this.progressFill.style.width = `${percentage}%`;
+            const fillPercentage = Math.min((elapsed / loopDuration) * 100, 100);
+            this.progressFill.style.width = `${fillPercentage}%`;
             
-            // Show audio file marker (current position within current loop)
-            const audioPercentage = (currentTime / loopDuration) * 100;
-            this.progressAudioMarker.style.display = 'block';
-            this.progressAudioMarker.style.left = `${audioPercentage}%`;
+            // Red marker tracks the same elapsed time (should match black bar)
+            this.progressMarker.style.display = 'block';
+            this.progressMarker.style.left = `${fillPercentage}%`;
             
-            // Show tick marks for each audio file boundary
-            this.updateTickMarks(duration, loopDuration);
+            // Update tick marks for loop boundaries
+            this.updateTickMarks(audioDuration, loopDuration);
             
-            // Time display
+            // Time display shows elapsed / 30s
             this.timeCurrent.textContent = this.formatTime(elapsed);
             this.timeTotal.textContent = '0:30';
         } else {
-            // Normal mode: Show progress relative to audio duration
-            const percentage = duration > 0 ? (currentTime / duration) * 100 : 0;
+            // Normal mode - progress shows audio position
+            const percentage = audioDuration > 0 ? (currentTime / audioDuration) * 100 : 0;
             this.progressFill.style.width = `${percentage}%`;
             
-            // Hide 30s mode elements
-            this.progressAudioMarker.style.display = 'none';
+            // Hide marker and ticks in normal mode
+            this.progressMarker.style.display = 'none';
             this.progressTicks.innerHTML = '';
-            this.progressTicks.dataset.tickKey = ''; // Clear cache
             
-            // Time display
+            // Normal time display
             this.timeCurrent.textContent = this.formatTime(currentTime);
-            this.timeTotal.textContent = this.formatTime(duration);
+            this.timeTotal.textContent = this.formatTime(audioDuration);
         }
     }
 
     /**
-     * Update tick marks showing audio file boundaries in 30s mode
-     * @param {number} audioDuration - Duration of audio file
+     * Update tick marks showing audio loop boundaries in 30s mode
+     * @param {number} audioDuration - Duration of audio file in seconds
      * @param {number} loopDuration - Total loop duration (30s)
      */
     updateTickMarks(audioDuration, loopDuration) {
-        if (audioDuration <= 0 || audioDuration >= loopDuration) {
+        if (!audioDuration || audioDuration <= 0) {
             this.progressTicks.innerHTML = '';
             return;
         }
 
-        // Calculate positions where audio file loops
-        const tickPositions = [];
-        let pos = audioDuration;
-        while (pos < loopDuration) {
-            tickPositions.push((pos / loopDuration) * 100);
-            pos += audioDuration;
-        }
-
-        // Only update if tick positions changed
-        const tickKey = tickPositions.join(',');
-        if (this.progressTicks.dataset.tickKey === tickKey) {
+        // Calculate how many complete loops fit in 30s
+        // floor gives us complete plays, and we need (complete plays - 1) restart ticks
+        const numCompleteLoops = Math.floor(loopDuration / audioDuration);
+        
+        // Only show tick marks if audio loops at least once
+        if (numCompleteLoops < 1) {
+            this.progressTicks.innerHTML = '';
             return;
         }
-        this.progressTicks.dataset.tickKey = tickKey;
 
-        // Render tick marks
-        this.progressTicks.innerHTML = tickPositions.map(p => 
-            `<div class="audio-controls__tick" style="left: ${p}%"></div>`
-        ).join('');
+        // Create tick marks at each loop restart point
+        let ticksHtml = '';
+        for (let i = 1; i <= numCompleteLoops; i++) {
+            const tickTime = i * audioDuration;
+            if (tickTime < loopDuration) {
+                const tickPercentage = (tickTime / loopDuration) * 100;
+                ticksHtml += `<div class="audio-controls__tick" style="left: ${tickPercentage}%"></div>`;
+            }
+        }
+        
+        this.progressTicks.innerHTML = ticksHtml;
     }
 
     /**
@@ -523,24 +473,5 @@ class AudioControls {
         if (this.container) {
             this.container.innerHTML = '';
         }
-
-        // Clear references
-        this.audioPlayer = null;
-        this.visualizer = null;
-        this.stopBtn = null;
-        this.loopOffBtn = null;
-        this.loopBtn = null;
-        this.loop30sBtn = null;
-        this.modeSelector = null;
-        this.progressBar = null;
-        this.progressFill = null;
-        this.timeCurrent = null;
-        this.timeTotal = null;
-        this.boundHandlers = {};
     }
-}
-
-// Export for use in modules
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = AudioControls;
 }

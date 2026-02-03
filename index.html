@@ -17,469 +17,583 @@
             color: #333;
             height: 100vh;
             display: flex;
+            flex-direction: column;
             font-size: 13px;
             line-height: 1.5;
+            overflow: hidden;
         }
         
+        /* Top Navigation Header */
+        .top-header {
+            width: 100%;
+            background: #fff;
+            border-bottom: 1px solid #e0e0e0;
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex-shrink: 0;
+            z-index: 1000;
+        }
+        
+        .nav-link {
+            font-size: 12px;
+            font-weight: 500;
+            color: #666;
+            text-decoration: none;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            transition: color 0.15s ease;
+            cursor: pointer;
+        }
+        
+        .nav-link:hover {
+            color: #000;
+        }
+        
+        .nav-link.active {
+            color: #000;
+        }
+        
+        .nav-separator {
+            color: #e0e0e0;
+            font-size: 12px;
+        }
+        
+        /* Main Layout Container */
+        .layout {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+            min-height: 0;
+        }
+        
+        /* Sidebar - Fixed to Left */
         .sidebar {
             width: 250px;
             background: #fff;
-            padding: 20px;
-            overflow-y: auto;
             border-right: 1px solid #e0e0e0;
             display: flex;
             flex-direction: column;
-        }
-        
-        #fileList {
-            flex: 1;
             overflow-y: auto;
-        }
-        
-        .sidebar h1 {
-            font-size: 14px;
-            font-weight: 500;
-            margin-bottom: 8px;
-            color: #666;
-            letter-spacing: 0.5px;
-        }
-        
-        .sidebar h2 {
-            font-size: 11px;
-            font-weight: 400;
-            margin-bottom: 24px;
-            color: #999;
-            letter-spacing: 0.3px;
-        }
-        
-        .file-item {
-            padding: 8px 10px;
-            margin: 2px 0;
-            background: transparent;
-            border-radius: 3px;
-            cursor: pointer;
-            font-size: 11px;
-            color: #666;
-            transition: all 0.15s ease;
+            overflow-x: hidden;
+            flex-shrink: 0;
+            padding: 0; /* Remove padding - components handle their own spacing */
             position: relative;
+            z-index: 1; /* Below sticky wrapper */
         }
         
-        .file-item:hover {
-            background: #f5f5f5;
-            color: #333;
-        }
-        
-        .file-item.active {
-            background: #000;
-            color: #fff;
-        }
-        
-        .main {
+        /* Main Content Area */
+        .main-content {
             flex: 1;
+            background: #fff;
             display: flex;
             flex-direction: column;
-            background: #fff;
-        }
-        
-        .controls {
-            padding: 16px 20px;
-            background: #fff;
-            border-bottom: 1px solid #e0e0e0;
-            display: flex;
-            align-items: center;
-            gap: 12px;
             position: relative;
-            z-index: 10000;
+            overflow: hidden;
         }
         
-        .controls button {
-            padding: 6px 12px;
-            background: #000;
-            color: #fff;
-            border: none;
-            border-radius: 2px;
-            cursor: pointer;
-            font-family: inherit;
-            font-size: 14px;
-            font-weight: 400;
-            transition: background 0.15s ease;
-            min-width: 36px;
-            text-align: center;
-        }
-        
-        .controls button:hover {
-            background: #333;
-        }
-        
-        .controls button:disabled {
-            background: #ccc;
-            cursor: not-allowed;
-        }
-        
-        .controls .toggle-btn {
-            background: #e0e0e0;
-            color: #666;
-        }
-        
-        .controls .toggle-btn:hover {
-            background: #d0d0d0;
-        }
-        
-        .controls .toggle-btn.active {
-            background: #000;
-            color: #fff;
-        }
-        
-        .controls .toggle-btn.active:hover {
-            background: #333;
-        }
-        
-        .controls .toggle-btn.abort-btn,
-        .controls .toggle-btn.abort-btn:hover {
-            background: #d32f2f;
-            color: #fff;
-        }
-        
-        .controls .toggle-btn.abort-btn:disabled {
-            background: #999;
-            opacity: 0.5;
-        }
-        
-        .viz-selector {
-            margin-left: auto;
-            padding: 6px 12px;
-            background: #fff;
-            border: 1px solid #e0e0e0;
-            border-radius: 2px;
-            font-family: inherit;
-            font-size: 12px;
-            color: #333;
-            cursor: pointer;
-        }
-        
-        .viz-selector:hover {
-            border-color: #ccc;
-        }
-        
-        .visualization {
+        /* Placeholder when no file selected */
+        .main-content__placeholder {
             flex: 1;
-            background: #fafafa;
-        }
-        
-        #p5-container {
-            width: 100%;
-            height: 100%;
-        }
-        
-        /* Test overlay */
-        .test-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.7);
-            z-index: 9999;
-            display: none;
+            display: flex;
             align-items: center;
             justify-content: center;
-            pointer-events: none;
+            color: #999;
+            font-size: 12px;
         }
         
-        .test-overlay.active {
+        .main-content__placeholder.hidden {
+            display: none;
+        }
+        
+        /* Visualizer container */
+        .main-content__visualizer {
+            display: none;
+            flex-direction: column;
+            background: #fafafa;
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        
+        .main-content__visualizer.active {
             display: flex;
         }
         
-        .test-overlay-content {
-            background: rgba(0, 0, 0, 0.9);
-            color: #fff;
-            padding: 24px 32px;
-            border-radius: 4px;
-            font-size: 24px;
-            font-family: inherit;
-            text-align: center;
-            pointer-events: auto;
+        .main-content__visualizer #audioControlsContainer {
+            flex-shrink: 0;
         }
         
-        .test-overlay-content .phase {
-            font-weight: 500;
-            margin-bottom: 8px;
-        }
-        
-        .test-overlay-content .countdown {
-            font-size: 18px;
-            color: #999;
-        }
-        
-        /* Dual-handle slider styles */
-        .dual-slider {
-            position: relative;
+        .main-content__visualizer #p5-container {
+            flex: 1;
             width: 100%;
-            height: 20px;
-            margin: 8px 0;
-            cursor: pointer;
-        }
-        
-        .slider-track {
-            position: absolute;
-            top: 50%;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: #e0e0e0;
-            border-radius: 2px;
-            transform: translateY(-50%);
-        }
-        
-        .slider-range {
-            position: absolute;
-            top: 50%;
-            height: 4px;
-            background: #000;
-            border-radius: 2px;
-            transform: translateY(-50%);
-            pointer-events: none;
-        }
-        
-        .slider-handle {
-            position: absolute;
-            top: 50%;
-            width: 14px;
-            height: 14px;
-            background: #000;
-            border: 2px solid #fff;
-            border-radius: 50%;
-            transform: translate(-50%, -50%);
-            cursor: grab;
-            z-index: 2;
-            transition: transform 0.1s ease;
-        }
-        
-        .slider-handle:active {
-            cursor: grabbing;
-            transform: translate(-50%, -50%) scale(1.2);
-        }
-        
-        .slider-handle:hover {
-            transform: translate(-50%, -50%) scale(1.1);
-        }
-        
-        /* Sticky filters */
-        #filters {
-            position: sticky;
-            top: 0;
-            background: #fff;
-            z-index: 10;
-            padding-bottom: 12px;
-            margin-bottom: 12px;
-            border-bottom: 1px solid #e0e0e0;
-        }
-        
-        /* Condensed filter styles */
-        .filter-group {
-            margin-top: 8px !important;
-        }
-        
-        .filter-group:first-child {
-            margin-top: 0 !important;
-        }
-        
-        .filter-group label {
-            font-size: 9px !important;
-            margin-bottom: 4px !important;
-        }
-        
-        .dual-slider {
-            height: 16px !important;
-            margin: 4px 0 !important;
-        }
-        
-        .slider-handle {
-            width: 12px !important;
-            height: 12px !important;
-        }
-        
-        .slider-track {
-            height: 3px !important;
-        }
-        
-        .slider-range {
-            height: 3px !important;
-        }
-        
-        /* Tooltip styles - positioned fixed to overlay entire interface */
-        .file-tooltip {
-            position: fixed;
-            background: #000;
-            color: #fff;
-            padding: 6px 8px;
-            border-radius: 3px;
-            font-size: 10px;
-            white-space: nowrap;
-            z-index: 10000;
-            pointer-events: none;
-            opacity: 0;
-            transition: opacity 0.15s ease;
-            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Courier New', monospace;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-        }
-        
-        .file-tooltip.show {
-            opacity: 1;
-        }
-        
-        .file-tooltip::before {
-            content: '';
-            position: absolute;
-            top: var(--arrow-top, 50%);
-            transform: translateY(-50%);
-            border: 4px solid transparent;
-        }
-        
-        .file-tooltip:not(.flipped)::before {
-            right: 100%;
-            border-right-color: #000;
-        }
-        
-        .file-tooltip.flipped::before {
-            left: 100%;
-            border-left-color: #000;
-        }
-        
-        /* Ensure sidebar can scroll */
-        .sidebar {
-            overflow-y: auto;
-        }
-        
-        .tooltip-row {
-            margin: 2px 0;
-            line-height: 1.4;
-        }
-        
-        /* Filter label tooltips */
-        .filter-label-tooltip {
-            position: fixed;
-            background: #000;
-            color: #fff;
-            padding: 8px 10px;
-            border-radius: 3px;
-            font-size: 11px;
-            max-width: 250px;
-            white-space: normal;
-            z-index: 10000;
-            pointer-events: none;
-            opacity: 0;
-            transition: opacity 0.15s ease;
-            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Courier New', monospace;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-            line-height: 1.4;
-        }
-        
-        .filter-label-tooltip.show {
-            opacity: 1;
-        }
-        
-        .filter-label-tooltip::before {
-            content: '';
-            position: absolute;
-            top: var(--arrow-top, 50%);
-            transform: translateY(-50%);
-            border: 4px solid transparent;
-        }
-        
-        .filter-label-tooltip:not(.flipped)::before {
-            right: 100%;
-            border-right-color: #000;
-        }
-        
-        .filter-label-tooltip.flipped::before {
-            left: 100%;
-            border-left-color: #000;
+            min-height: 0;
         }
     </style>
+    
+    <!-- Component CSS -->
+    <link rel="stylesheet" href="css/components/base/pattern-explorer.css?v=7">
+    <link rel="stylesheet" href="css/components/base/filter-panel.css?v=7">
+    <link rel="stylesheet" href="css/components/base/dual-slider.css?v=7">
+    <link rel="stylesheet" href="css/components/base/visualizer.css?v=2">
+    <link rel="stylesheet" href="css/components/base/audio-controls.css?v=1">
 </head>
 <body>
-    <div class="sidebar">
-        <h1>SAIL Pattern Library</h1>
-        <h2>v1.0</h2>
-        <div id="filters">
-            <div class="filter-group" style="margin-bottom: 12px;">
-                <input type="text" id="searchBox" placeholder="Search files..." style="width: 100%; padding: 6px 8px; border: 1px solid #e0e0e0; border-radius: 2px; font-size: 13px; font-family: inherit; color: #333; background: #fff;">
-            </div>
-            <div class="filter-group">
-                <label class="filter-label" data-tooltip="RMS Mean: Average Root Mean Square amplitude. Measures overall loudness/intensity of the audio. Higher values indicate louder audio." style="display: block; font-size: 11px; color: #666; margin-bottom: 4px; cursor: pointer; position: relative;">RMS <span id="rms_display" style="color: #999; font-weight: normal; font-size: 11px;">(0.003-0.555)</span></label>
-                <div class="dual-slider" id="rms_slider" data-min="0.003231" data-max="0.554765" data-step="0.001">
-                    <div class="slider-track"></div>
-                    <div class="slider-handle slider-handle-min" data-handle="min"></div>
-                    <div class="slider-handle slider-handle-max" data-handle="max"></div>
-                    <div class="slider-range"></div>
-                </div>
-            </div>
-            <div class="filter-group">
-                <label class="filter-label" data-tooltip="Duration: Length of the audio file in seconds." style="display: block; font-size: 11px; color: #666; margin-bottom: 4px; cursor: pointer; position: relative;">Duration <span id="duration_display" style="color: #999; font-weight: normal; font-size: 11px;">(1.5-35.3s)</span></label>
-                <div class="dual-slider" id="duration_slider" data-min="1.49" data-max="35.29" data-step="0.1">
-                    <div class="slider-track"></div>
-                    <div class="slider-handle slider-handle-min" data-handle="min"></div>
-                    <div class="slider-handle slider-handle-max" data-handle="max"></div>
-                    <div class="slider-range"></div>
-                </div>
-            </div>
-            <div class="filter-group">
-                <label class="filter-label" data-tooltip="Stereo Balance: Left/right channel balance. Range: -1.0 (fully left) to 1.0 (fully right). 0.0 = centered/mono." style="display: block; font-size: 11px; color: #666; margin-bottom: 4px; cursor: pointer; position: relative;">Balance <span id="balance_display" style="color: #999; font-weight: normal; font-size: 11px;">(-1.0-1.0)</span></label>
-                <div class="dual-slider" id="balance_slider" data-min="-1.0" data-max="1.0" data-step="0.01">
-                    <div class="slider-track"></div>
-                    <div class="slider-handle slider-handle-min" data-handle="min"></div>
-                    <div class="slider-handle slider-handle-max" data-handle="max"></div>
-                    <div class="slider-range"></div>
-                </div>
-            </div>
-            <div class="filter-group">
-                <label class="filter-label" data-tooltip="Stereo Movement: How much the stereo field changes over time. Range: 0.0 (no movement) to ~0.86 (high movement). Measures variance in stereo positioning." style="display: block; font-size: 11px; color: #666; margin-bottom: 4px; cursor: pointer; position: relative;">Movement <span id="movement_display" style="color: #999; font-weight: normal; font-size: 11px;">(0.0-0.86)</span></label>
-                <div class="dual-slider" id="movement_slider" data-min="0.0" data-max="0.8556" data-step="0.01">
-                    <div class="slider-track"></div>
-                    <div class="slider-handle slider-handle-min" data-handle="min"></div>
-                    <div class="slider-handle slider-handle-max" data-handle="max"></div>
-                    <div class="slider-range"></div>
-                </div>
-            </div>
-            <button id="resetFilters" style="margin-top: 8px; width: 100%; padding: 4px; background: #f5f5f5; border: 1px solid #e0e0e0; border-radius: 2px; cursor: pointer; font-size: 12px; font-family: inherit; color: #666;">RESET</button>
-        </div>
-        <div id="fileList">Loading files...</div>
+    <!-- Top Navigation Header -->
+    <div class="top-header">
+        <a href="index.html" class="nav-link active">LIBRARY</a>
+        <span class="nav-separator">|</span>
+        <a href="test.html" class="nav-link">TEST</a>
+        <span class="nav-separator">|</span>
+        <a href="#" class="nav-link">ANALYSIS</a>
     </div>
     
-    <div class="main">
-        <div class="controls">
-            <button id="playBtn">▶</button>
-            <button id="pauseBtn" style="display: none;">⏸</button>
-            <button id="stopBtn">⏹</button>
-            <button id="loopBtn" class="toggle-btn active">LOOP</button>
-            <button id="manualTestBtn" class="toggle-btn">MANUAL TEST</button>
-            <select id="vizMode" class="viz-selector">
-                <option value="waveform">Waveform</option>
-                <option value="intensity">Intensity Bars</option>
-                <option value="stereo">Stereo Field</option>
-                <option value="spectrum">Frequency Spectrum</option>
-                <option value="pulses">Directional Pulses</option>
-                <option value="blob">Liquid Blob</option>
-                <option value="particles">Particle Swarm</option>
-                <option value="landscape">Frequency Terrain</option>
-            </select>
-        </div>
-        <div class="visualization">
-            <div id="p5-container"></div>
+    <!-- Main Layout -->
+    <div class="layout">
+        <!-- Sidebar with PatternExplorerWithFilters -->
+        <div class="sidebar">
+            <!-- The component will reorganize these containers into its own structure -->
+            <!-- Order: filterPanel first, then fileList (component will create sticky wrapper) -->
+            <div id="filterPanel"></div>
+            <div id="fileList">Loading files...</div>
         </div>
         
-        <!-- Test overlay -->
-        <div id="testOverlay" class="test-overlay">
-            <div class="test-overlay-content">
-                <div class="phase" id="testPhase">Baselining...</div>
-                <div class="countdown" id="testCountdown">30s</div>
+        <!-- Main Content Area -->
+        <div class="main-content">
+            <!-- Placeholder when no file selected -->
+            <div class="main-content__placeholder" id="mainPlaceholder">
+                Select a pattern to view details
+            </div>
+            
+            <!-- Visualizer (shown when file is playing) -->
+            <div class="main-content__visualizer" id="visualizerContainer">
+                <div id="audioControlsContainer"></div>
+                <div id="p5-container"></div>
             </div>
         </div>
     </div>
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/p5.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/addons/p5.sound.min.js"></script>
-    <script src="app.js"></script>
+    
+    <!-- p5.js dependencies (for visualizer) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/p5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/addons/p5.sound.min.js"></script>
+    
+    <!-- Component JavaScript -->
+    <script src="js/modules/filters.js?v=2"></script>
+    <script src="js/modules/audioPlayer.js?v=2"></script>
+    <script src="js/components/base/PatternExplorer.js?v=2"></script>
+    <script src="js/components/base/FilterPanel.js?v=2"></script>
+    <script src="js/components/base/DualSlider.js?v=2"></script>
+    <script src="js/components/base/Visualizer.js?v=14"></script>
+    <script src="js/components/base/AudioControls.js?v=1"></script>
+    <script src="js/components/variants/PatternExplorerWithFilters.js?v=2"></script>
+    
+    <!-- Initialization Script -->
+    <script>
+        let allFilesList = [];
+        let patternMetadata = {};
+        
+        // Audio/Visualization state
+        let visualizer = null;
+        let audioPlayer = null;
+        let audioControls = null;
+        let patternExplorer = null;
+        let currentFilePath = null;
+        
+        // DOM elements (set after DOM loads)
+        let mainPlaceholder = null;
+        let visualizerContainer = null;
+        
+        // Initialize Visualizer (called when visualizer container becomes visible)
+        let visualizerInitRetries = 0;
+        const MAX_VISUALIZER_RETRIES = 30; // ~500ms max wait
+        
+        function initializeVisualizer() {
+            if (visualizer) return;
+            
+            const container = document.getElementById('p5-container');
+            if (!container) return;
+            
+            // Wait for container to have dimensions (with retry limit)
+            const rect = container.getBoundingClientRect();
+            if (rect.width === 0 || rect.height === 0) {
+                visualizerInitRetries++;
+                if (visualizerInitRetries < MAX_VISUALIZER_RETRIES) {
+                    requestAnimationFrame(initializeVisualizer);
+                } else {
+                    console.error('Visualizer container has no dimensions');
+                    visualizerInitRetries = 0;
+                }
+                return;
+            }
+            
+            visualizerInitRetries = 0;
+            visualizer = new Visualizer({
+                containerId: 'p5-container',
+                defaultMode: 'waveform',
+                onReady: (loadSoundFn) => {
+                    initializeAudioPlayer(loadSoundFn);
+                }
+            });
+        }
+        
+        // Load pattern metadata
+        async function loadPatternMetadata() {
+            try {
+                const response = await fetch('pattern_metadata.json');
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.patterns && Array.isArray(data.patterns)) {
+                        patternMetadata = {};
+                        data.patterns.forEach(pattern => {
+                            patternMetadata[pattern.filename] = pattern;
+                        });
+                        console.log('Loaded metadata for', Object.keys(patternMetadata).length, 'patterns');
+                    }
+                }
+            } catch (error) {
+                console.warn('Could not load pattern metadata:', error);
+            }
+        }
+        
+        // Load file list from server or static JSON file
+        async function loadFileList() {
+            // Try API endpoint first (for local development)
+            try {
+                const apiResponse = await fetch('/api/list-audio-files');
+                if (apiResponse.ok) {
+                    const contentType = apiResponse.headers.get('content-type');
+                    if (contentType && contentType.includes('application/json')) {
+                        const data = await apiResponse.json();
+                        if (Array.isArray(data)) {
+                            allFilesList = data;
+                            console.log('Loaded', allFilesList.length, 'files from API');
+                            initializeComponent();
+                            return;
+                        }
+                    }
+                }
+            } catch (apiError) {
+                console.log('API endpoint not available:', apiError.message);
+            }
+            
+            // Fallback to static JSON file (for GitHub Pages)
+            const basePath = window.location.pathname.replace(/\/[^/]*$/, '') || '';
+            const jsonPaths = [
+                basePath + '/audio-files.json',
+                './audio-files.json',
+                'audio-files.json',
+                '/audio-files.json'
+            ];
+            
+            for (const path of jsonPaths) {
+                try {
+                    console.log('Trying to load from:', path);
+                    const response = await fetch(path);
+                    
+                    if (!response.ok) {
+                        console.log('Response not OK, status:', response.status, 'for path:', path);
+                        continue;
+                    }
+                    
+                    const contentType = response.headers.get('content-type') || '';
+                    const text = await response.text();
+                    
+                    const isJson = contentType.includes('application/json') || 
+                                  contentType.includes('text/json') ||
+                                  text.trim().startsWith('[') || 
+                                  text.trim().startsWith('{');
+                    
+                    if (!isJson) {
+                        console.log('Response does not appear to be JSON, starts with:', text.substring(0, 50));
+                        continue;
+                    }
+                    
+                    const data = JSON.parse(text);
+                    if (Array.isArray(data) && data.length > 0) {
+                        allFilesList = data;
+                        console.log('Successfully loaded', allFilesList.length, 'files from:', path);
+                        initializeComponent();
+                        return;
+                    }
+                } catch (fetchError) {
+                    console.log('Error loading from', path, ':', fetchError.message);
+                    continue;
+                }
+            }
+            
+            // If we get here, all attempts failed
+            console.error('Failed to load audio files from any source');
+            const fileListEl = document.getElementById('fileList');
+            if (fileListEl) {
+                fileListEl.innerHTML = '<div style="padding: 20px; color: #999; font-size: 12px;">Failed to load audio files</div>';
+            }
+        }
+        
+        
+        // Initialize AudioPlayer (called after Visualizer is ready)
+        function initializeAudioPlayer(loadSoundFn) {
+            if (audioPlayer) return; // Already initialized
+            
+            audioPlayer = new AudioPlayer({
+                loadSoundFn: loadSoundFn,
+                defaultLoop: true,
+                onPlay: () => {
+                    updatePlayState(true);
+                },
+                onPause: () => {
+                    updatePlayState(false);
+                },
+                onStop: () => {
+                    updatePlayState(false);
+                },
+                onEnd: () => {
+                    updatePlayState(false);
+                }
+            });
+            
+            // Set AudioPlayer reference in Visualizer
+            visualizer.setAudioPlayer(audioPlayer);
+            
+            // Initialize AudioControls
+            initializeAudioControls();
+        }
+        
+        // Initialize AudioControls (called after AudioPlayer is ready)
+        function initializeAudioControls() {
+            if (audioControls) return; // Already initialized
+            
+            audioControls = new AudioControls({
+                containerId: 'audioControlsContainer',
+                audioPlayer: audioPlayer,
+                visualizer: visualizer,
+                defaultLoopMode: 'loop',
+                defaultMode: 'waveform',
+                onLoopModeChange: (mode, duration) => {
+                    console.log('Loop mode changed:', mode);
+                },
+                onModeChange: (mode) => {
+                    console.log('Visualization mode changed:', mode);
+                },
+                onStop: () => {
+                    // Stop also unloads current file
+                    unloadCurrentFile();
+                }
+            });
+        }
+        
+        // Update play state in PatternExplorer
+        function updatePlayState(isPlaying) {
+            if (patternExplorer && patternExplorer.patternExplorer) {
+                patternExplorer.patternExplorer.setPlayingFile(currentFilePath, isPlaying);
+            }
+        }
+        
+        // Show visualizer, hide placeholder
+        function showVisualizer() {
+            mainPlaceholder.classList.add('hidden');
+            visualizerContainer.classList.add('active');
+        }
+        
+        // Hide visualizer, show placeholder
+        function hideVisualizer() {
+            mainPlaceholder.classList.remove('hidden');
+            visualizerContainer.classList.remove('active');
+        }
+        
+        // Load and play a file
+        function loadAndPlayFile(file) {
+            // Keep original path for PatternExplorer matching
+            const originalPath = file.path || `audio_files/${file.name}`;
+            
+            // URL path for audio loading (with leading slash)
+            let audioUrl = originalPath;
+            if (!audioUrl.startsWith('/')) {
+                audioUrl = '/' + audioUrl;
+            }
+            
+            // Show visualizer FIRST (so container has dimensions for p5.js)
+            showVisualizer();
+            
+            // Set active file in PatternExplorer (use original path format)
+            if (patternExplorer && patternExplorer.patternExplorer) {
+                patternExplorer.patternExplorer.setActiveFile(originalPath);
+            }
+            
+            // Set currentFilePath immediately for UI state
+            currentFilePath = originalPath;
+            
+            // Start audio context during user gesture (critical for browser autoplay policy)
+            if (typeof userStartAudio === 'function') {
+                userStartAudio().catch(() => {});
+            }
+            
+            // Initialize visualizer if not already done
+            if (!visualizer) {
+                initializeVisualizer();
+            }
+            
+            // Wait for audioPlayer to be ready, then load and play
+            let loadRetries = 0;
+            const MAX_LOAD_RETRIES = 60; // 3 seconds max wait
+            
+            const tryLoadAndPlay = () => {
+                if (!audioPlayer) {
+                    loadRetries++;
+                    if (loadRetries < MAX_LOAD_RETRIES) {
+                        setTimeout(tryLoadAndPlay, 50);
+                    } else {
+                        console.error('AudioPlayer not ready');
+                        hideVisualizer();
+                    }
+                    return;
+                }
+                
+                // Ensure audio context is started
+                const startContext = visualizer 
+                    ? visualizer.ensureAudioContextStarted() 
+                    : Promise.resolve(true);
+                
+                startContext.then(() => {
+                    return audioPlayer.loadFile(audioUrl);
+                }).then(() => {
+                    audioPlayer.play();
+                }).catch(error => {
+                    console.error('Error loading file:', error);
+                    currentFilePath = null;
+                    hideVisualizer();
+                    if (patternExplorer && patternExplorer.patternExplorer) {
+                        patternExplorer.patternExplorer.setActiveFile(null);
+                    }
+                });
+            };
+            
+            tryLoadAndPlay();
+        }
+        
+        // Unload current file (stop and hide visualizer)
+        function unloadCurrentFile() {
+            if (audioPlayer) {
+                audioPlayer.stop();
+            }
+            currentFilePath = null;
+            
+            // Clear visualizer pause state
+            if (visualizer) {
+                visualizer.clearPauseState();
+            }
+            
+            // Clear pending file if exists
+            window._pendingFileToLoad = null;
+            window._pendingFilePath = null;
+            window._pendingAudioUrl = null;
+            
+            hideVisualizer();
+            
+            // Clear active state in PatternExplorer
+            if (patternExplorer && patternExplorer.patternExplorer) {
+                patternExplorer.patternExplorer.setActiveFile(null);
+                patternExplorer.patternExplorer.setPlayingFile(null, false);
+            }
+        }
+        
+        // Toggle play/pause for current file
+        function togglePlayPause() {
+            if (!audioPlayer || !audioPlayer.isLoaded()) return;
+            
+            if (audioPlayer.isPlaying()) {
+                audioPlayer.pause();
+            } else {
+                // Ensure audio context is started
+                if (visualizer) {
+                    visualizer.ensureAudioContextStarted();
+                }
+                audioPlayer.play();
+            }
+        }
+        
+        // Handle file click (from PatternExplorer)
+        function handleFileClick(file) {
+            // Use original path format (without leading slash) to match PatternExplorer
+            const filePath = file.path || `audio_files/${file.name}`;
+            
+            // If clicking the same file that's already loaded, unload it
+            if (currentFilePath === filePath) {
+                unloadCurrentFile();
+                return;
+            }
+            
+            // Stop current file if playing
+            if (audioPlayer && audioPlayer.isPlaying()) {
+                audioPlayer.stop();
+            }
+            
+            // Load and play the new file
+            loadAndPlayFile(file);
+        }
+        
+        // Handle preview button click (from PatternExplorer)
+        function handleFilePreview(file) {
+            // Use original path format (without leading slash) to match PatternExplorer
+            const filePath = file.path || `audio_files/${file.name}`;
+            
+            // If this file is already loaded, toggle play/pause
+            if (currentFilePath === filePath) {
+                togglePlayPause();
+                return;
+            }
+            
+            // Otherwise, load and play this file (same as file click)
+            handleFileClick(file);
+        }
+        
+        // Initialize PatternExplorerWithFilters component
+        function initializeComponent() {
+            patternExplorer = new PatternExplorerWithFilters({
+                containerId: 'fileList',
+                filterContainerId: 'filterPanel',
+                files: allFilesList,
+                metadata: patternMetadata,
+                onFileClick: (file) => {
+                    handleFileClick(file);
+                },
+                onFileHover: (file, metadata, event) => {
+                    // Optional: Handle file hover
+                },
+                onFilePreview: (file) => {
+                    handleFilePreview(file);
+                },
+                onPlayStateChange: (file, isPlaying) => {
+                    // Handle play/pause toggle from PatternExplorer
+                    if (!audioPlayer || !audioPlayer.isLoaded()) return;
+                    
+                    const filePath = file.path || `audio_files/${file.name}`;
+                    if (currentFilePath !== filePath) return; // Not the current file
+                    
+                    if (isPlaying) {
+                        // Ensure audio context is started
+                        if (visualizer) {
+                            visualizer.ensureAudioContextStarted();
+                        }
+                        audioPlayer.play();
+                    } else {
+                        audioPlayer.pause();
+                    }
+                }
+            });
+        }
+        
+        // Initialize on page load
+        window.addEventListener('DOMContentLoaded', async () => {
+            // Initialize DOM references
+            mainPlaceholder = document.getElementById('mainPlaceholder');
+            visualizerContainer = document.getElementById('visualizerContainer');
+            
+            await loadPatternMetadata();
+            await loadFileList();
+        });
+    </script>
 </body>
 </html>

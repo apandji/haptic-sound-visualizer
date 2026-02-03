@@ -39,7 +39,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 // Load pattern metadata
 async function loadPatternMetadata() {
     try {
-        const response = await fetch('pattern_metadata.json');
+        const response = await fetch('../pattern_metadata.json');
         if (response.ok) {
             const data = await response.json();
             if (data.patterns && Array.isArray(data.patterns)) {
@@ -322,6 +322,11 @@ function renderFileList(files) {
 
 // Load audio file - this will be called from p5 sketch
 function loadAudio(path) {
+    // Adjust path for legacy subfolder - prepend ../ to reach audio_files from /legacy/
+    if (path && !path.startsWith('/') && !path.startsWith('../') && !path.startsWith('http')) {
+        path = '../' + path;
+    }
+    
     console.log('loadAudio called with path:', path);
     console.log('window.p5Sketch exists:', !!window.p5Sketch);
     console.log('loadAudioFile function exists:', !!(window.p5Sketch && window.p5Sketch.loadAudioFile));

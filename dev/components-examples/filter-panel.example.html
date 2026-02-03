@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FilterPanel Component Example</title>
-    <link rel="stylesheet" href="../../../css/components/base/dual-slider.css">
-    <link rel="stylesheet" href="../../../css/components/base/filter-panel.css">
+    <link rel="stylesheet" href="../../css/components/base/dual-slider.css">
+    <link rel="stylesheet" href="../../css/components/base/filter-panel.css">
     <style>
         * {
             margin: 0;
@@ -131,8 +131,8 @@
         </div>
     </div>
     
-    <script src="../base/DualSlider.js"></script>
-    <script src="../base/FilterPanel.js"></script>
+    <script src="../../js/components/base/DualSlider.js"></script>
+    <script src="../../js/components/base/FilterPanel.js"></script>
     <script>
         // Sample metadata (simulating pattern_metadata.json)
         const sampleMetadata = {
@@ -171,7 +171,7 @@
         // Sample file list
         const allFiles = Object.keys(sampleMetadata).map(name => ({
             name: name,
-            path: `audio_files/${name}`
+            path: `../../audio_files/${name}`
         }));
         
         // Create FilterPanel (regular mode)

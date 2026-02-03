@@ -47,7 +47,7 @@
     <h1>PatternExplorer Component Example</h1>
     <div id="fileList"></div>
     
-    <script src="../base/PatternExplorer.js"></script>
+    <script src="../../js/components/base/PatternExplorer.js"></script>
     <script>
         // Example usage
         const patternExplorer = new PatternExplorer({
@@ -67,9 +67,9 @@
         
         // Render some test files
         const testFiles = [
-            { name: 'A_100_1.mp3', path: 'audio_files/A_100_1.mp3' },
-            { name: 'A_100_2.mp3', path: 'audio_files/A_100_2.mp3' },
-            { name: 'test.mp3', path: 'audio_files/test.mp3' }
+            { name: 'A_100_1.mp3', path: '../../audio_files/A_100_1.mp3' },
+            { name: 'A_100_2.mp3', path: '../../audio_files/A_100_2.mp3' },
+            { name: 'test.mp3', path: '../../audio_files/test.mp3' }
         ];
         
         patternExplorer.render(testFiles);

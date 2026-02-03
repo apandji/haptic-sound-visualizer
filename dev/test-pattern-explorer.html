@@ -267,7 +267,7 @@
         <div class="console-output" id="console"></div>
     </div>
     
-    <script src="js/components/base/PatternExplorer.js"></script>
+    <script src="../js/components/base/PatternExplorer.js"></script>
     <script>
         // Custom console that displays in the page
         const consoleDiv = document.getElementById('console');
@@ -361,10 +361,10 @@
         function testLoadFiles() {
             console.log('🧪 Test: Loading test files...');
             testFiles = [
-                { name: 'A_100_1.mp3', path: 'audio_files/A_100_1.mp3' },
-                { name: 'A_100_2.mp3', path: 'audio_files/A_100_2.mp3' },
-                { name: 'A_110_1.mp3', path: 'audio_files/A_110_1.mp3' },
-                { name: 'test_file.mp3', path: 'audio_files/test_file.mp3' }
+                { name: 'A_100_1.mp3', path: '../audio_files/A_100_1.mp3' },
+                { name: 'A_100_2.mp3', path: '../audio_files/A_100_2.mp3' },
+                { name: 'A_110_1.mp3', path: '../audio_files/A_110_1.mp3' },
+                { name: 'test_file.mp3', path: '../audio_files/test_file.mp3' }
             ];
             
             metadata = testMetadata;
@@ -387,7 +387,7 @@
                         
                         // Try to load metadata
                         try {
-                            const metaResponse = await fetch('pattern_metadata.json');
+                            const metaResponse = await fetch('../pattern_metadata.json');
                             if (metaResponse.ok) {
                                 const metaData = await metaResponse.json();
                                 if (metaData.patterns) {

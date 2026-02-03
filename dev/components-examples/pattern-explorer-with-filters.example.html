@@ -602,11 +602,11 @@
     </div>
     
     <!-- Load dependencies -->
-    <script src="../../modules/filters.js"></script>
-    <script src="../base/DualSlider.js"></script>
-    <script src="../base/FilterPanel.js"></script>
-    <script src="../base/PatternExplorer.js"></script>
-    <script src="../variants/PatternExplorerWithFilters.js"></script>
+    <script src="../../js/modules/filters.js"></script>
+    <script src="../../js/components/base/DualSlider.js"></script>
+    <script src="../../js/components/base/FilterPanel.js"></script>
+    <script src="../../js/components/base/PatternExplorer.js"></script>
+    <script src="../../js/components/variants/PatternExplorerWithFilters.js"></script>
     
     <script>
         // Generate many sample files with varied metadata
@@ -629,7 +629,7 @@
                         // Create some variation - not all combinations exist
                         if (Math.random() > 0.3) { // 70% chance of file existing
                             const fileName = `${category}_${variation}_${instance}.mp3`;
-                            const filePath = `audio_files/${fileName}`;
+                            const filePath = `../../audio_files/${fileName}`;
                             
                             files.push({
                                 name: fileName,

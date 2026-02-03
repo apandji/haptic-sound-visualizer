@@ -51,6 +51,13 @@ class Visualizer {
         this.isStereo = false;
         this.soundBuffer = null;
 
+        // Pause state - stores last FFT data to show frozen visualization
+        this.isPaused = false;
+        this.lastWaveform = null;
+        this.lastSpectrum = null;
+        this.lastSoundTime = 0;
+        this.lastSoundDuration = 0;
+
         // Initialize p5.js sketch
         this.initSketch();
     }
@@ -67,24 +74,16 @@ class Visualizer {
             return;
         }
         
-        console.log('Visualizer: initSketch called');
-        
         const sketch = (p) => {
-            console.log('Visualizer: sketch function invoked');
-            
             p.setup = () => {
-                console.log('Visualizer: p5 setup starting');
-                
                 const container = document.getElementById(self.containerId);
                 if (!container) {
                     console.error(`Container ${self.containerId} not found`);
                     return;
                 }
 
-                console.log('Visualizer: creating canvas', container.clientWidth, 'x', container.clientHeight);
                 const canvas = p.createCanvas(container.clientWidth, container.clientHeight);
                 canvas.parent(self.containerId);
-                console.log('Visualizer: canvas created');
 
                 // Store p5 instance reference
                 self.p5Context = p;
@@ -93,7 +92,6 @@ class Visualizer {
                 self.fft = new p5.FFT();
 
                 // Create loadSound function from this p5 instance
-                // This ensures audio loads in the same p5 instance as FFT
                 self.loadSoundFn = function(path, onSuccess, onError) {
                     return p.loadSound(path, onSuccess, onError);
                 };
@@ -105,8 +103,6 @@ class Visualizer {
                 self.isStereo = false;
                 self.soundBuffer = null;
 
-                console.log('Visualizer p5.js sketch setup complete, loadSoundFn available');
-                
                 // Notify that Visualizer is ready (loadSoundFn is available)
                 if (self.onReady) {
                     self.onReady(self.loadSoundFn);
@@ -135,6 +131,31 @@ class Visualizer {
                 const soundFileIsLoaded = soundFile && soundFile.isLoaded();
                 const soundFileIsPlaying = soundFile && soundFile.isPlaying();
                 
+                // Detect pause state changes
+                const wasPlaying = self._wasPlaying || false;
+                const isNowPlaying = soundFileIsPlaying || audioPlayerIsPlaying;
+                
+                // Track if we just paused (was playing, now not playing, but file is still loaded)
+                if (wasPlaying && !isNowPlaying && soundFileIsLoaded) {
+                    self.isPaused = true;
+                    // Store current FFT data for frozen display
+                    if (self.fft) {
+                        self.lastWaveform = self.fft.waveform().slice();
+                        self.lastSpectrum = self.fft.analyze().slice();
+                    }
+                    if (soundFile) {
+                        self.lastSoundTime = soundFile.currentTime();
+                        self.lastSoundDuration = soundFile.duration();
+                    }
+                }
+                
+                // Clear pause state when we start playing again
+                if (isNowPlaying) {
+                    self.isPaused = false;
+                }
+                
+                self._wasPlaying = isNowPlaying;
+                
                 // Debug: Log state once when audio starts playing
                 if (soundFileIsPlaying && !self._loggedPlayingState) {
                     self._loggedPlayingState = true;
@@ -143,15 +164,14 @@ class Visualizer {
                     self._loggedPlayingState = false;
                 }
                 
-                // Show visualization if sound is loaded and playing
-                // Check both soundFile.isPlaying() and AudioPlayer.isPlaying() for consistency
-                // (matches original app.js behavior)
-                // Note: FFT analyzes master output automatically - no need to setInput()
-                let shouldShowVisualization = soundFileIsLoaded && (soundFileIsPlaying || audioPlayerIsPlaying);
+                // Show visualization if:
+                // 1. Sound is loaded and playing, OR
+                // 2. Sound is paused (show frozen visualization)
+                let shouldShowVisualization = soundFileIsLoaded && (soundFileIsPlaying || audioPlayerIsPlaying || self.isPaused);
                 
                 // Fallback: If audio is loaded but not playing, check if FFT has meaningful data
                 // This helps cases where audio might be playing but isPlaying() returns false
-                if (!shouldShowVisualization && soundFileIsLoaded && self.fft) {
+                if (!shouldShowVisualization && soundFileIsLoaded && self.fft && !self.isPaused) {
                     try {
                         const waveform = self.fft.waveform();
                         const maxWaveform = Math.max(...waveform.map(Math.abs));
@@ -196,8 +216,18 @@ class Visualizer {
                         }
 
                         // Draw playhead - red accent (for all modes)
-                        if (soundFile && soundFile.duration() > 0) {
-                            const progress = soundFile.currentTime() / soundFile.duration();
+                        // Use cached values when paused
+                        let playheadTime, playheadDuration;
+                        if (self.isPaused) {
+                            playheadTime = self.lastSoundTime;
+                            playheadDuration = self.lastSoundDuration;
+                        } else if (soundFile) {
+                            playheadTime = soundFile.currentTime();
+                            playheadDuration = soundFile.duration();
+                        }
+                        
+                        if (playheadDuration > 0) {
+                            const progress = playheadTime / playheadDuration;
                             p.stroke(255, 0, 0);
                             p.strokeWeight(2);
                             p.line(progress * p.width, 0, progress * p.width, p.height);
@@ -239,12 +269,43 @@ class Visualizer {
             };
         };
 
-        // Create p5 instance with timing workaround
-        // p5.js needs time for browser layout to settle before setup() runs reliably
-        setTimeout(() => {
-            console.log('Visualizer: creating p5 instance');
-            this.p5Instance = new p5(sketch);
-        }, 50);
+        // Create p5 instance
+        // Force synchronous layout calculation first
+        const container = document.getElementById(this.containerId);
+        if (container) {
+            void container.offsetHeight;
+        }
+        
+        this.p5Instance = new p5(sketch);
+        
+        // p5.js instance mode sometimes fails to call setup() automatically
+        // Poll and manually trigger if needed (500ms total wait)
+        let setupCheckAttempts = 0;
+        const maxAttempts = 10; // 500ms total (10 x 50ms)
+        
+        const checkSetupCalled = () => {
+            setupCheckAttempts++;
+            
+            if (this.p5Context) {
+                return; // Setup was called successfully
+            }
+            
+            if (setupCheckAttempts >= maxAttempts) {
+                // Try manually calling setup if p5 instance exists
+                if (this.p5Instance && this.p5Instance.setup) {
+                    try {
+                        this.p5Instance.setup();
+                    } catch (e) {
+                        console.error('Visualizer manual setup failed:', e);
+                    }
+                }
+                return;
+            }
+            
+            setTimeout(checkSetupCalled, 50);
+        };
+        
+        setTimeout(checkSetupCalled, 50);
     }
 
     /**
@@ -336,12 +397,8 @@ class Visualizer {
         // Setup stereo analyzers when audio loads
         const originalOnLoad = this.audioPlayer.onLoad;
         this.audioPlayer.onLoad = (soundFile) => {
-            console.log('Visualizer - Audio loaded, setting up analyzers');
-            
             // Ensure audio context is started (required for FFT)
-            this.ensureAudioContextStarted().then((started) => {
-                console.log('Visualizer - Audio context started:', started);
-            });
+            this.ensureAudioContextStarted();
             
             // Setup stereo analyzers and connect FFT
             this.setupStereoAnalyzers(soundFile);
@@ -362,13 +419,24 @@ class Visualizer {
     }
 
     /**
+     * Clear pause state (call when stopping or unloading audio)
+     */
+    clearPauseState() {
+        this.isPaused = false;
+        this.lastWaveform = null;
+        this.lastSpectrum = null;
+        this.lastSoundTime = 0;
+        this.lastSoundDuration = 0;
+        this._wasPlaying = false;
+    }
+
+    /**
      * Ensure p5 audio context is started (call this on user interaction like play button click)
      * This is required for FFT analysis in some browsers
      * @returns {Promise<boolean>} - Resolves to true if context is running
      */
     ensureAudioContextStarted() {
         if (!this.p5InstanceForAudio) {
-            console.warn('Visualizer - No p5 instance available for audio context');
             return Promise.resolve(false);
         }
         
@@ -376,29 +444,24 @@ class Visualizer {
             try {
                 const audioContext = this.p5InstanceForAudio.getAudioContext();
                 if (!audioContext) {
-                    console.warn('Visualizer - No audio context available');
                     resolve(false);
                     return;
                 }
                 
-                console.log('Visualizer - Audio context state:', audioContext.state);
-                
                 if (audioContext.state === 'running') {
-                    console.log('Visualizer - Audio context already running');
                     resolve(true);
                     return;
                 }
                 
-                console.log('Visualizer - Starting p5 audio context...');
+                // Try userStartAudio (requires user gesture)
                 this.p5InstanceForAudio.userStartAudio().then(() => {
-                    console.log('Visualizer - p5 audio context started successfully, state:', audioContext.state);
+                    console.log('Audio context started');
                     resolve(true);
-                }).catch((err) => {
-                    console.warn('Visualizer - Could not start audio context:', err);
+                }).catch(() => {
                     // Try resuming directly as fallback
                     if (audioContext.state === 'suspended') {
                         audioContext.resume().then(() => {
-                            console.log('Visualizer - Audio context resumed via fallback');
+                            console.log('Audio context resumed');
                             resolve(true);
                         }).catch(() => resolve(false));
                     } else {
@@ -406,19 +469,40 @@ class Visualizer {
                     }
                 });
             } catch (e) {
-                console.warn('Visualizer - Error accessing audio context:', e);
                 resolve(false);
             }
         });
     }
 
     /**
+     * Get waveform data - returns cached data if paused
+     * @returns {Float32Array|Array}
+     */
+    getWaveformData() {
+        if (this.isPaused && this.lastWaveform) {
+            return this.lastWaveform;
+        }
+        return this.fft ? this.fft.waveform() : [];
+    }
+
+    /**
+     * Get spectrum data - returns cached data if paused
+     * @returns {Uint8Array|Array}
+     */
+    getSpectrumData() {
+        if (this.isPaused && this.lastSpectrum) {
+            return this.lastSpectrum;
+        }
+        return this.fft ? this.fft.analyze() : [];
+    }
+
+    /**
      * Draw waveform visualization
      */
     drawWaveform(p) {
-        if (!this.fft) return;
+        if (!this.fft && !this.isPaused) return;
         
-        const waveform = this.fft.waveform();
+        const waveform = this.getWaveformData();
 
         p.stroke(0);
         p.strokeWeight(1.5);
@@ -444,8 +528,8 @@ class Visualizer {
      * Draw intensity bars visualization
      */
     drawIntensityBars(p) {
-        if (!this.fft) return;
-        const waveform = this.fft.waveform();
+        if (!this.fft && !this.isPaused) return;
+        const waveform = this.getWaveformData();
         const numBars = 100;
         const barWidth = p.width / numBars;
         const samplesPerBar = Math.floor(waveform.length / numBars);
@@ -606,8 +690,8 @@ class Visualizer {
      * Draw stereo fallback (mono visualization)
      */
     drawStereoFallback(p, numBars, barWidth) {
-        if (!this.fft) return;
-        const waveform = this.fft.waveform();
+        if (!this.fft && !this.isPaused) return;
+        const waveform = this.getWaveformData();
         const samplesPerBar = Math.floor(waveform.length / numBars);
 
         for (let i = 0; i < numBars; i++) {
@@ -666,9 +750,9 @@ class Visualizer {
      * Draw frequency spectrum visualization
      */
     drawFrequencySpectrum(p) {
-        if (!this.fft) return;
-        const spectrum = this.fft.analyze();
-        const waveform = this.fft.waveform();
+        if (!this.fft && !this.isPaused) return;
+        const spectrum = this.getSpectrumData();
+        const waveform = this.getWaveformData();
 
         let totalIntensity = 0;
         for (let i = 0; i < waveform.length; i++) {
@@ -801,8 +885,8 @@ class Visualizer {
                 console.warn('Error getting stereo data for pulses:', e);
             }
         } else {
-            if (!this.fft) return;
-            const waveform = this.fft.waveform();
+            if (!this.fft && !this.isPaused) return;
+            const waveform = this.getWaveformData();
             let sum = 0, maxChange = 0, prev = 0;
             for (let i = 0; i < waveform.length; i++) {
                 const val = Math.abs(waveform[i]);
@@ -971,9 +1055,9 @@ class Visualizer {
      * more complex blob morphing logic from app.js lines 1879-2135
      */
     drawLiquidBlob(p) {
-        if (!this.fft) return;
-        const spectrum = this.fft.analyze();
-        const waveform = this.fft.waveform();
+        if (!this.fft && !this.isPaused) return;
+        const spectrum = this.getSpectrumData();
+        const waveform = this.getWaveformData();
 
         let totalIntensity = 0;
         for (let i = 0; i < waveform.length; i++) {
@@ -1193,9 +1277,9 @@ class Visualizer {
      * more complex particle physics from app.js lines 2137-2350
      */
     drawParticleSwarm(p) {
-        if (!this.fft) return;
-        const spectrum = this.fft.analyze();
-        const waveform = this.fft.waveform();
+        if (!this.fft && !this.isPaused) return;
+        const spectrum = this.getSpectrumData();
+        const waveform = this.getWaveformData();
 
         let totalIntensity = 0;
         for (let i = 0; i < waveform.length; i++) {
@@ -1380,9 +1464,9 @@ class Visualizer {
      * Draw 3D landscape visualization
      */
     draw3DLandscape(p) {
-        if (!this.fft) return;
-        const spectrum = this.fft.analyze();
-        const waveform = this.fft.waveform();
+        if (!this.fft && !this.isPaused) return;
+        const spectrum = this.getSpectrumData();
+        const waveform = this.getWaveformData();
 
         let totalIntensity = 0;
         for (let i = 0; i < waveform.length; i++) {
