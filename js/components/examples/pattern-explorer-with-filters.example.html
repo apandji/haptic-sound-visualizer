@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PatternExplorerWithFilters Example</title>
+    <style>
+        /* DualSlider Component Styles */
+        .dual-slider {
+            position: relative;
+            width: 100%;
+            height: 20px;
+            margin: 8px 0;
+            cursor: pointer;
+            user-select: none;
+        }
+        .dual-slider__track {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: #e0e0e0;
+            border-radius: 2px;
+            transform: translateY(-50%);
+        }
+        .dual-slider__range {
+            position: absolute;
+            top: 50%;
+            height: 4px;
+            background: #000;
+            border-radius: 2px;
+            transform: translateY(-50%);
+            pointer-events: none;
+        }
+        .dual-slider__handle {
+            position: absolute;
+            top: 50%;
+            width: 14px;
+            height: 14px;
+            background: #000;
+            border: 2px solid #fff;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            cursor: grab;
+            z-index: 2;
+            transition: transform 0.1s ease;
+        }
+        .dual-slider__handle:active {
+            cursor: grabbing;
+            transform: translate(-50%, -50%) scale(1.2);
+        }
+        .dual-slider__handle:hover {
+            transform: translate(-50%, -50%) scale(1.1);
+        }
+        .dual-slider__display {
+            display: inline-block;
+            color: #999;
+            font-weight: normal;
+            font-size: 11px;
+            margin-left: 4px;
+        }
+        .dual-slider {
+            padding: 0 6px !important; /* Padding to accommodate handle overflow */
+            overflow: visible !important;
+            box-sizing: border-box;
+        }
+        .dual-slider--compact {
+            height: 20px; /* Increased to fully accommodate handle with border */
+            margin: 4px 0;
+            padding: 0 6px !important; /* Padding to accommodate handle overflow */
+            overflow: visible !important;
+        }
+        .dual-slider__track {
+            left: 6px !important; /* Account for container padding */
+            right: 6px !important; /* Account for container padding */
+        }
+        .dual-slider__range {
+            /* left and width are set dynamically by JavaScript */
+        }
+        .dual-slider--compact .dual-slider__handle {
+            width: 12px;
+            height: 12px;
+            border-width: 2px;
+            box-sizing: border-box !important; /* Border included in width/height */
+        }
+        .dual-slider__handle {
+            box-sizing: border-box !important; /* Border included in width/height */
+        }
+        .dual-slider--compact .dual-slider__track,
+        .dual-slider--compact .dual-slider__range {
+            height: 3px;
+        }
+        
+        /* FilterPanel Component Styles */
+        .filter-panel__search {
+            margin-bottom: 12px;
+        }
+        .filter-panel__search-input {
+            width: 100%;
+            padding: 6px 8px;
+            border: 1px solid #e0e0e0;
+            border-radius: 2px;
+            font-size: 13px;
+            font-family: inherit;
+            color: #333;
+            background: #fff;
+            box-sizing: border-box;
+        }
+        .filter-panel__search-input:focus {
+            outline: none;
+            border-color: #000;
+        }
+        .filter-panel__group {
+            margin-bottom: 16px;
+            overflow: visible; /* Ensure slider handles aren't clipped */
+            /* No horizontal padding - slider container handles the padding for handles */
+        }
+        .filter-panel__label {
+            display: block;
+            font-size: 11px;
+            color: #666;
+            margin-bottom: 4px;
+            cursor: pointer;
+        }
+        .filter-panel__display {
+            color: #999;
+            font-weight: normal;
+            font-size: 11px;
+            margin-left: 4px;
+        }
+        .filter-panel__reset {
+            width: 100%;
+            padding: 4px;
+            margin-top: 8px;
+            background: #f5f5f5;
+            border: 1px solid #e0e0e0;
+            border-radius: 2px;
+            font-size: 12px;
+            font-weight: 500;
+            color: #666;
+            cursor: pointer;
+            transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+        }
+        .filter-panel__reset:hover {
+            background: #e8e8e8;
+            border-color: #d0d0d0;
+            color: #333;
+        }
+        .filter-panel__reset.has-active-filters {
+            background: #000;
+            border-color: #000;
+            color: #fff;
+            font-weight: 600;
+        }
+        .filter-panel__reset.has-active-filters:hover {
+            background: #333;
+            border-color: #333;
+        }
+        /* Sticky filters like index.html */
+        #filterPanel:not(.filter-panel--collapsible),
+        #filters:not(.filter-panel--collapsible) {
+            position: sticky;
+            top: 0;
+            background: #fff;
+            z-index: 10;
+            padding-bottom: 12px;
+            margin-bottom: 12px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        /* Remove border-bottom when inside sticky wrapper */
+        /* Only target the actual filter panel container div (direct child), not child elements like search inputs */
+        .pattern-explorer-sticky-wrapper > #filterPanel.filter-panel--collapsible,
+        .pattern-explorer-sticky-wrapper > #filters.filter-panel--collapsible {
+            border-bottom: none !important;
+        }
+        
+        /* Ensure search input keeps its bottom border - override any rules that might remove it */
+        .pattern-explorer-search-input,
+        input.pattern-explorer-search-input,
+        .pattern-explorer-search .pattern-explorer-search-input,
+        .pattern-explorer-sticky-wrapper .pattern-explorer-search-input,
+        .pattern-explorer-sticky-wrapper input.pattern-explorer-search-input,
+        #filterPanel_search.pattern-explorer-search-input {
+            border-bottom: 1px solid #e0e0e0 !important;
+        }
+        
+        /* Compact variant matching index.html exactly */
+        .filter-panel--compact .filter-panel__search { 
+            margin-bottom: 12px; 
+        }
+        .filter-panel--compact .filter-panel__search-input {
+            padding: 6px 8px; /* Match index.html */
+            font-size: 13px; /* Match index.html */
+        }
+        .filter-panel--compact .filter-panel__group { 
+            margin-top: 10px; /* Increased spacing */
+            margin-bottom: 0;
+            overflow: visible; /* Ensure slider handles aren't clipped */
+            /* No horizontal padding - slider container handles the padding for handles */
+        }
+        .filter-panel--compact .filter-panel__group:first-child {
+            margin-top: 0;
+        }
+        .filter-panel--compact .filter-panel__label {
+            font-size: 10px; /* Increased for better readability */
+            margin-bottom: 5px; /* Increased spacing */
+            font-weight: 500; /* Better hierarchy */
+        }
+        .filter-panel--compact .filter-panel__display { 
+            font-size: 10px; /* Increased for better readability */
+            font-weight: 600; /* Bolder for prominence */
+            color: #333; /* Better contrast */
+            margin-left: 6px; /* More spacing */
+        }
+        .filter-panel--compact .filter-panel__reset {
+            margin-top: 8px; /* Match index.html */
+            padding: 4px; /* Match index.html */
+            font-size: 12px; /* Match index.html */
+        }
+        .filter-panel--collapsible {
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+        .filter-panel__toggle {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 0;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 11px;
+            font-weight: 500;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .filter-panel__toggle:hover {
+            color: #333;
+        }
+        .filter-panel__toggle-icon {
+            display: inline-block;
+            font-size: 10px;
+            width: 12px;
+            text-align: center;
+        }
+        .filter-panel__content {
+            overflow: hidden;
+            transition: max-height 0.3s ease, opacity 0.2s ease;
+            max-height: 1000px;
+            opacity: 1;
+        }
+        .filter-panel--collapsed .filter-panel__content {
+            max-height: 0;
+            opacity: 0;
+            padding: 0;
+            margin: 0;
+        }
+        .filter-panel--collapsed .filter-panel__search,
+        .filter-panel--collapsed .filter-panel__sliders,
+        .filter-panel--collapsed .filter-panel__reset {
+            display: none;
+        }
+        
+        /* PatternExplorer Component Styles */
+        .panel-header {
+            font-size: 13px;
+            font-weight: 500;
+            margin-top: 16px; /* Visual separation from filters */
+            margin-bottom: 16px;
+            padding: 12px 0; /* Vertical padding */
+            color: #999;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            border-top: 1px solid #e0e0e0; /* Visual separation */
+            background: #fafafa; /* Subtle background */
+        }
+        .file-item {
+            display: flex;
+            align-items: center;
+            padding: 10px 12px; /* Increased padding */
+            margin: 1px 0; /* Tighter spacing */
+            cursor: pointer;
+            border-radius: 4px; /* More rounded */
+            transition: all 0.15s ease;
+            border: 1px solid transparent; /* Reserve space for border */
+        }
+        .file-item:hover {
+            background: #f5f5f5;
+            color: #333;
+            border-color: #e0e0e0; /* Subtle border on hover */
+            transform: translateX(2px); /* Slight slide effect */
+        }
+        .file-item-play-btn {
+            width: 20px;
+            height: 20px;
+            margin-right: 8px;
+            padding: 0;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+        }
+        .file-item-play-btn:hover {
+            color: #000;
+        }
+        .file-item-play-btn svg {
+            width: 16px;
+            height: 16px;
+            fill: currentColor;
+        }
+        .file-item-text {
+            flex: 1;
+            font-size: 12px;
+            color: #333;
+        }
+        .file-item-progress {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 2px;
+            background: #000;
+            transition: width 0.1s linear;
+        }
+        
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Courier New', monospace;
+            background: #fafafa;
+            color: #333;
+            padding: 0;
+            margin: 0;
+            font-size: 13px;
+            line-height: 1.5;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .container {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .header-section {
+            padding: 20px 20px 0 20px;
+            flex-shrink: 0;
+        }
+        
+        h1 {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 20px;
+        }
+        
+        .layout {
+            display: flex;
+            gap: 24px;
+            flex: 1;
+            overflow: hidden;
+            padding: 0 20px 20px 20px;
+            min-height: 0; /* Important for flex children */
+        }
+        
+        .sidebar {
+            width: 250px;
+            background: #fff;
+            padding: 20px;
+            overflow-y: hidden; /* Sidebar doesn't scroll - file list does */
+            border-right: 1px solid #e0e0e0;
+            display: flex;
+            flex-direction: column;
+            box-sizing: border-box;
+            height: 100%;
+            min-height: 0; /* Important for flex children to shrink */
+            max-height: 100%; /* Constrain to parent */
+        }
+        
+        /* Sticky Wrapper - contains header + search + filters (like index.html's #filters) */
+        .pattern-explorer-sticky-wrapper {
+            position: sticky;
+            top: 0;
+            background: #fff;
+            z-index: 10;
+            padding-bottom: 12px;
+            margin-bottom: 12px;
+            border-bottom: 1px solid #e0e0e0; /* Border separates from file list */
+            flex-shrink: 0;
+        }
+        
+        /* Pattern Explorer Header (inside sticky wrapper, no longer sticky itself) */
+        .pattern-explorer-header {
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 16px;
+            padding: 0;
+            color: #000;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+        
+        /* Pattern Explorer Search (inside sticky wrapper, no longer sticky itself) */
+        .pattern-explorer-search {
+            padding-bottom: 12px;
+            margin-bottom: 0; /* No margin - filters will have border-top */
+        }
+        
+        .pattern-explorer-search-input,
+        input.pattern-explorer-search-input,
+        .pattern-explorer-search .pattern-explorer-search-input,
+        .pattern-explorer-sticky-wrapper .pattern-explorer-search-input,
+        .pattern-explorer-sticky-wrapper input.pattern-explorer-search-input,
+        #filterPanel_search.pattern-explorer-search-input {
+            width: 100%;
+            padding: 6px 8px;
+            border: 1px solid #e0e0e0 !important;
+            border-top: 1px solid #e0e0e0 !important;
+            border-right: 1px solid #e0e0e0 !important;
+            border-bottom: 1px solid #e0e0e0 !important;
+            border-left: 1px solid #e0e0e0 !important;
+            border-radius: 2px;
+            font-size: 13px;
+            font-family: inherit;
+            color: #333;
+            background: #fff;
+            box-sizing: border-box;
+        }
+        
+        .pattern-explorer-search-input:focus,
+        input.pattern-explorer-search-input:focus,
+        .pattern-explorer-search .pattern-explorer-search-input:focus,
+        .pattern-explorer-sticky-wrapper .pattern-explorer-search-input:focus,
+        .pattern-explorer-sticky-wrapper input.pattern-explorer-search-input:focus,
+        #filterPanel_search.pattern-explorer-search-input:focus {
+            outline: none;
+            border: 1px solid #000 !important;
+            border-top: 1px solid #000 !important;
+            border-right: 1px solid #000 !important;
+            border-bottom: 1px solid #000 !important;
+            border-left: 1px solid #000 !important;
+        }
+        
+        .pattern-explorer-search-input::placeholder {
+            color: #999;
+        }
+        
+        /* Filter Panel Well */
+        #filterPanel {
+            flex-shrink: 1; /* Allow filters to shrink if needed */
+            width: 100%;
+            box-sizing: border-box;
+        }
+        
+        .filter-panel--collapsible {
+            background: #fff !important; /* White, not gray well */
+            border: none !important;
+            border-bottom: none !important; /* No border - wrapper has border-bottom */
+            border-radius: 0 !important; /* Brutalistic: no rounded corners */
+            padding: 4px 0 !important; /* Minimal padding */
+            margin-bottom: 0 !important;
+            /* No longer sticky - wrapper handles sticky positioning */
+        }
+        
+        .filter-panel--collapsible.filter-panel--collapsed {
+            padding: 4px 0 !important;
+            /* Border-bottom is on wrapper, not here */
+        }
+        
+        /* Remove border-bottom from filter panel when inside sticky wrapper */
+        .pattern-explorer-sticky-wrapper #filterPanel,
+        
+        .filter-panel__toggle {
+            padding: 6px 0 !important;
+            gap: 4px !important;
+            color: #333 !important;
+        }
+        
+        .filter-panel__toggle-icon {
+            font-size: 12px !important;
+            font-weight: 600 !important;
+            color: #000 !important;
+            width: 14px !important;
+        }
+        
+        .filter-panel__content {
+            margin-top: 0 !important;
+            padding: 0 0 8px 0 !important;
+        }
+        
+        .filter-panel--collapsible .filter-panel__group {
+            margin-bottom: 10px !important;
+        }
+        
+        #fileList {
+            flex: 1 1 auto;
+            overflow-y: auto;
+            width: 100%;
+            box-sizing: border-box;
+            min-height: 0; /* Critical for flex scrolling */
+            overflow-x: hidden;
+            position: relative; /* Ensure it can scroll */
+        }
+        
+        .main-content {
+            flex: 1;
+            background: #fff;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            padding: 20px;
+        }
+        
+        .info-box {
+            margin-top: 20px;
+            padding: 12px;
+            background: #f5f5f5;
+            border-radius: 2px;
+            font-size: 11px;
+            color: #666;
+            flex-shrink: 0; /* Don't shrink */
+            /* Hide info box to give file list space - or move it outside sidebar */
+            display: none;
+        }
+        
+        .info-box strong {
+            color: #333;
+        }
+        
+        .stats {
+            margin-bottom: 16px;
+            padding: 8px;
+            background: #f9f9f9;
+            border-radius: 2px;
+            font-size: 11px;
+        }
+        
+        .stats strong {
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header-section">
+            <h1>PatternExplorerWithFilters Example</h1>
+            <p class="subtitle">Composed component: PatternExplorer + FilterPanel</p>
+        </div>
+        
+        <div class="layout">
+            <!-- Sidebar with Header, Search, Filters, and File List -->
+            <div class="sidebar">
+                <!-- Header, Search, and Filters will be inserted here by component -->
+                <div id="filterPanel"></div>
+                <div id="fileList"></div>
+                <div class="info-box">
+                    <strong>Component:</strong> PatternExplorerWithFilters<br>
+                    <strong>Features:</strong> Auto-filtering, collapsible filters, compact mode
+                </div>
+            </div>
+            
+            <!-- Main Content Area -->
+            <div class="main-content">
+                <h2>Main Content Area</h2>
+                <div class="stats" id="stats">
+                    <strong>Total files:</strong> <span id="total-count">0</span> | 
+                    <strong>Filtered:</strong> <span id="filtered-count">0</span>
+                </div>
+                <p style="color: #666; font-size: 12px;">
+                    This example demonstrates the PatternExplorerWithFilters variant, which automatically
+                    wires FilterPanel changes to PatternExplorer. When you adjust filters, the file list
+                    updates automatically.
+                </p>
+                <div style="margin-top: 20px; padding: 12px; background: #f9f9f9; border-radius: 2px;">
+                    <h3 style="font-size: 13px; margin-bottom: 8px;">Try it:</h3>
+                    <ul style="font-size: 11px; color: #666; margin-left: 20px;">
+                        <li>Type in the search box to filter by filename</li>
+                        <li>Adjust the RMS, Duration, Balance, or Movement sliders</li>
+                        <li>Click RESET to clear all filters</li>
+                        <li>Click the FILTERS toggle to collapse/expand</li>
+                        <li>Click play buttons to preview files</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Load dependencies -->
+    <script src="../../modules/filters.js"></script>
+    <script src="../base/DualSlider.js"></script>
+    <script src="../base/FilterPanel.js"></script>
+    <script src="../base/PatternExplorer.js"></script>
+    <script src="../variants/PatternExplorerWithFilters.js"></script>
+    
+    <script>
+        // Generate many sample files with varied metadata
+        function generateSampleFiles() {
+            const files = [];
+            const metadata = {};
+            
+            // Categories: A, B, C, D, E, F, G, H, I, J
+            const categories = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
+            // Variations: 100, 110, 120, 130, 140, 150, 200, 210, 220, 230, 240, 250, 300, 310, 320, 330, 340, 350, 400, 410, 420, 430, 440, 450
+            const variations = [100, 110, 120, 130, 140, 150, 200, 210, 220, 230, 240, 250, 300, 310, 320, 330, 340, 350, 400, 410, 420, 430, 440, 450];
+            // Instances: 1-5 per variation
+            const instances = [1, 2, 3, 4, 5];
+            
+            let fileIndex = 0;
+            
+            categories.forEach(category => {
+                variations.forEach(variation => {
+                    instances.forEach(instance => {
+                        // Create some variation - not all combinations exist
+                        if (Math.random() > 0.3) { // 70% chance of file existing
+                            const fileName = `${category}_${variation}_${instance}.mp3`;
+                            const filePath = `audio_files/${fileName}`;
+                            
+                            files.push({
+                                name: fileName,
+                                path: filePath
+                            });
+                            
+                            // Generate varied metadata
+                            // RMS: 0.05 to 0.45 (realistic range)
+                            const rms = 0.05 + Math.random() * 0.4;
+                            // Duration: 3.0 to 8.5 seconds
+                            const duration = 3.0 + Math.random() * 5.5;
+                            // Balance: -0.8 to 0.8
+                            const balance = -0.8 + Math.random() * 1.6;
+                            // Movement: 0.05 to 0.85
+                            const movement = 0.05 + Math.random() * 0.8;
+                            
+                            metadata[fileName] = {
+                                rms_mean: parseFloat(rms.toFixed(3)),
+                                duration: parseFloat(duration.toFixed(1)),
+                                stereo_balance: parseFloat(balance.toFixed(2)),
+                                stereo_movement: parseFloat(movement.toFixed(2))
+                            };
+                            
+                            fileIndex++;
+                        }
+                    });
+                });
+            });
+            
+            return { files, metadata };
+        }
+        
+        // Generate large dataset
+        const { files: sampleFiles, metadata: sampleMetadata } = generateSampleFiles();
+        
+        // Create PatternExplorerWithFilters instance
+        const explorer = new PatternExplorerWithFilters({
+            containerId: 'fileList',
+            filterContainerId: 'filterPanel',
+            files: sampleFiles,
+            metadata: sampleMetadata,
+            compact: true,
+            collapsible: true, // Collapsible filters in well
+            defaultCollapsed: false,
+            searchPlaceholder: 'Search patterns...',
+            onFileClick: (file) => {
+                console.log('File clicked:', file.name);
+            },
+            onFilePreview: (file, isPlaying) => {
+                console.log('File preview:', file.name, isPlaying ? 'playing' : 'paused');
+                // Simulate playback
+                if (isPlaying) {
+                    explorer.setPlayingFile(file.path, true);
+                } else {
+                    explorer.setPlayingFile(file.path, false);
+                }
+            },
+            onFilterChange: (filters, filteredFiles) => {
+                // Update stats
+                document.getElementById('total-count').textContent = sampleFiles.length;
+                document.getElementById('filtered-count').textContent = filteredFiles.length;
+                console.log('Filters changed:', filters);
+                console.log('Filtered files:', filteredFiles.length, 'of', sampleFiles.length);
+            }
+        });
+        
+        // Update initial stats
+        document.getElementById('total-count').textContent = sampleFiles.length;
+        document.getElementById('filtered-count').textContent = sampleFiles.length;
+        
+        console.log('✅ PatternExplorerWithFilters example initialized');
+    </script>
+</body>
+</html>

@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SAIL Pattern Library</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Courier New', monospace;
+            background: #fafafa;
+            color: #333;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            font-size: 13px;
+            line-height: 1.5;
+            overflow: hidden;
+        }
+        
+        /* Top Navigation Header */
+        .top-header {
+            width: 100%;
+            background: #fff;
+            border-bottom: 1px solid #e0e0e0;
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex-shrink: 0;
+            z-index: 1000;
+        }
+        
+        .nav-link {
+            font-size: 12px;
+            font-weight: 500;
+            color: #666;
+            text-decoration: none;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            transition: color 0.15s ease;
+            cursor: pointer;
+        }
+        
+        .nav-link:hover {
+            color: #000;
+        }
+        
+        .nav-link.active {
+            color: #000;
+        }
+        
+        .nav-separator {
+            color: #e0e0e0;
+            font-size: 12px;
+        }
+        
+        /* Main Layout Container */
+        .layout {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+            min-height: 0;
+        }
+        
+        /* Sidebar - Fixed to Left */
+        .sidebar {
+            width: 250px;
+            background: #fff;
+            border-right: 1px solid #e0e0e0;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            overflow-x: hidden;
+            flex-shrink: 0;
+            padding: 0; /* Remove padding - components handle their own spacing */
+            position: relative;
+            z-index: 1; /* Below sticky wrapper */
+        }
+        
+        /* Main Content Area (for future use) */
+        .main-content {
+            flex: 1;
+            background: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #999;
+            font-size: 12px;
+        }
+    </style>
+    
+    <!-- Component CSS -->
+    <link rel="stylesheet" href="css/components/base/pattern-explorer.css?v=6">
+    <link rel="stylesheet" href="css/components/base/filter-panel.css?v=6">
+    <link rel="stylesheet" href="css/components/base/dual-slider.css?v=6">
+</head>
+<body>
+    <!-- Top Navigation Header -->
+    <div class="top-header">
+        <a href="library.html" class="nav-link active">LIBRARY</a>
+        <span class="nav-separator">|</span>
+        <a href="index.html" class="nav-link">TEST</a>
+        <span class="nav-separator">|</span>
+        <a href="#" class="nav-link">ANALYSIS</a>
+    </div>
+    
+    <!-- Main Layout -->
+    <div class="layout">
+        <!-- Sidebar with PatternExplorerWithFilters -->
+        <div class="sidebar">
+            <!-- The component will reorganize these containers into its own structure -->
+            <!-- Order: filterPanel first, then fileList (component will create sticky wrapper) -->
+            <div id="filterPanel"></div>
+            <div id="fileList">Loading files...</div>
+        </div>
+        
+        <!-- Main Content Area (placeholder for now) -->
+        <div class="main-content">
+            <div>Select a pattern to view details</div>
+        </div>
+    </div>
+    
+    <!-- Component JavaScript -->
+    <script src="js/modules/filters.js?v=2"></script>
+    <script src="js/components/base/PatternExplorer.js?v=2"></script>
+    <script src="js/components/base/FilterPanel.js?v=2"></script>
+    <script src="js/components/base/DualSlider.js?v=2"></script>
+    <script src="js/components/variants/PatternExplorerWithFilters.js?v=2"></script>
+    
+    <!-- Initialization Script -->
+    <script>
+        let allFilesList = [];
+        let patternMetadata = {};
+        
+        // Load pattern metadata
+        async function loadPatternMetadata() {
+            try {
+                const response = await fetch('pattern_metadata.json');
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.patterns && Array.isArray(data.patterns)) {
+                        patternMetadata = {};
+                        data.patterns.forEach(pattern => {
+                            patternMetadata[pattern.filename] = pattern;
+                        });
+                        console.log('Loaded metadata for', Object.keys(patternMetadata).length, 'patterns');
+                    }
+                }
+            } catch (error) {
+                console.warn('Could not load pattern metadata:', error);
+            }
+        }
+        
+        // Load file list from server or static JSON file
+        async function loadFileList() {
+            // Try API endpoint first (for local development)
+            try {
+                const apiResponse = await fetch('/api/list-audio-files');
+                if (apiResponse.ok) {
+                    const contentType = apiResponse.headers.get('content-type');
+                    if (contentType && contentType.includes('application/json')) {
+                        const data = await apiResponse.json();
+                        if (Array.isArray(data)) {
+                            allFilesList = data;
+                            console.log('Loaded', allFilesList.length, 'files from API');
+                            initializeComponent();
+                            return;
+                        }
+                    }
+                }
+            } catch (apiError) {
+                console.log('API endpoint not available:', apiError.message);
+            }
+            
+            // Fallback to static JSON file (for GitHub Pages)
+            const basePath = window.location.pathname.replace(/\/[^/]*$/, '') || '';
+            const jsonPaths = [
+                basePath + '/audio-files.json',
+                './audio-files.json',
+                'audio-files.json',
+                '/audio-files.json'
+            ];
+            
+            for (const path of jsonPaths) {
+                try {
+                    console.log('Trying to load from:', path);
+                    const response = await fetch(path);
+                    
+                    if (!response.ok) {
+                        console.log('Response not OK, status:', response.status, 'for path:', path);
+                        continue;
+                    }
+                    
+                    const contentType = response.headers.get('content-type') || '';
+                    const text = await response.text();
+                    
+                    const isJson = contentType.includes('application/json') || 
+                                  contentType.includes('text/json') ||
+                                  text.trim().startsWith('[') || 
+                                  text.trim().startsWith('{');
+                    
+                    if (!isJson) {
+                        console.log('Response does not appear to be JSON, starts with:', text.substring(0, 50));
+                        continue;
+                    }
+                    
+                    const data = JSON.parse(text);
+                    if (Array.isArray(data) && data.length > 0) {
+                        allFilesList = data;
+                        console.log('Successfully loaded', allFilesList.length, 'files from:', path);
+                        initializeComponent();
+                        return;
+                    }
+                } catch (fetchError) {
+                    console.log('Error loading from', path, ':', fetchError.message);
+                    continue;
+                }
+            }
+            
+            // If we get here, all attempts failed
+            console.error('Failed to load audio files from any source');
+            const fileListEl = document.getElementById('fileList');
+            if (fileListEl) {
+                fileListEl.innerHTML = '<div style="padding: 20px; color: #999; font-size: 12px;">Failed to load audio files</div>';
+            }
+        }
+        
+        // Initialize PatternExplorerWithFilters component
+        function initializeComponent() {
+            const component = new PatternExplorerWithFilters({
+                containerId: 'fileList',
+                filterContainerId: 'filterPanel',
+                files: allFilesList,
+                metadata: patternMetadata,
+                onFileClick: (file) => {
+                    console.log('File clicked:', file);
+                    // TODO: Handle file click (e.g., show details in main content area)
+                },
+                onFileHover: (file, metadata, event) => {
+                    // Optional: Handle file hover
+                },
+                onFilePreview: (file) => {
+                    console.log('File preview:', file);
+                    // TODO: Handle file preview
+                }
+            });
+        }
+        
+        // Initialize on page load
+        window.addEventListener('DOMContentLoaded', async () => {
+            await loadPatternMetadata();
+            await loadFileList();
+        });
+    </script>
+</body>
+</html>

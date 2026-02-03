@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FilterPanel Component Example</title>
+    <link rel="stylesheet" href="../../../css/components/base/dual-slider.css">
+    <link rel="stylesheet" href="../../../css/components/base/filter-panel.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Courier New', monospace;
+            background: #fafafa;
+            color: #333;
+            padding: 40px;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 40px;
+        }
+        
+        .demo-layout {
+            display: flex;
+            gap: 24px;
+        }
+        
+        .filter-section {
+            width: 300px;
+            background: #fff;
+            padding: 20px;
+            border-radius: 4px;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .results-section {
+            flex: 1;
+            background: #fff;
+            padding: 20px;
+            border-radius: 4px;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .section-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: #333;
+        }
+        
+        .output {
+            margin-top: 16px;
+            padding: 12px;
+            background: #f5f5f5;
+            border-radius: 3px;
+            font-size: 11px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .file-list {
+            margin-top: 16px;
+        }
+        
+        .file-item {
+            padding: 6px 8px;
+            margin: 2px 0;
+            background: #f9f9f9;
+            border-radius: 2px;
+            font-size: 11px;
+        }
+        
+        .file-item:hover {
+            background: #f0f0f0;
+        }
+        
+        .stats {
+            margin-top: 16px;
+            padding: 12px;
+            background: #e8f4f8;
+            border-radius: 3px;
+            font-size: 11px;
+        }
+        
+        .stats strong {
+            color: #0066cc;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>FilterPanel Component</h1>
+        <p class="subtitle">Search box + multiple dual sliders for filtering audio files</p>
+        
+        <div class="demo-layout">
+            <!-- Filter Panel -->
+            <div class="filter-section">
+                <h2 class="section-title">Filters</h2>
+                <div id="filterPanel"></div>
+            </div>
+            
+            <!-- Results -->
+            <div class="results-section">
+                <h2 class="section-title">Filtered Results</h2>
+                <div class="stats">
+                    <strong>Total files:</strong> <span id="total-count">0</span> | 
+                    <strong>Filtered:</strong> <span id="filtered-count">0</span>
+                </div>
+                <div class="file-list" id="fileList"></div>
+                <div class="output" id="filterOutput"></div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="../base/DualSlider.js"></script>
+    <script src="../base/FilterPanel.js"></script>
+    <script>
+        // Sample metadata (simulating pattern_metadata.json)
+        const sampleMetadata = {
+            'A_100_1.mp3': {
+                rms_mean: 0.123,
+                duration: 5.5,
+                stereo_balance: 0.0,
+                stereo_movement: 0.10
+            },
+            'A_100_2.mp3': {
+                rms_mean: 0.234,
+                duration: 6.2,
+                stereo_balance: -0.3,
+                stereo_movement: 0.15
+            },
+            'A_110_1.mp3': {
+                rms_mean: 0.345,
+                duration: 4.8,
+                stereo_balance: 0.5,
+                stereo_movement: 0.25
+            },
+            'B_200_1.mp3': {
+                rms_mean: 0.456,
+                duration: 7.1,
+                stereo_balance: 0.2,
+                stereo_movement: 0.30
+            },
+            'test_file.mp3': {
+                rms_mean: 0.567,
+                duration: 3.5,
+                stereo_balance: -0.8,
+                stereo_movement: 0.05
+            }
+        };
+        
+        // Sample file list
+        const allFiles = Object.keys(sampleMetadata).map(name => ({
+            name: name,
+            path: `audio_files/${name}`
+        }));
+        
+        // Create FilterPanel (regular mode)
+        const filterPanel = new FilterPanel({
+            containerId: 'filterPanel',
+            metadata: sampleMetadata,
+            searchPlaceholder: 'Search patterns...',
+            onFilterChange: (filters) => {
+                // Apply filters
+                const filteredFiles = applyFilters(allFiles, filters, sampleMetadata);
+                
+                // Update UI
+                updateResults(filteredFiles, filters);
+            },
+            onReset: () => {
+                console.log('Filters reset');
+            }
+        });
+        
+        // Example: Compact mode (for PatternExplorer)
+        // const compactFilterPanel = new FilterPanel({
+        //     containerId: 'compactFilterPanel',
+        //     metadata: sampleMetadata,
+        //     compact: true, // Enable compact mode
+        //     onFilterChange: (filters) => { /* ... */ }
+        // });
+        
+        // Simple filter function (will be extracted to module later)
+        function applyFilters(files, filters, metadata) {
+            return files.filter(file => {
+                // Search filter
+                if (filters.search && !file.name.toLowerCase().includes(filters.search)) {
+                    return false;
+                }
+                
+                // Metadata filters
+                const fileMetadata = metadata[file.name];
+                if (!fileMetadata) {
+                    return true; // Include files without metadata
+                }
+                
+                // Check each filter
+                if (filters.rms) {
+                    const [min, max] = filters.rms;
+                    if (fileMetadata.rms_mean < min || fileMetadata.rms_mean > max) {
+                        return false;
+                    }
+                }
+                
+                if (filters.duration) {
+                    const [min, max] = filters.duration;
+                    if (fileMetadata.duration < min || fileMetadata.duration > max) {
+                        return false;
+                    }
+                }
+                
+                if (filters.balance) {
+                    const [min, max] = filters.balance;
+                    if (fileMetadata.stereo_balance < min || fileMetadata.stereo_balance > max) {
+                        return false;
+                    }
+                }
+                
+                if (filters.movement) {
+                    const [min, max] = filters.movement;
+                    if (fileMetadata.stereo_movement < min || fileMetadata.stereo_movement > max) {
+                        return false;
+                    }
+                }
+                
+                return true;
+            });
+        }
+        
+        // Update results display
+        function updateResults(filteredFiles, filters) {
+            const fileList = document.getElementById('fileList');
+            const filterOutput = document.getElementById('filterOutput');
+            const totalCount = document.getElementById('total-count');
+            const filteredCount = document.getElementById('filtered-count');
+            
+            // Update counts
+            totalCount.textContent = allFiles.length;
+            filteredCount.textContent = filteredFiles.length;
+            
+            // Update file list
+            fileList.innerHTML = '';
+            if (filteredFiles.length === 0) {
+                fileList.innerHTML = '<div class="file-item" style="color: #999;">No files match the filters</div>';
+            } else {
+                filteredFiles.forEach(file => {
+                    const item = document.createElement('div');
+                    item.className = 'file-item';
+                    item.textContent = file.name;
+                    fileList.appendChild(item);
+                });
+            }
+            
+            // Update filter output
+            filterOutput.textContent = JSON.stringify(filters, null, 2);
+        }
+        
+        // Initial update
+        const initialFilters = filterPanel.getFilters();
+        updateResults(applyFilters(allFiles, initialFilters, sampleMetadata), initialFilters);
+        
+        console.log('✅ FilterPanel example initialized');
+    </script>
+</body>
+</html>

@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DualSlider Component Example</title>
+    <style>
+        /* DualSlider Component Styles - Embedded for example page */
+        .dual-slider {
+            position: relative;
+            width: 100%;
+            height: 20px;
+            margin: 8px 0;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .dual-slider__track {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: #e0e0e0;
+            border-radius: 2px;
+            transform: translateY(-50%);
+        }
+
+        .dual-slider__range {
+            position: absolute;
+            top: 50%;
+            height: 4px;
+            background: #000;
+            border-radius: 2px;
+            transform: translateY(-50%);
+            pointer-events: none;
+        }
+
+        .dual-slider__handle {
+            position: absolute;
+            top: 50%;
+            width: 14px;
+            height: 14px;
+            background: #000;
+            border: 2px solid #fff;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            cursor: grab;
+            z-index: 2;
+            transition: transform 0.1s ease;
+        }
+
+        .dual-slider__handle:active {
+            cursor: grabbing;
+            transform: translate(-50%, -50%) scale(1.2);
+        }
+
+        .dual-slider__handle:hover {
+            transform: translate(-50%, -50%) scale(1.1);
+        }
+
+        .dual-slider__handle.active {
+            transform: translate(-50%, -50%) scale(1.2);
+        }
+
+        .dual-slider__display {
+            display: inline-block;
+            color: #999;
+            font-weight: normal;
+            font-size: 11px;
+            margin-left: 4px;
+        }
+
+        .dual-slider--compact {
+            height: 16px;
+            margin: 4px 0;
+        }
+
+        .dual-slider--compact .dual-slider__handle {
+            width: 12px;
+            height: 12px;
+        }
+
+        .dual-slider--compact .dual-slider__track,
+        .dual-slider--compact .dual-slider__range {
+            height: 3px;
+        }
+
+        /* Dark theme variant */
+        .dual-slider--dark .dual-slider__track {
+            background: #404040;
+        }
+
+        .dual-slider--dark .dual-slider__range {
+            background: #fff;
+        }
+
+        .dual-slider--dark .dual-slider__handle {
+            background: #fff;
+            border-color: #404040;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Courier New', monospace;
+            background: #fafafa;
+            color: #333;
+            padding: 40px;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+        
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 40px;
+        }
+        
+        .example {
+            background: #fff;
+            padding: 24px;
+            border-radius: 4px;
+            border: 1px solid #e0e0e0;
+            margin-bottom: 24px;
+        }
+        
+        .example h2 {
+            font-size: 16px;
+            margin-bottom: 16px;
+            color: #333;
+        }
+        
+        .example p {
+            color: #666;
+            margin-bottom: 16px;
+            font-size: 12px;
+        }
+        
+        .slider-container {
+            margin: 16px 0;
+        }
+        
+        label {
+            display: block;
+            font-size: 11px;
+            color: #666;
+            margin-bottom: 4px;
+        }
+        
+        .output {
+            margin-top: 16px;
+            padding: 12px;
+            background: #f5f5f5;
+            border-radius: 3px;
+            font-size: 11px;
+            font-family: monospace;
+        }
+        
+        .output strong {
+            color: #000;
+        }
+        
+        .controls {
+            margin-top: 16px;
+            display: flex;
+            gap: 8px;
+        }
+        
+        button {
+            padding: 6px 12px;
+            background: #000;
+            color: #fff;
+            border: none;
+            border-radius: 2px;
+            cursor: pointer;
+            font-size: 11px;
+            font-family: inherit;
+        }
+        
+        button:hover {
+            background: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>DualSlider Component</h1>
+        <p class="subtitle">A dual-handle range slider for selecting min/max values</p>
+        
+        <!-- Example 1: Basic RMS Slider -->
+        <div class="example">
+            <h2>Example 1: RMS Filter</h2>
+            <p>Range: 0.0 to 1.0, Step: 0.01</p>
+            <div class="slider-container">
+                <label>RMS <span id="rms-display"></span></label>
+                <div id="rms-slider"></div>
+            </div>
+            <div class="output">
+                <strong>Current values:</strong> <span id="rms-output">min: 0.00, max: 1.00</span>
+            </div>
+        </div>
+        
+        <!-- Example 2: Duration Slider -->
+        <div class="example">
+            <h2>Example 2: Duration Filter</h2>
+            <p>Range: 0 to 50 seconds, Step: 0.1</p>
+            <div class="slider-container">
+                <label>Duration <span id="duration-display"></span></label>
+                <div id="duration-slider"></div>
+            </div>
+            <div class="output">
+                <strong>Current values:</strong> <span id="duration-output">min: 0.0s, max: 50.0s</span>
+            </div>
+        </div>
+        
+        <!-- Example 3: Balance Slider -->
+        <div class="example">
+            <h2>Example 3: Balance Filter</h2>
+            <p>Range: -1.0 (left) to 1.0 (right), Step: 0.01</p>
+            <div class="slider-container">
+                <label>Balance <span id="balance-display"></span></label>
+                <div id="balance-slider"></div>
+            </div>
+            <div class="output">
+                <strong>Current values:</strong> <span id="balance-output">min: -1.00, max: 1.00</span>
+            </div>
+            <div class="controls">
+                <button onclick="setBalanceRange(-0.5, 0.5)">Set -0.5 to 0.5</button>
+                <button onclick="balanceSlider.reset()">Reset</button>
+            </div>
+        </div>
+        
+        <!-- Example 4: Compact Variant -->
+        <div class="example">
+            <h2>Example 4: Compact Variant</h2>
+            <p>Smaller handles and track</p>
+            <div class="slider-container">
+                <label>Movement <span id="movement-display"></span></label>
+                <div id="movement-slider" class="dual-slider--compact"></div>
+            </div>
+            <div class="output">
+                <strong>Current values:</strong> <span id="movement-output">min: 0.00, max: 1.00</span>
+            </div>
+        </div>
+        
+        <!-- Example 5: Dark Mode Variant -->
+        <div class="example" style="background: #1a1a1a; color: #fff; border-color: #404040;">
+            <h2 style="color: #fff;">Example 5: Dark Mode Variant</h2>
+            <p style="color: #b0b0b0;">White handles and range on dark background</p>
+            <div class="slider-container">
+                <label style="color: #b0b0b0;">Frequency <span id="frequency-display" style="color: #999;"></span></label>
+                <div id="frequency-slider" class="dual-slider--dark"></div>
+            </div>
+            <div class="output" style="background: #2d2d2d; color: #b0b0b0;">
+                <strong style="color: #fff;">Current values:</strong> <span id="frequency-output">min: 20.00, max: 20000.00</span>
+            </div>
+            <div class="controls">
+                <button onclick="toggleDarkMode()" style="background: #4a9eff; color: #fff;">Toggle Dark Mode</button>
+                <button onclick="frequencySlider.reset()" style="background: #404040; color: #fff;">Reset</button>
+            </div>
+        </div>
+    </div>
+    
+    <script src="../base/DualSlider.js"></script>
+    <script>
+        // Example 1: RMS Slider
+        const rmsSlider = new DualSlider({
+            containerId: 'rms-slider',
+            min: 0,
+            max: 1,
+            step: 0.01,
+            label: 'RMS',
+            initialMin: 0.1,
+            initialMax: 0.5,
+            formatValue: (val) => val.toFixed(3),
+            onChange: (min, max) => {
+                document.getElementById('rms-output').textContent = `min: ${min.toFixed(3)}, max: ${max.toFixed(3)}`;
+            }
+        });
+        
+        // Set display element
+        rmsSlider.display = document.getElementById('rms-display');
+        rmsSlider.updateSlider();
+        
+        // Example 2: Duration Slider
+        const durationSlider = new DualSlider({
+            containerId: 'duration-slider',
+            min: 0,
+            max: 50,
+            step: 0.1,
+            label: 'Duration',
+            initialMin: 2,
+            initialMax: 10,
+            formatValue: (val) => val.toFixed(1) + 's',
+            onChange: (min, max) => {
+                document.getElementById('duration-output').textContent = `min: ${min.toFixed(1)}s, max: ${max.toFixed(1)}s`;
+            }
+        });
+        
+        durationSlider.display = document.getElementById('duration-display');
+        durationSlider.updateSlider();
+        
+        // Example 3: Balance Slider
+        window.balanceSlider = new DualSlider({
+            containerId: 'balance-slider',
+            min: -1,
+            max: 1,
+            step: 0.01,
+            label: 'Balance',
+            initialMin: -1,
+            initialMax: 1,
+            formatValue: (val) => val.toFixed(2),
+            onChange: (min, max) => {
+                document.getElementById('balance-output').textContent = `min: ${min.toFixed(2)}, max: ${max.toFixed(2)}`;
+            }
+        });
+        
+        balanceSlider.display = document.getElementById('balance-display');
+        balanceSlider.updateSlider();
+        
+        // Helper function for balance slider
+        window.setBalanceRange = (min, max) => {
+            balanceSlider.setValues(min, max);
+        };
+        
+        // Example 4: Movement Slider (Compact)
+        const movementSlider = new DualSlider({
+            containerId: 'movement-slider',
+            min: 0,
+            max: 1,
+            step: 0.01,
+            label: 'Movement',
+            initialMin: 0,
+            initialMax: 1,
+            formatValue: (val) => val.toFixed(2),
+            onChange: (min, max) => {
+                document.getElementById('movement-output').textContent = `min: ${min.toFixed(2)}, max: ${max.toFixed(2)}`;
+            }
+        });
+        
+        movementSlider.display = document.getElementById('movement-display');
+        movementSlider.updateSlider();
+        
+        // Example 5: Frequency Slider (Dark Mode)
+        window.frequencySlider = new DualSlider({
+            containerId: 'frequency-slider',
+            min: 20,
+            max: 20000,
+            step: 1,
+            label: 'Frequency',
+            initialMin: 100,
+            initialMax: 10000,
+            formatValue: (val) => {
+                if (val >= 1000) return (val / 1000).toFixed(2) + 'k';
+                return val.toFixed(0);
+            },
+            onChange: (min, max) => {
+                const formatVal = (val) => {
+                    if (val >= 1000) return (val / 1000).toFixed(2) + 'k';
+                    return val.toFixed(0);
+                };
+                document.getElementById('frequency-output').textContent = `min: ${formatVal(min)}, max: ${formatVal(max)}`;
+            }
+        });
+        
+        frequencySlider.display = document.getElementById('frequency-display');
+        frequencySlider.updateSlider();
+        
+        // Toggle dark mode on all sliders
+        window.toggleDarkMode = () => {
+            const sliders = document.querySelectorAll('.dual-slider');
+            sliders.forEach(slider => {
+                slider.classList.toggle('dual-slider--dark');
+            });
+        };
+        
+        console.log('✅ DualSlider examples initialized');
+    </script>
+</body>
+</html>

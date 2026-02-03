@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PatternExplorerWithFilterDrawer Example</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Courier New', monospace;
+            background: #fafafa;
+            color: #333;
+            padding: 40px;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 40px;
+        }
+        
+        .layout {
+            display: flex;
+            gap: 24px;
+        }
+        
+        .sidebar {
+            width: 300px;
+            background: #fff;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            padding: 20px;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* Sticky filters like index.html */
+        #filters {
+            position: sticky;
+            top: 0;
+            background: #fff;
+            z-index: 10;
+            padding-bottom: 12px;
+            margin-bottom: 12px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        #fileList {
+            flex: 1;
+            overflow-y: auto;
+        }
+        
+        .main-content {
+            flex: 1;
+            background: #fff;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            padding: 20px;
+            min-height: 400px;
+        }
+        
+        .info-box {
+            margin-top: 20px;
+            padding: 12px;
+            background: #f5f5f5;
+            border-radius: 2px;
+            font-size: 11px;
+            color: #666;
+        }
+        
+        .info-box strong {
+            color: #333;
+        }
+        
+        .stats {
+            margin-bottom: 16px;
+            padding: 8px;
+            background: #f9f9f9;
+            border-radius: 2px;
+            font-size: 11px;
+        }
+        
+        .stats strong {
+            color: #333;
+        }
+        
+        /* Embedded component styles */
+        /* DualSlider */
+        .dual-slider {
+            position: relative;
+            width: 100%;
+            height: 20px;
+            margin: 8px 0;
+            cursor: pointer;
+            user-select: none;
+        }
+        .dual-slider__track {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: #e0e0e0;
+            border-radius: 2px;
+            transform: translateY(-50%);
+        }
+        .dual-slider__range {
+            position: absolute;
+            top: 50%;
+            height: 4px;
+            background: #000;
+            border-radius: 2px;
+            transform: translateY(-50%);
+            pointer-events: none;
+        }
+        .dual-slider__handle {
+            position: absolute;
+            top: 50%;
+            width: 14px;
+            height: 14px;
+            background: #000;
+            border: 2px solid #fff;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            cursor: grab;
+            z-index: 2;
+            transition: transform 0.1s ease;
+        }
+        .dual-slider__handle:active {
+            cursor: grabbing;
+            transform: translate(-50%, -50%) scale(1.2);
+        }
+        .dual-slider__handle:hover {
+            transform: translate(-50%, -50%) scale(1.1);
+        }
+        .dual-slider__display {
+            display: inline-block;
+            color: #999;
+            font-weight: normal;
+            font-size: 11px;
+            margin-left: 4px;
+        }
+        
+        /* FilterPanel */
+        .filter-panel__search {
+            margin-bottom: 12px;
+        }
+        .filter-panel__search-input {
+            width: 100%;
+            padding: 6px 8px;
+            border: 1px solid #e0e0e0;
+            border-radius: 2px;
+            font-size: 13px;
+            font-family: inherit;
+            color: #333;
+            background: #fff;
+            box-sizing: border-box;
+        }
+        .filter-panel__search-input:focus {
+            outline: none;
+            border-color: #000;
+        }
+        .filter-panel__group {
+            margin-bottom: 16px;
+        }
+        .filter-panel__label {
+            display: block;
+            font-size: 11px;
+            color: #666;
+            margin-bottom: 4px;
+            cursor: pointer;
+        }
+        .filter-panel__display {
+            color: #999;
+            font-weight: normal;
+            font-size: 11px;
+            margin-left: 4px;
+        }
+        .filter-panel__reset {
+            width: 100%;
+            padding: 6px;
+            margin-top: 8px;
+            background: #f5f5f5;
+            border: 1px solid #e0e0e0;
+            border-radius: 2px;
+            font-size: 11px;
+            font-weight: 500;
+            color: #666;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .filter-panel__reset:hover {
+            background: #e0e0e0;
+        }
+        
+        /* PatternExplorer */
+        .panel-header {
+            font-size: 13px;
+            font-weight: 500;
+            color: #999;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .panel-header__content {
+            flex: 1;
+        }
+        .panel-header__filter-btn {
+            width: 24px;
+            height: 24px;
+            padding: 0;
+            background: transparent;
+            border: none;
+            color: #999;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            transition: background 0.15s ease, color 0.15s ease;
+            flex-shrink: 0;
+        }
+        .panel-header__filter-btn:hover {
+            background: #f5f5f5;
+            color: #333;
+        }
+        .panel-header__filter-btn svg {
+            width: 16px;
+            height: 16px;
+            fill: currentColor;
+        }
+        .file-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 10px;
+            margin: 2px 0;
+            background: transparent;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 11px;
+            color: #666;
+            transition: all 0.15s ease;
+            position: relative;
+        }
+        .file-item:hover {
+            background: #f5f5f5;
+            color: #333;
+        }
+        .file-item-play-btn {
+            flex-shrink: 0;
+            width: 20px;
+            height: 20px;
+            padding: 0;
+            background: transparent;
+            border: none;
+            color: inherit;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0.6;
+        }
+        .file-item-play-btn:hover {
+            opacity: 1;
+        }
+        .file-item-play-btn svg {
+            width: 16px;
+            height: 16px;
+            fill: currentColor;
+        }
+        .file-item-text {
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        /* File Tooltip Styles */
+        .file-tooltip {
+            position: fixed;
+            background: #000;
+            color: #fff;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 11px;
+            line-height: 1.4;
+            z-index: 10000;
+            pointer-events: none;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s ease, visibility 0.2s ease;
+            max-width: 300px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+        .file-tooltip.show {
+            opacity: 1 !important;
+            visibility: visible !important;
+        }
+        .file-tooltip::before {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 0;
+            border: 6px solid transparent;
+        }
+        .file-tooltip.flipped::before {
+            right: -12px;
+            top: var(--arrow-top, 50%);
+            transform: translateY(-50%);
+            border-left-color: #000;
+        }
+        .file-tooltip:not(.flipped)::before {
+            left: -12px;
+            top: var(--arrow-top, 50%);
+            transform: translateY(-50%);
+            border-right-color: #000;
+        }
+        .tooltip-row {
+            margin: 2px 0;
+        }
+        .tooltip-row:first-child {
+            margin-top: 0;
+        }
+        .tooltip-row:last-child {
+            margin-bottom: 0;
+        }
+        .tooltip-label {
+            font-weight: 600;
+            margin-right: 6px;
+        }
+        
+        /* Fix tooltip positioning */
+        .file-tooltip {
+            position: fixed !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>PatternExplorerWithFilterDrawer Example</h1>
+        <p class="subtitle">Inline filters matching index.html style</p>
+        
+        <div class="layout">
+            <!-- Sidebar with Pattern Explorer -->
+            <div class="sidebar">
+                <div id="filters"></div>
+                <div id="fileList"></div>
+                <div class="info-box">
+                    <strong>Component:</strong> PatternExplorerWithFilterDrawer<br>
+                    <strong>Features:</strong> Inline filters (like index.html)
+                </div>
+            </div>
+            
+            <!-- Main Content Area -->
+            <div class="main-content">
+                <h2>Main Content Area</h2>
+                <div class="stats" id="stats">
+                    <strong>Total files:</strong> <span id="total-count">0</span> | 
+                    <strong>Filtered:</strong> <span id="filtered-count">0</span>
+                </div>
+                <p style="color: #666; font-size: 12px; margin-top: 16px;">
+                    Filters are displayed inline above the file list, matching the style from index.html.
+                </p>
+                <div style="margin-top: 20px; padding: 12px; background: #f9f9f9; border-radius: 2px;">
+                    <h3 style="font-size: 13px; margin-bottom: 8px;">Try it:</h3>
+                    <ul style="font-size: 11px; color: #666; margin-left: 20px;">
+                        <li>Use the search box to filter files by name</li>
+                        <li>Adjust the sliders to filter by metadata ranges</li>
+                        <li>Click RESET to clear all filters</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Load dependencies -->
+    <script src="../../modules/filters.js"></script>
+    <script src="../base/DualSlider.js"></script>
+    <script src="../base/FilterPanel.js"></script>
+    <script src="../base/PatternExplorer.js"></script>
+    <script src="../variants/PatternExplorerWithFilterDrawer.js"></script>
+    
+    <script>
+        // Sample files
+        const sampleFiles = [
+            { name: 'A_100_1.mp3', path: 'audio_files/A_100_1.mp3' },
+            { name: 'A_100_2.mp3', path: 'audio_files/A_100_2.mp3' },
+            { name: 'A_110_1.mp3', path: 'audio_files/A_110_1.mp3' },
+            { name: 'B_200_1.mp3', path: 'audio_files/B_200_1.mp3' },
+            { name: 'B_200_2.mp3', path: 'audio_files/B_200_2.mp3' },
+            { name: 'B_210_1.mp3', path: 'audio_files/B_210_1.mp3' },
+            { name: 'C_300_1.mp3', path: 'audio_files/C_300_1.mp3' },
+            { name: 'C_300_2.mp3', path: 'audio_files/C_300_2.mp3' },
+            { name: 'D_400_1.mp3', path: 'audio_files/D_400_1.mp3' }
+        ];
+        
+        // Sample metadata
+        const sampleMetadata = {
+            'A_100_1.mp3': {
+                rms_mean: 0.123,
+                duration: 5.5,
+                stereo_balance: 0.0,
+                stereo_movement: 0.10
+            },
+            'A_100_2.mp3': {
+                rms_mean: 0.234,
+                duration: 6.2,
+                stereo_balance: -0.3,
+                stereo_movement: 0.15
+            },
+            'A_110_1.mp3': {
+                rms_mean: 0.345,
+                duration: 4.8,
+                stereo_balance: 0.5,
+                stereo_movement: 0.25
+            },
+            'B_200_1.mp3': {
+                rms_mean: 0.156,
+                duration: 7.1,
+                stereo_balance: -0.2,
+                stereo_movement: 0.12
+            },
+            'B_200_2.mp3': {
+                rms_mean: 0.267,
+                duration: 5.9,
+                stereo_balance: 0.3,
+                stereo_movement: 0.18
+            },
+            'B_210_1.mp3': {
+                rms_mean: 0.189,
+                duration: 6.5,
+                stereo_balance: 0.1,
+                stereo_movement: 0.20
+            },
+            'C_300_1.mp3': {
+                rms_mean: 0.298,
+                duration: 5.2,
+                stereo_balance: -0.4,
+                stereo_movement: 0.22
+            },
+            'C_300_2.mp3': {
+                rms_mean: 0.312,
+                duration: 6.8,
+                stereo_balance: 0.2,
+                stereo_movement: 0.19
+            },
+            'D_400_1.mp3': {
+                rms_mean: 0.201,
+                duration: 5.7,
+                stereo_balance: 0.0,
+                stereo_movement: 0.16
+            }
+        };
+        
+        // Create PatternExplorerWithFilterDrawer instance
+        const explorer = new PatternExplorerWithFilterDrawer({
+            containerId: 'fileList',
+            filterContainerId: 'filters',
+            files: sampleFiles,
+            metadata: sampleMetadata,
+            drawerWidth: 350,
+            drawerPosition: 'right',
+            searchPlaceholder: 'Search patterns...',
+            onFileClick: (file) => {
+                console.log('File clicked:', file.name);
+            },
+            onFilePreview: (file, isPlaying) => {
+                console.log('File preview:', file.name, isPlaying ? 'playing' : 'paused');
+                if (isPlaying) {
+                    explorer.setPlayingFile(file.path, true);
+                } else {
+                    explorer.setPlayingFile(file.path, false);
+                }
+            },
+            onFilterChange: (filters, filteredFiles) => {
+                // Update stats
+                document.getElementById('total-count').textContent = sampleFiles.length;
+                document.getElementById('filtered-count').textContent = filteredFiles.length;
+                console.log('Filters changed:', filters);
+                console.log('Filtered files:', filteredFiles.length, 'of', sampleFiles.length);
+            }
+        });
+        
+        // Update initial stats
+        document.getElementById('total-count').textContent = sampleFiles.length;
+        document.getElementById('filtered-count').textContent = sampleFiles.length;
+        
+        console.log('✅ PatternExplorerWithFilterDrawer example initialized');
+        console.log('💡 Filters are displayed inline above the file list');
+    </script>
+</body>
+</html>

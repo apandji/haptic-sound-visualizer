@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Filters Module Example</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Courier New', monospace;
+            background: #fafafa;
+            color: #333;
+            padding: 40px;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 40px;
+        }
+        
+        .section {
+            background: #fff;
+            padding: 20px;
+            border-radius: 4px;
+            border: 1px solid #e0e0e0;
+            margin-bottom: 24px;
+        }
+        
+        .section h2 {
+            font-size: 16px;
+            margin-bottom: 16px;
+            color: #333;
+        }
+        
+        .test-case {
+            margin-bottom: 20px;
+            padding: 12px;
+            background: #f9f9f9;
+            border-radius: 2px;
+        }
+        
+        .test-case h3 {
+            font-size: 13px;
+            margin-bottom: 8px;
+            color: #555;
+        }
+        
+        .input-group {
+            margin-bottom: 8px;
+        }
+        
+        .input-group label {
+            display: inline-block;
+            width: 120px;
+            font-weight: 500;
+        }
+        
+        .input-group input {
+            padding: 4px 8px;
+            border: 1px solid #ddd;
+            border-radius: 2px;
+            font-family: inherit;
+            font-size: 12px;
+        }
+        
+        .results {
+            margin-top: 12px;
+            padding: 12px;
+            background: #fff;
+            border: 1px solid #e0e0e0;
+            border-radius: 2px;
+        }
+        
+        .results h4 {
+            font-size: 12px;
+            margin-bottom: 8px;
+            color: #666;
+        }
+        
+        .file-list {
+            list-style: none;
+            font-size: 11px;
+        }
+        
+        .file-list li {
+            padding: 4px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .file-list li:last-child {
+            border-bottom: none;
+        }
+        
+        .count {
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .pass {
+            color: #4caf50;
+        }
+        
+        .fail {
+            color: #f44336;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Filters Module Test</h1>
+        <p class="subtitle">Testing pure filter functions with sample data</p>
+        
+        <!-- Test Case 1: Search Filter -->
+        <div class="section">
+            <h2>Test 1: Search Filter</h2>
+            <div class="test-case">
+                <h3>Filter by filename search</h3>
+                <div class="input-group">
+                    <label>Search Query:</label>
+                    <input type="text" id="searchInput" placeholder="Enter search term..." value="A_100">
+                </div>
+                <div class="results" id="searchResults"></div>
+            </div>
+        </div>
+        
+        <!-- Test Case 2: Metadata Range Filters -->
+        <div class="section">
+            <h2>Test 2: Metadata Range Filters</h2>
+            <div class="test-case">
+                <h3>Filter by RMS range</h3>
+                <div class="input-group">
+                    <label>RMS Min:</label>
+                    <input type="number" id="rmsMin" step="0.01" value="0.1">
+                </div>
+                <div class="input-group">
+                    <label>RMS Max:</label>
+                    <input type="number" id="rmsMax" step="0.01" value="0.3">
+                </div>
+                <div class="results" id="rmsResults"></div>
+            </div>
+            
+            <div class="test-case">
+                <h3>Filter by Duration range</h3>
+                <div class="input-group">
+                    <label>Duration Min:</label>
+                    <input type="number" id="durationMin" step="0.1" value="5.0">
+                </div>
+                <div class="input-group">
+                    <label>Duration Max:</label>
+                    <input type="number" id="durationMax" step="0.1" value="6.0">
+                </div>
+                <div class="results" id="durationResults"></div>
+            </div>
+        </div>
+        
+        <!-- Test Case 3: Combined Filters -->
+        <div class="section">
+            <h2>Test 3: Combined Filters</h2>
+            <div class="test-case">
+                <h3>Search + Multiple Metadata Filters</h3>
+                <div class="input-group">
+                    <label>Search:</label>
+                    <input type="text" id="combinedSearch" placeholder="Search..." value="">
+                </div>
+                <div class="input-group">
+                    <label>RMS Range:</label>
+                    <input type="number" id="combinedRmsMin" step="0.01" value="0.0" style="width: 80px;">
+                    <span> - </span>
+                    <input type="number" id="combinedRmsMax" step="0.01" value="1.0" style="width: 80px;">
+                </div>
+                <div class="input-group">
+                    <label>Duration Range:</label>
+                    <input type="number" id="combinedDurationMin" step="0.1" value="0.0" style="width: 80px;">
+                    <span> - </span>
+                    <input type="number" id="combinedDurationMax" step="0.1" value="10.0" style="width: 80px;">
+                </div>
+                <div class="results" id="combinedResults"></div>
+            </div>
+        </div>
+        
+        <!-- Test Case 4: Calculate Ranges -->
+        <div class="section">
+            <h2>Test 4: Calculate Ranges</h2>
+            <div class="test-case">
+                <h3>Auto-calculate min/max from metadata</h3>
+                <div class="results" id="rangesResults"></div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="../filters.js"></script>
+    <script>
+        // Sample files
+        const sampleFiles = [
+            { name: 'A_100_1.mp3', path: 'audio_files/A_100_1.mp3' },
+            { name: 'A_100_2.mp3', path: 'audio_files/A_100_2.mp3' },
+            { name: 'A_110_1.mp3', path: 'audio_files/A_110_1.mp3' },
+            { name: 'B_200_1.mp3', path: 'audio_files/B_200_1.mp3' },
+            { name: 'B_200_2.mp3', path: 'audio_files/B_200_2.mp3' },
+            { name: 'C_300_1.mp3', path: 'audio_files/C_300_1.mp3' }
+        ];
+        
+        // Sample metadata
+        const sampleMetadata = {
+            'A_100_1.mp3': {
+                rms_mean: 0.123,
+                duration: 5.5,
+                stereo_balance: 0.0,
+                stereo_movement: 0.10
+            },
+            'A_100_2.mp3': {
+                rms_mean: 0.234,
+                duration: 6.2,
+                stereo_balance: -0.3,
+                stereo_movement: 0.15
+            },
+            'A_110_1.mp3': {
+                rms_mean: 0.345,
+                duration: 4.8,
+                stereo_balance: 0.5,
+                stereo_movement: 0.25
+            },
+            'B_200_1.mp3': {
+                rms_mean: 0.156,
+                duration: 7.1,
+                stereo_balance: -0.2,
+                stereo_movement: 0.12
+            },
+            'B_200_2.mp3': {
+                rms_mean: 0.267,
+                duration: 5.9,
+                stereo_balance: 0.3,
+                stereo_movement: 0.18
+            },
+            'C_300_1.mp3': {
+                rms_mean: 0.189,
+                duration: 6.5,
+                stereo_balance: 0.1,
+                stereo_movement: 0.20
+            }
+        };
+        
+        // Helper function to render results
+        function renderResults(containerId, filteredFiles, allFiles) {
+            const container = document.getElementById(containerId);
+            const count = filteredFiles.length;
+            const total = allFiles.length;
+            
+            container.innerHTML = `
+                <h4>Results: <span class="count">${count} / ${total}</span> files</h4>
+                <ul class="file-list">
+                    ${filteredFiles.map(file => `<li>${file.name}</li>`).join('')}
+                </ul>
+            `;
+        }
+        
+        // Test 1: Search Filter
+        function testSearchFilter() {
+            const searchQuery = document.getElementById('searchInput').value;
+            const filtered = Filters.filterBySearch(sampleFiles, searchQuery);
+            renderResults('searchResults', filtered, sampleFiles);
+        }
+        
+        // Test 2: RMS Filter
+        function testRmsFilter() {
+            const min = parseFloat(document.getElementById('rmsMin').value);
+            const max = parseFloat(document.getElementById('rmsMax').value);
+            const filters = { rms: [min, max] };
+            const filtered = Filters.applyFilters(sampleFiles, filters, sampleMetadata);
+            renderResults('rmsResults', filtered, sampleFiles);
+        }
+        
+        // Test 2: Duration Filter
+        function testDurationFilter() {
+            const min = parseFloat(document.getElementById('durationMin').value);
+            const max = parseFloat(document.getElementById('durationMax').value);
+            const filters = { duration: [min, max] };
+            const filtered = Filters.applyFilters(sampleFiles, filters, sampleMetadata);
+            renderResults('durationResults', filtered, sampleFiles);
+        }
+        
+        // Test 3: Combined Filters
+        function testCombinedFilters() {
+            const search = document.getElementById('combinedSearch').value;
+            const rmsMin = parseFloat(document.getElementById('combinedRmsMin').value);
+            const rmsMax = parseFloat(document.getElementById('combinedRmsMax').value);
+            const durationMin = parseFloat(document.getElementById('combinedDurationMin').value);
+            const durationMax = parseFloat(document.getElementById('combinedDurationMax').value);
+            
+            const filters = {
+                search: search,
+                rms: [rmsMin, rmsMax],
+                duration: [durationMin, durationMax]
+            };
+            
+            const filtered = Filters.applyFilters(sampleFiles, filters, sampleMetadata);
+            renderResults('combinedResults', filtered, sampleFiles);
+        }
+        
+        // Test 4: Calculate Ranges
+        function testCalculateRanges() {
+            const ranges = Filters.calculateRanges(sampleMetadata);
+            const container = document.getElementById('rangesResults');
+            
+            container.innerHTML = `
+                <h4>Calculated Ranges from Metadata</h4>
+                <pre style="font-size: 11px; margin-top: 8px; padding: 8px; background: #f5f5f5; border-radius: 2px; overflow-x: auto;">
+RMS:        ${ranges.rms.min.toFixed(3)} - ${ranges.rms.max.toFixed(3)}
+Duration:   ${ranges.duration.min.toFixed(1)}s - ${ranges.duration.max.toFixed(1)}s
+Balance:    ${ranges.balance.min.toFixed(2)} - ${ranges.balance.max.toFixed(2)}
+Movement:   ${ranges.movement.min.toFixed(2)} - ${ranges.movement.max.toFixed(2)}
+                </pre>
+            `;
+        }
+        
+        // Setup event listeners
+        document.getElementById('searchInput').addEventListener('input', testSearchFilter);
+        document.getElementById('rmsMin').addEventListener('input', testRmsFilter);
+        document.getElementById('rmsMax').addEventListener('input', testRmsFilter);
+        document.getElementById('durationMin').addEventListener('input', testDurationFilter);
+        document.getElementById('durationMax').addEventListener('input', testDurationFilter);
+        
+        document.getElementById('combinedSearch').addEventListener('input', testCombinedFilters);
+        document.getElementById('combinedRmsMin').addEventListener('input', testCombinedFilters);
+        document.getElementById('combinedRmsMax').addEventListener('input', testCombinedFilters);
+        document.getElementById('combinedDurationMin').addEventListener('input', testCombinedFilters);
+        document.getElementById('combinedDurationMax').addEventListener('input', testCombinedFilters);
+        
+        // Run initial tests
+        testSearchFilter();
+        testRmsFilter();
+        testDurationFilter();
+        testCombinedFilters();
+        testCalculateRanges();
+        
+        console.log('✅ Filters module test page initialized');
+    </script>
+</body>
+</html>
