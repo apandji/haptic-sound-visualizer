@@ -4,24 +4,6 @@ Base components are standalone, reusable UI components that can be used independ
 
 ## Components
 
-### FilterDrawer
-**File**: `FilterDrawer.js`  
-**CSS**: `../../css/components/base/filter-drawer.css`  
-**Purpose**: Slide-out panel component that overlays content area  
-**Features**: Backdrop overlay, slide animations, click-outside-to-close, escape key support  
-**API**:
-```javascript
-new FilterDrawer({
-  containerId: 'filterDrawer',
-  width: 350,
-  position: 'right', // or 'left'
-  backdrop: true,
-  closeOnBackdropClick: true,
-  onOpen: () => {},
-  onClose: () => {}
-})
-```
-
 ### PatternExplorer
 **File**: `PatternExplorer.js`  
 **CSS**: `../../css/components/base/pattern-explorer.css`  
@@ -39,7 +21,7 @@ new PatternExplorer({
 })
 ```
 
-**Example**: `../examples/pattern-explorer.example.html`
+**Example**: `../../dev/components-examples/pattern-explorer.example.html`
 
 ---
 
@@ -71,7 +53,7 @@ slider.reset()            // Reset to full range
 slider.destroy()          // Cleanup
 ```
 
-**Example**: `../examples/dual-slider.example.html`
+**Example**: `../../dev/components-examples/dual-slider.example.html`
 
 ---
 
@@ -100,7 +82,7 @@ filterPanel.updateMetadata(metadata) // Update metadata and recalculate ranges
 filterPanel.destroy()            // Cleanup
 ```
 
-**Example**: `../examples/filter-panel.example.html`
+**Example**: `../../dev/components-examples/filter-panel.example.html`
 
 ---
 
@@ -108,6 +90,6 @@ filterPanel.destroy()            // Cleanup
 
 1. Create component file: `ComponentName.js`
 2. Create CSS file: `../../css/components/base/component-name.css`
-3. Create example: `../examples/component-name.example.html`
+3. Create example: `../../dev/components-examples/component-name.example.html`
 4. Document in this README
 5. Follow the component template (see COMPONENT_ORGANIZATION.md)

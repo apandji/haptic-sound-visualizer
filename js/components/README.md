@@ -8,17 +8,18 @@ This directory contains reusable UI components organized into base components, v
 components/
 ├── base/              # Standalone, reusable components
 ├── variants/          # Composed components (combine base components)
-├── examples/          # Example/test pages for components
 └── README.md          # This file
 ```
+
+**Note**: Example/test files are located in `/dev/components-examples/` and `/dev/modules-examples/`
 
 ## Base Components (`base/`)
 
 Standalone UI components that can be used independently.
 
-- **PatternExplorer** - File list with tooltips and play buttons
-- **DualSlider** - Dual-handle range slider (planned)
-- **FilterPanel** - Search + filter sliders (planned)
+- **PatternExplorer** ✅ - File list with tooltips and play buttons
+- **DualSlider** ✅ - Dual-handle range slider
+- **FilterPanel** ✅ - Search + filter sliders
 - **Visualizer** - p5.js audio visualization (planned)
 - **AudioControls** - Playback controls (planned)
 
@@ -28,19 +29,11 @@ See `base/README.md` for details.
 
 Composed components that combine multiple base components.
 
-- **PatternExplorerWithFilters** - PatternExplorer + FilterPanel (planned)
+- **PatternExplorerWithFilters** ✅ - PatternExplorer + FilterPanel (inline)
 - **PatternExplorerSelectable** - PatternExplorer + SelectionManager (planned)
 - **PatternExplorerTestMode** - Full featured for Test page (planned)
 
 See `variants/README.md` for details.
-
-## Examples (`examples/`)
-
-Standalone HTML pages for testing components in isolation.
-
-- `pattern-explorer.example.html` - Test PatternExplorer component
-- `dual-slider.example.html` - Test DualSlider component (planned)
-- `filter-panel.example.html` - Test FilterPanel component (planned)
 
 ## Usage
 
@@ -82,7 +75,7 @@ const explorer = new PatternExplorerWithFilters({
 
 1. **Base Component**: Add to `base/` directory
 2. **Variant**: Add to `variants/` directory
-3. **Example**: Add to `examples/` directory
+3. **Example**: Add to `dev/components-examples/` directory
 4. **CSS**: Add to `css/components/base/` or `css/components/variants/`
 5. **Document**: Update relevant README files
 

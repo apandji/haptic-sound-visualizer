@@ -48,6 +48,11 @@ class PatternExplorerWithFilters {
         this.onFileHover = options.onFileHover || null;
         this.onFilePreview = options.onFilePreview || null;
         this.onPlayStateChange = options.onPlayStateChange || null;
+        
+        // Bound event handlers (for proper cleanup)
+        this.boundHandlers = {
+            searchInput: null
+        };
         this.onFilterChange = options.onFilterChange || null; // Optional: called when filters change
         
         // State
@@ -268,7 +273,7 @@ class PatternExplorerWithFilters {
             
             // Handle search input
             this.searchQuery = '';
-            this.searchInput.addEventListener('input', (e) => {
+            this.boundHandlers.searchInput = (e) => {
                 this.searchQuery = e.target.value.trim().toLowerCase();
                 // Trigger filter change
                 if (this.filterPanel) {
@@ -276,7 +281,8 @@ class PatternExplorerWithFilters {
                     filters.search = this.searchQuery;
                     this.handleFilterChange(filters);
                 }
-            });
+            };
+            this.searchInput.addEventListener('input', this.boundHandlers.searchInput);
             
             searchContainer.appendChild(this.searchInput);
             
@@ -430,6 +436,12 @@ class PatternExplorerWithFilters {
      * Destroy components and cleanup
      */
     destroy() {
+        // Remove search input event listener
+        if (this.searchInput && this.boundHandlers.searchInput) {
+            this.searchInput.removeEventListener('input', this.boundHandlers.searchInput);
+        }
+        
+        // Destroy FilterPanel
         if (this.filterPanel && typeof this.filterPanel.destroy === 'function') {
             this.filterPanel.destroy();
         }
@@ -439,7 +451,14 @@ class PatternExplorerWithFilters {
             this.patternExplorer.container.innerHTML = '';
         }
         
+        // Clear bound handlers references
+        this.boundHandlers = {
+            searchInput: null
+        };
+        
+        // Clear references
         this.filterPanel = null;
         this.patternExplorer = null;
+        this.searchInput = null;
     }
 }

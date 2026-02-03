@@ -11,7 +11,7 @@ Variants are composed components that combine multiple base components to create
   - Applies filters when FilterPanel changes
   - Updates PatternExplorer file list automatically
   - Single API for both components
-  - **Example**: `js/components/examples/pattern-explorer-with-filters.example.html`
+  - **Example**: `dev/components-examples/pattern-explorer-with-filters.example.html`
   - **API**:
     ```javascript
     new PatternExplorerWithFilters({
@@ -21,28 +21,6 @@ Variants are composed components that combine multiple base components to create
       metadata: metadata,
       compact: true,
       collapsible: true,
-      onFileClick: (file) => {},
-      onFilePreview: (file, isPlaying) => {},
-      onFilterChange: (filters, filteredFiles) => {}
-    })
-    ```
-
-- **PatternExplorerWithFilterDrawer** ✅ - PatternExplorer + FilterDrawer + FilterPanel (slide-out)
-  - Filter icon button in PatternExplorer header
-  - Slide-out drawer panel from the right
-  - Overlays main content area
-  - Backdrop overlay with click-to-close
-  - Escape key to close
-  - **Example**: `js/components/examples/pattern-explorer-with-filter-drawer.example.html`
-  - **API**:
-    ```javascript
-    new PatternExplorerWithFilterDrawer({
-      containerId: 'fileList',
-      drawerId: 'filterDrawer',
-      files: allFiles,
-      metadata: metadata,
-      drawerWidth: 350,
-      drawerPosition: 'right',
       onFileClick: (file) => {},
       onFilePreview: (file, isPlaying) => {},
       onFilterChange: (filters, filteredFiles) => {}

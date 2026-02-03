@@ -35,13 +35,14 @@ class FilterPanel {
         this.sliders = {}; // Store DualSlider instances
         this.isCollapsed = this.defaultCollapsed;
         
-        // Load saved state from localStorage if collapsible
-        if (this.collapsible) {
-            const savedState = localStorage.getItem(`filterPanel_${this.containerId}_collapsed`);
-            if (savedState !== null) {
-                this.isCollapsed = savedState === 'true';
-            }
-        }
+        // Bound event handlers (for proper cleanup)
+        this.boundHandlers = {
+            toggleBtnClick: null,
+            searchInput: null,
+            resetBtnClick: null
+        };
+        
+        // Note: We don't load saved state from localStorage - filters always start collapsed on hard refresh
         
         // Initialize
         this.init();
@@ -276,31 +277,38 @@ class FilterPanel {
      * Setup event listeners
      */
     setupEventListeners() {
+        // Create bound handlers and store references for cleanup
+        this.boundHandlers.toggleBtnClick = () => {
+            this.toggle();
+        };
+        
+        this.boundHandlers.searchInput = (e) => {
+            this.searchQuery = e.target.value.trim().toLowerCase();
+            this.handleFilterChange();
+        };
+        
+        this.boundHandlers.resetBtnClick = () => {
+            this.reset();
+        };
+        
         // Toggle button (if collapsible)
         if (this.collapsible) {
             const toggleBtn = document.getElementById(`${this.containerId}_toggle`);
             if (toggleBtn) {
-                toggleBtn.addEventListener('click', () => {
-                    this.toggle();
-                });
+                toggleBtn.addEventListener('click', this.boundHandlers.toggleBtnClick);
             }
         }
         
         // Search input (only if included in FilterPanel)
         const searchInput = document.getElementById(`${this.containerId}_search`);
         if (searchInput) {
-            searchInput.addEventListener('input', (e) => {
-                this.searchQuery = e.target.value.trim().toLowerCase();
-                this.handleFilterChange();
-            });
+            searchInput.addEventListener('input', this.boundHandlers.searchInput);
         }
         
         // Reset button
         const resetBtn = document.getElementById(`${this.containerId}_reset`);
         if (resetBtn) {
-            resetBtn.addEventListener('click', () => {
-                this.reset();
-            });
+            resetBtn.addEventListener('click', this.boundHandlers.resetBtnClick);
         }
     }
     
@@ -500,15 +508,43 @@ class FilterPanel {
      * Cleanup
      */
     destroy() {
+        // Remove event listeners
+        if (this.collapsible) {
+            const toggleBtn = document.getElementById(`${this.containerId}_toggle`);
+            if (toggleBtn && this.boundHandlers.toggleBtnClick) {
+                toggleBtn.removeEventListener('click', this.boundHandlers.toggleBtnClick);
+            }
+        }
+        
+        const searchInput = document.getElementById(`${this.containerId}_search`);
+        if (searchInput && this.boundHandlers.searchInput) {
+            searchInput.removeEventListener('input', this.boundHandlers.searchInput);
+        }
+        
+        const resetBtn = document.getElementById(`${this.containerId}_reset`);
+        if (resetBtn && this.boundHandlers.resetBtnClick) {
+            resetBtn.removeEventListener('click', this.boundHandlers.resetBtnClick);
+        }
+        
         // Destroy all sliders
         Object.values(this.sliders).forEach(slider => {
             slider.destroy();
         });
         
+        // Clear bound handlers references
+        this.boundHandlers = {
+            toggleBtnClick: null,
+            searchInput: null,
+            resetBtnClick: null
+        };
+        
         // Clear container
         if (this.container) {
             this.container.innerHTML = '';
         }
+        
+        // Clear references
+        this.sliders = {};
     }
 }
 

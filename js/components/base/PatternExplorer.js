@@ -20,6 +20,14 @@ class PatternExplorer {
         this.showFilterButton = options.showFilterButton || false; // Show filter icon button
         this.onFilterButtonClick = options.onFilterButtonClick || null; // Called when filter button clicked
         
+        // Bound event handlers (for proper cleanup)
+        this.boundHandlers = {
+            filterBtnClick: null
+        };
+        
+        // DOM references
+        this.filterButton = null;
+        
         // Create tooltip element (shared across all file items)
         this.tooltip = this.createTooltip();
         
@@ -71,21 +79,25 @@ class PatternExplorer {
             
             // Add filter button if enabled
             if (this.showFilterButton) {
-                const filterBtn = document.createElement('button');
-                filterBtn.className = 'panel-header__filter-btn';
-                filterBtn.setAttribute('aria-label', 'Open filters');
-                filterBtn.title = 'Filters';
-                filterBtn.innerHTML = `
+                this.filterButton = document.createElement('button');
+                this.filterButton.className = 'panel-header__filter-btn';
+                this.filterButton.setAttribute('aria-label', 'Open filters');
+                this.filterButton.title = 'Filters';
+                this.filterButton.innerHTML = `
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" width="16" height="16">
                         <path d="M3 3a1 1 0 011-1h12a1 1 0 011 1v2.586a1 1 0 01-.293.707l-4.414 4.414a1 1 0 00-.293.707V15a1 1 0 01-1 1H7a1 1 0 01-1-1v-3.586a1 1 0 00-.293-.707L1.293 6.293A1 1 0 011 5.586V3z"/>
                     </svg>
                 `;
-                filterBtn.addEventListener('click', () => {
+                
+                // Create bound handler and store reference
+                this.boundHandlers.filterBtnClick = () => {
                     if (this.onFilterButtonClick) {
                         this.onFilterButtonClick();
                     }
-                });
-                header.appendChild(filterBtn);
+                };
+                
+                this.filterButton.addEventListener('click', this.boundHandlers.filterBtnClick);
+                header.appendChild(this.filterButton);
             }
             
             // Insert before the file list container
@@ -477,11 +489,26 @@ class PatternExplorer {
      * Cleanup
      */
     destroy() {
+        // Remove filter button event listener
+        if (this.filterButton && this.boundHandlers.filterBtnClick) {
+            this.filterButton.removeEventListener('click', this.boundHandlers.filterBtnClick);
+        }
+        
+        // Clear bound handlers references
+        this.boundHandlers = {
+            filterBtnClick: null
+        };
+        
         this.hideTooltip();
         if (this.container) {
             this.container.innerHTML = '';
         }
+        
+        // Clear references
+        this.filterButton = null;
+        
         // Note: We don't remove the tooltip element as it might be shared
+        // Note: File item listeners are automatically removed when container.innerHTML is cleared
     }
 }
 

@@ -12,7 +12,7 @@ Modules contain non-UI logic, state management, and utilities that can be used b
   - `filterByMetadata(files, filters, metadata)` - Filter by metadata ranges
   - `filterByRange(value, range, defaultMin, defaultMax)` - Check if value is in range
   - `calculateRanges(metadata)` - Calculate min/max ranges from metadata
-  - **Example**: `js/modules/examples/filters.example.html`
+  - **Example**: `dev/modules-examples/filters.example.html`
 
 ### Planned Modules
 

@@ -39,6 +39,19 @@ class DualSlider {
         this.handleMax = null;
         this.display = null;
         
+        // Bound event handlers (for proper cleanup)
+        this.boundHandlers = {
+            handleMinMouseDown: null,
+            handleMaxMouseDown: null,
+            handleMinTouchStart: null,
+            handleMaxTouchStart: null,
+            documentMouseMove: null,
+            documentMouseUp: null,
+            documentTouchMove: null,
+            documentTouchEnd: null,
+            trackClick: null
+        };
+        
         // Initialize
         this.init();
     }
@@ -91,22 +104,33 @@ class DualSlider {
      * Setup event listeners
      */
     setupEventListeners() {
+        // Create bound handlers and store references for cleanup
+        this.boundHandlers.handleMinMouseDown = (e) => this.handleMouseDown(e, this.handleMin);
+        this.boundHandlers.handleMaxMouseDown = (e) => this.handleMouseDown(e, this.handleMax);
+        this.boundHandlers.handleMinTouchStart = (e) => this.handleTouchStart(e, this.handleMin);
+        this.boundHandlers.handleMaxTouchStart = (e) => this.handleTouchStart(e, this.handleMax);
+        this.boundHandlers.documentMouseMove = (e) => this.handleMouseMove(e);
+        this.boundHandlers.documentMouseUp = () => this.handleMouseUp();
+        this.boundHandlers.documentTouchMove = (e) => this.handleTouchMove(e);
+        this.boundHandlers.documentTouchEnd = () => this.handleTouchEnd();
+        this.boundHandlers.trackClick = (e) => this.handleTrackClick(e);
+        
         // Handle mouse down on handles
-        this.handleMin.addEventListener('mousedown', (e) => this.handleMouseDown(e, this.handleMin));
-        this.handleMax.addEventListener('mousedown', (e) => this.handleMouseDown(e, this.handleMax));
+        this.handleMin.addEventListener('mousedown', this.boundHandlers.handleMinMouseDown);
+        this.handleMax.addEventListener('mousedown', this.boundHandlers.handleMaxMouseDown);
         
         // Handle mouse move and up on document (for dragging)
-        document.addEventListener('mousemove', (e) => this.handleMouseMove(e));
-        document.addEventListener('mouseup', () => this.handleMouseUp());
+        document.addEventListener('mousemove', this.boundHandlers.documentMouseMove);
+        document.addEventListener('mouseup', this.boundHandlers.documentMouseUp);
         
         // Handle touch events
-        this.handleMin.addEventListener('touchstart', (e) => this.handleTouchStart(e, this.handleMin));
-        this.handleMax.addEventListener('touchstart', (e) => this.handleTouchStart(e, this.handleMax));
-        document.addEventListener('touchmove', (e) => this.handleTouchMove(e));
-        document.addEventListener('touchend', () => this.handleTouchEnd());
+        this.handleMin.addEventListener('touchstart', this.boundHandlers.handleMinTouchStart);
+        this.handleMax.addEventListener('touchstart', this.boundHandlers.handleMaxTouchStart);
+        document.addEventListener('touchmove', this.boundHandlers.documentTouchMove);
+        document.addEventListener('touchend', this.boundHandlers.documentTouchEnd);
         
         // Allow clicking on track to move nearest handle
-        this.track.addEventListener('click', (e) => this.handleTrackClick(e));
+        this.track.addEventListener('click', this.boundHandlers.trackClick);
     }
     
     /**
@@ -308,11 +332,48 @@ class DualSlider {
      * Cleanup
      */
     destroy() {
-        // Remove event listeners
-        if (this.handleMin) {
-            this.handleMin.removeEventListener('mousedown', this.handleMouseDown);
-            this.handleMax.removeEventListener('mousedown', this.handleMouseDown);
+        // Remove handle event listeners
+        if (this.handleMin && this.boundHandlers.handleMinMouseDown) {
+            this.handleMin.removeEventListener('mousedown', this.boundHandlers.handleMinMouseDown);
+            this.handleMin.removeEventListener('touchstart', this.boundHandlers.handleMinTouchStart);
         }
+        
+        if (this.handleMax && this.boundHandlers.handleMaxMouseDown) {
+            this.handleMax.removeEventListener('mousedown', this.boundHandlers.handleMaxMouseDown);
+            this.handleMax.removeEventListener('touchstart', this.boundHandlers.handleMaxTouchStart);
+        }
+        
+        // Remove document-level event listeners
+        if (this.boundHandlers.documentMouseMove) {
+            document.removeEventListener('mousemove', this.boundHandlers.documentMouseMove);
+        }
+        if (this.boundHandlers.documentMouseUp) {
+            document.removeEventListener('mouseup', this.boundHandlers.documentMouseUp);
+        }
+        if (this.boundHandlers.documentTouchMove) {
+            document.removeEventListener('touchmove', this.boundHandlers.documentTouchMove);
+        }
+        if (this.boundHandlers.documentTouchEnd) {
+            document.removeEventListener('touchend', this.boundHandlers.documentTouchEnd);
+        }
+        
+        // Remove track click listener
+        if (this.track && this.boundHandlers.trackClick) {
+            this.track.removeEventListener('click', this.boundHandlers.trackClick);
+        }
+        
+        // Clear bound handlers references
+        this.boundHandlers = {
+            handleMinMouseDown: null,
+            handleMaxMouseDown: null,
+            handleMinTouchStart: null,
+            handleMaxTouchStart: null,
+            documentMouseMove: null,
+            documentMouseUp: null,
+            documentTouchMove: null,
+            documentTouchEnd: null,
+            trackClick: null
+        };
         
         // Remove display element if created
         if (this.display && this.display.parentElement) {
@@ -323,6 +384,14 @@ class DualSlider {
         if (this.container) {
             this.container.innerHTML = '';
         }
+        
+        // Clear DOM references
+        this.track = null;
+        this.range = null;
+        this.handleMin = null;
+        this.handleMax = null;
+        this.display = null;
+        this.activeHandle = null;
     }
 }
 
