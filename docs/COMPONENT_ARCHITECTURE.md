@@ -38,9 +38,9 @@ Modular, component-based architecture to enable:
 │       └── analyze.js - Analysis page logic
 └── css/
     ├── components/
-    │   ├── pattern-explorer.css
+    │   ├── patternExplorer.css
     │   ├── visualizer.css
-    │   ├── audio-controls.css
+    │   ├── audioControls.css
     │   └── filters.css
     └── styles.css - Base styles
 ```

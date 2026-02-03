@@ -23,4 +23,5 @@
 #p5-container canvas,
 [id*="p5-container"] canvas {
     display: block;
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Courier New', monospace;
 }

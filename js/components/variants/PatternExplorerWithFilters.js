@@ -227,10 +227,74 @@ class PatternExplorerWithFilters {
         if (!header) {
             header = document.createElement('div');
             header.className = 'pattern-explorer-header';
-            header.textContent = 'PATTERN EXPLORER';
+            
+            const headerText = document.createElement('span');
+            headerText.className = 'pattern-explorer-header__text';
+            headerText.textContent = 'PATTERN LIBRARY';
+            header.appendChild(headerText);
+            
+            const headerCount = document.createElement('span');
+            headerCount.className = 'pattern-explorer-header__count';
+            header.appendChild(headerCount);
             
             // Insert at the beginning of sticky wrapper
             this.stickyWrapper.insertBefore(header, this.stickyWrapper.firstChild);
+        } else {
+            // Header exists - ensure it has the count element
+            let headerText = header.querySelector('.pattern-explorer-header__text');
+            let headerCount = header.querySelector('.pattern-explorer-header__count');
+            
+            // If header doesn't have text element, create it
+            if (!headerText) {
+                headerText = document.createElement('span');
+                headerText.className = 'pattern-explorer-header__text';
+                headerText.textContent = 'PATTERN LIBRARY';
+                header.insertBefore(headerText, header.firstChild);
+            }
+            
+            // If header doesn't have count element, create it
+            if (!headerCount) {
+                headerCount = document.createElement('span');
+                headerCount.className = 'pattern-explorer-header__count';
+                header.appendChild(headerCount);
+            }
+        }
+        
+        // Update count
+        this.updatePatternCount();
+    }
+    
+    /**
+     * Update pattern count display
+     */
+    updatePatternCount() {
+        if (!this.stickyWrapper) {
+            // Try to find sticky wrapper if not set
+            if (this.parentContainer) {
+                this.stickyWrapper = this.parentContainer.querySelector('.pattern-explorer-sticky-wrapper');
+            }
+            if (!this.stickyWrapper) return;
+        }
+        
+        const header = this.stickyWrapper.querySelector('.pattern-explorer-header');
+        if (!header) return;
+        
+        let countEl = header.querySelector('.pattern-explorer-header__count');
+        
+        // Create count element if it doesn't exist
+        if (!countEl) {
+            countEl = document.createElement('span');
+            countEl.className = 'pattern-explorer-header__count';
+            header.appendChild(countEl);
+        }
+        
+        // Update count text
+        const count = this.filteredFiles ? this.filteredFiles.length : 0;
+        const total = this.allFiles ? this.allFiles.length : 0;
+        if (count === total) {
+            countEl.textContent = `${count}`;
+        } else {
+            countEl.textContent = `${count} / ${total}`;
         }
     }
     
@@ -348,6 +412,7 @@ class PatternExplorerWithFilters {
         if (this.patternExplorer) {
             this.patternExplorer.render(this.filteredFiles);
         }
+        this.updatePatternCount();
     }
     
     /**
@@ -358,6 +423,7 @@ class PatternExplorerWithFilters {
         // Re-apply current filters
         const currentFilters = this.filterPanel ? this.filterPanel.getFilters() : {};
         this.handleFilterChange(currentFilters);
+        this.updatePatternCount();
     }
     
     /**

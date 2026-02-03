@@ -6,7 +6,7 @@ Base components are standalone, reusable UI components that can be used independ
 
 ### PatternExplorer
 **File**: `PatternExplorer.js`  
-**CSS**: `../../css/components/base/pattern-explorer.css`  
+**CSS**: `../../css/components/base/patternExplorer.css`  
 **Purpose**: Renders a list of audio files with tooltips, play/pause buttons, and click handlers.
 
 **API**:
@@ -27,7 +27,7 @@ new PatternExplorer({
 
 ### DualSlider
 **File**: `DualSlider.js`  
-**CSS**: `../../css/components/base/dual-slider.css`  
+**CSS**: `../../css/components/base/dualSlider.css`  
 **Purpose**: A dual-handle range slider for selecting min/max values.
 
 **API**:
@@ -59,7 +59,7 @@ slider.destroy()          // Cleanup
 
 ### FilterPanel
 **File**: `FilterPanel.js`  
-**CSS**: `../../css/components/base/filter-panel.css`  
+**CSS**: `../../css/components/base/filterPanel.css`  
 **Purpose**: Search box + multiple dual sliders for filtering audio files.
 
 **API**:

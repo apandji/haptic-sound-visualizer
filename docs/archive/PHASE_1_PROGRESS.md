@@ -11,7 +11,7 @@
    - Reset functionality
    - Event callbacks
 
-2. **`css/components/base/dual-slider.css`** ✅
+2. **`css/components/base/dualSlider.css`** ✅
    - Base styles
    - Compact variant
    - Dark theme variant
@@ -68,7 +68,7 @@
    - Filter change callbacks
    - Automatic range calculation from metadata
 
-2. **`css/components/base/filter-panel.css`** ✅
+2. **`css/components/base/filterPanel.css`** ✅
    - Component styles
    - Search input styling
    - Filter group layout

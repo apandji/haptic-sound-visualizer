@@ -7,7 +7,7 @@ Extract filter functionality from `app.js` into a reusable `FilterPanel` compone
 
 ### 1. Create DualSlider Component
 **File**: `js/components/base/DualSlider.js`  
-**CSS**: `css/components/base/dual-slider.css`  
+**CSS**: `css/components/base/dualSlider.css`  
 **Example**: `js/components/examples/dual-slider.example.html`
 
 **Purpose**: Reusable dual-handle range slider component
@@ -184,9 +184,9 @@ js/
 css/
 └── components/
     └── base/
-        ├── pattern-explorer.css          ✅ (exists)
-        ├── dual-slider.css               🆕
-        └── filter-panel.css              🆕
+        ├── patternExplorer.css          ✅ (exists)
+        ├── dualSlider.css               🆕
+        └── filterPanel.css              🆕
 ```
 
 ---

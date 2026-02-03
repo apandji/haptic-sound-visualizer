@@ -149,7 +149,7 @@ visualizer.destroy()               // Cleanup: removes p5.js sketch, clears cont
 
 ### 3. Create AudioControls Component
 **File**: `js/components/base/AudioControls.js`  
-**CSS**: `css/components/base/audio-controls.css`  
+**CSS**: `css/components/base/audioControls.css`  
 **Example**: `dev/components-examples/audio-controls.example.html`
 
 **Purpose**: Control bar with loop toggle, visualization mode selector, and stop button (no play/pause - handled by PatternExplorer)
@@ -273,11 +273,11 @@ js/
 css/
 └── components/
     └── base/
-        ├── pattern-explorer.css          ✅ (Phase 1)
-        ├── dual-slider.css               ✅ (Phase 1)
-        ├── filter-panel.css              ✅ (Phase 1)
+        ├── patternExplorer.css          ✅ (Phase 1)
+        ├── dualSlider.css               ✅ (Phase 1)
+        ├── filterPanel.css              ✅ (Phase 1)
         ├── visualizer.css                🆕
-        └── audio-controls.css             🆕
+        └── audioControls.css             🆕
 ```
 
 ---

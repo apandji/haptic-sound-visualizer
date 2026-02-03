@@ -6,8 +6,8 @@
     top: 0;
     background: #fff !important; /* Ensure solid background */
     z-index: 1000 !important; /* Much higher z-index to prevent files from showing behind */
-    padding: 16px 20px 8px 20px; /* Top padding for header, horizontal padding, bottom padding */
-    margin-bottom: 8px; /* More condensed */
+    padding: var(--spacing-lg) var(--spacing-xl) var(--spacing-sm) var(--spacing-xl); /* Top padding for header, horizontal padding, bottom padding */
+    margin-bottom: var(--spacing-sm); /* More condensed */
     border-bottom: 1px solid #e0e0e0; /* Border separates from file list */
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05); /* Subtle shadow to ensure it's above content */
     flex-shrink: 0; /* Don't shrink - fixed height */
@@ -25,19 +25,34 @@
 
 /* Pattern Explorer Header (inside sticky wrapper, no longer sticky itself) */
 .pattern-explorer-header {
-    font-size: 13px;
-    font-weight: 500;
-    margin-bottom: 16px;
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-medium);
+    margin-bottom: var(--spacing-lg);
     margin-top: 0;
     padding: 0; /* No padding - wrapper handles it */
     color: #000;
     letter-spacing: 0.5px;
     text-transform: uppercase;
+    display: flex;
+    align-items: baseline;
+    gap: var(--spacing-sm);
+}
+
+.pattern-explorer-header__text {
+    /* Main header text */
+}
+
+.pattern-explorer-header__count {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-normal);
+    color: #999;
+    text-transform: none;
+    letter-spacing: 0;
 }
 
 /* Pattern Explorer Search (inside sticky wrapper, no longer sticky itself) */
 .pattern-explorer-search {
-    padding-bottom: 12px;
+    padding-bottom: var(--spacing-md);
     margin-bottom: 0; /* No margin - filters will have border-top */
     /* No border-bottom - border is on wrapper */
 }
@@ -50,14 +65,14 @@ input.pattern-explorer-search-input,
 .pattern-explorer-sticky-wrapper input.pattern-explorer-search-input,
 #filterPanel_search.pattern-explorer-search-input {
     width: 100%;
-    padding: 6px 8px;
+    padding: 6px var(--spacing-sm);
     border: 1px solid #e0e0e0 !important;
     border-top: 1px solid #e0e0e0 !important;
     border-right: 1px solid #e0e0e0 !important;
     border-bottom: 1px solid #e0e0e0 !important;
     border-left: 1px solid #e0e0e0 !important;
     border-radius: 2px;
-    font-size: 13px;
+    font-size: var(--font-size-base);
     font-family: inherit;
     color: #333;
     background: #fff;

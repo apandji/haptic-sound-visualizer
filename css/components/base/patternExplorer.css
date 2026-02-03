@@ -6,7 +6,7 @@
     position: relative;
     z-index: 1 !important; /* Below sticky wrapper */
     background: #fff !important; /* Ensure background */
-    padding: 0 20px; /* Horizontal padding to match sticky wrapper */
+    padding: 0 var(--spacing-xl); /* Horizontal padding to match sticky wrapper */
     margin: 0; /* No margin */
     flex: 1; /* Take remaining space */
     overflow-y: auto; /* Only file list scrolls */
@@ -40,11 +40,11 @@
 }
 
 .panel-header {
-    font-size: 13px;
-    font-weight: 500;
-    margin-top: 16px; /* Add top margin for visual separation */
-    margin-bottom: 16px; /* Reduced from 24px for better spacing */
-    padding: 12px 0; /* Add vertical padding */
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-medium);
+    margin-top: var(--spacing-lg); /* Add top margin for visual separation */
+    margin-bottom: var(--spacing-lg); /* Reduced from 24px for better spacing */
+    padding: var(--spacing-md) 0; /* Add vertical padding */
     color: #999;
     letter-spacing: 0.5px;
     text-transform: uppercase;
@@ -98,13 +98,13 @@
 .file-item {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 10px 12px; /* Increased padding for better touch targets */
+    gap: var(--spacing-sm);
+    padding: 10px var(--spacing-md); /* Increased padding for better touch targets */
     margin: 1px 0; /* Tighter spacing */
     background: transparent;
     border-radius: 4px; /* Slightly more rounded */
     cursor: pointer;
-    font-size: 11px;
+    font-size: var(--font-size-sm);
     color: #666;
     transition: all 0.15s ease;
     position: relative;

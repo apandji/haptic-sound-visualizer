@@ -73,7 +73,7 @@ Create control bar with loop toggle, visualization mode selector, and stop butto
 
 **Files to Create**:
 - `js/components/base/AudioControls.js`
-- `css/components/base/audio-controls.css`
+- `css/components/base/audioControls.css`
 - `dev/components-examples/audio-controls.example.html`
 
 **Requirements**:

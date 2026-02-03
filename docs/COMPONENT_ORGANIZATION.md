@@ -43,9 +43,9 @@ js/
 css/
 ├── components/
 │   ├── base/                         # Base component styles
-│   │   ├── pattern-explorer.css
-│   │   ├── filter-panel.css
-│   │   ├── dual-slider.css
+│   │   ├── patternExplorer.css
+│   │   ├── filterPanel.css
+│   │   ├── dualSlider.css
 │   │   └── visualizer.css
 │   │
 │   └── variants/                     # Variant-specific overrides
@@ -59,7 +59,7 @@ css/
 ### Files
 - **Components**: `PascalCase.js` (e.g., `PatternExplorer.js`)
 - **Modules**: `camelCase.js` (e.g., `selectionManager.js`)
-- **CSS**: `kebab-case.css` (e.g., `pattern-explorer.css`)
+- **CSS**: `camelCase.css` (e.g., `patternExplorer.css`)
 - **Examples**: `component-name.example.html`
 
 ### Classes
@@ -232,7 +232,7 @@ class VariantName {
 
 ### Base Component Styles
 ```css
-/* css/components/base/pattern-explorer.css */
+/* css/components/base/patternExplorer.css */
 
 /* Component root */
 .pattern-explorer {
@@ -349,6 +349,6 @@ class PatternExplorer { }
 | Composed component | `js/components/variants/` | `PatternExplorerWithFilters.js` |
 | Non-UI logic | `js/modules/` | `SelectionManager.js` |
 | Page logic | `js/pages/` | `library.js` |
-| Component CSS | `css/components/base/` | `pattern-explorer.css` |
+| Component CSS | `css/components/base/` | `patternExplorer.css` |
 | Variant CSS | `css/components/variants/` | `pattern-explorer-test-mode.css` |
 | Example/test page | `js/components/examples/` | `pattern-explorer.example.html` |

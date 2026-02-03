@@ -248,9 +248,22 @@ class Visualizer {
                     p.fill(180);
                     p.textAlign(p.CENTER, p.CENTER);
                     p.textSize(12);
+                    // Set monospace font to match UI - use Courier New which is widely available
+                    p.textFont('Courier New');
+                    
                     let statusText = 'Select a file to play';
-                    if (soundFileIsLoaded && !soundFileIsPlaying && !audioPlayerIsPlaying) {
-                        statusText = 'Click play to start visualization';
+                    
+                    // Check if we're in MANUAL TEST mode and baselining phase
+                    const isTestMode = self.audioPlayer && typeof self.audioPlayer.getTestMode === 'function' && self.audioPlayer.getTestMode();
+                    const testPhase = isTestMode && typeof self.audioPlayer.getTestPhase === 'function' ? self.audioPlayer.getTestPhase() : null;
+                    
+                    if (isTestMode && testPhase === 'baseline') {
+                        statusText = 'Baselining...';
+                    } else if (soundFileIsLoaded && !soundFileIsPlaying && !audioPlayerIsPlaying) {
+                        // Don't show "Click play" message during baselining
+                        if (!isTestMode || testPhase !== 'baseline') {
+                            statusText = 'Click play to start visualization';
+                        }
                     } else if (soundFile && !soundFileIsLoaded) {
                         statusText = 'Loading audio...';
                     } else if (soundFileIsLoaded && (soundFileIsPlaying || audioPlayerIsPlaying)) {

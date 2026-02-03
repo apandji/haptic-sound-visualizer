@@ -59,9 +59,11 @@ class AudioControls {
         this.onModeChange = options.onModeChange || null;
         this.onStop = options.onStop || null;
         this.onSeek = options.onSeek || null;
+        this.onPlayPause = options.onPlayPause || null;
 
         // DOM element references
         this.stopBtn = null;
+        this.playPauseBtn = null;
         this.loopOffBtn = null;
         this.loopBtn = null;
         this.loop30sBtn = null;
@@ -71,6 +73,9 @@ class AudioControls {
         this.progressBar = null;
         this.progressFill = null;
         this.progressTime = null;
+        
+        // Play state tracking
+        this.isPlaying = false;
 
         // Animation frame for progress updates
         this.progressAnimationId = null;
@@ -91,12 +96,13 @@ class AudioControls {
         this.container.innerHTML = `
             <div class="audio-controls">
                 <div class="audio-controls__row">
+                    <button class="audio-controls__btn audio-controls__play-pause-btn" title="Play/Pause">PLAY</button>
                     <button class="audio-controls__btn audio-controls__stop-btn" title="Stop">STOP</button>
                     <div class="audio-controls__loop-group">
                         <button class="audio-controls__btn audio-controls__loop-off-btn ${this.loopMode === 'off' ? 'active' : ''}" title="No Loop" data-mode="off">OFF</button>
                         <button class="audio-controls__btn audio-controls__loop-btn ${this.loopMode === 'loop' ? 'active' : ''}" title="Loop Infinitely" data-mode="loop">LOOP</button>
                         <button class="audio-controls__btn audio-controls__loop-30s-btn ${this.loopMode === 'loop30s' ? 'active' : ''}" title="Loop for 30 seconds" data-mode="loop30s">30s</button>
-                        <button class="audio-controls__btn audio-controls__test-btn ${this.loopMode === 'test' ? 'active' : ''}" title="Manual Test: 30s baseline + 30s audio" data-mode="test">TEST</button>
+                        <button class="audio-controls__btn audio-controls__test-btn ${this.loopMode === 'test' ? 'active' : ''}" title="Manual Test: 30s baseline + 30s audio" data-mode="test">MANUAL TEST</button>
                     </div>
                     <div class="audio-controls__phase-indicator" style="display: none;">
                         <span class="audio-controls__phase-label"></span>
@@ -124,6 +130,7 @@ class AudioControls {
 
         // Store references
         this.stopBtn = this.container.querySelector('.audio-controls__stop-btn');
+        this.playPauseBtn = this.container.querySelector('.audio-controls__play-pause-btn');
         this.loopOffBtn = this.container.querySelector('.audio-controls__loop-off-btn');
         this.loopBtn = this.container.querySelector('.audio-controls__loop-btn');
         this.loop30sBtn = this.container.querySelector('.audio-controls__loop-30s-btn');
@@ -146,6 +153,10 @@ class AudioControls {
         // Stop button
         this.boundHandlers.stopClick = () => this.handleStop();
         this.stopBtn.addEventListener('click', this.boundHandlers.stopClick);
+
+        // Play/Pause button
+        this.boundHandlers.playPauseClick = () => this.handlePlayPause();
+        this.playPauseBtn.addEventListener('click', this.boundHandlers.playPauseClick);
 
         // Loop mode buttons
         this.boundHandlers.loopOffClick = () => this.handleLoopModeChange('off');
@@ -176,9 +187,45 @@ class AudioControls {
         if (this.audioPlayer) {
             this.audioPlayer.stop();
         }
+        this.updatePlayPauseState(false);
         this.updateProgress();
         if (this.onStop) {
             this.onStop();
+        }
+    }
+
+    /**
+     * Handle play/pause button click
+     */
+    handlePlayPause() {
+        if (!this.audioPlayer || !this.audioPlayer.isLoaded()) return;
+
+        if (this.audioPlayer.isPlaying()) {
+            this.audioPlayer.pause();
+            if (this.onPlayPause) {
+                this.onPlayPause(false);
+            }
+        } else {
+            // Ensure audio context is started
+            if (this.visualizer && typeof this.visualizer.ensureAudioContextStarted === 'function') {
+                this.visualizer.ensureAudioContextStarted();
+            }
+            this.audioPlayer.play();
+            if (this.onPlayPause) {
+                this.onPlayPause(true);
+            }
+        }
+    }
+
+    /**
+     * Update play/pause button state
+     * @param {boolean} isPlaying - Whether audio is currently playing
+     */
+    updatePlayPauseState(isPlaying) {
+        this.isPlaying = isPlaying;
+        if (this.playPauseBtn) {
+            this.playPauseBtn.textContent = isPlaying ? 'PAUSE' : 'PLAY';
+            this.playPauseBtn.title = isPlaying ? 'Pause' : 'Play';
         }
     }
 
@@ -221,8 +268,12 @@ class AudioControls {
     applyLoopMode() {
         if (!this.audioPlayer) return;
 
+        // Track if we're switching away from test mode (to resume playback)
+        const wasInTestMode = this.audioPlayer.getTestMode();
+        const shouldResumePlayback = wasInTestMode && this.loopMode !== 'test';
+
         // First disable test mode if switching away from it
-        if (this.loopMode !== 'test' && this.audioPlayer.getTestMode()) {
+        if (this.loopMode !== 'test' && wasInTestMode) {
             this.audioPlayer.setTestMode(false);
         }
 
@@ -248,6 +299,15 @@ class AudioControls {
                     this.visualizer.clearPauseState();
                 }
                 break;
+        }
+
+        // Resume playback when switching away from TEST mode
+        if (shouldResumePlayback && this.audioPlayer.isLoaded() && !this.audioPlayer.isPlaying()) {
+            // Ensure audio context is started
+            if (this.visualizer && typeof this.visualizer.ensureAudioContextStarted === 'function') {
+                this.visualizer.ensureAudioContextStarted();
+            }
+            this.audioPlayer.play();
         }
     }
 

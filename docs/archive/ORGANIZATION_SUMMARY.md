@@ -25,7 +25,7 @@ js/
 css/
 └── components/
     ├── base/                          ✅ Created
-    │   └── pattern-explorer.css      ✅ Moved here
+    │   └── patternExplorer.css      ✅ Moved here
     │
     └── variants/                      ✅ Created
 ```
@@ -34,7 +34,7 @@ css/
 
 1. ✅ `js/components/PatternExplorer.js` → `js/components/base/PatternExplorer.js`
 2. ✅ `js/components/PatternExplorer.example.html` → `js/components/examples/pattern-explorer.example.html`
-3. ✅ `css/components/pattern-explorer.css` → `css/components/base/pattern-explorer.css`
+3. ✅ `css/components/pattern-explorer.css` → `css/components/base/patternExplorer.css`
 
 ### Files Updated
 
@@ -86,7 +86,7 @@ css/
 **Base Component**:
 ```html
 <script src="js/components/base/PatternExplorer.js"></script>
-<link rel="stylesheet" href="css/components/base/pattern-explorer.css">
+<link rel="stylesheet" href="css/components/base/patternExplorer.css">
 ```
 
 **Variant Component**:

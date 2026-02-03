@@ -50,7 +50,7 @@ class PatternExplorer {
         if (!header && this.container.parentElement) {
             header = document.createElement('div');
             header.className = 'panel-header';
-            header.textContent = 'PATTERN EXPLORER';
+            header.textContent = 'PATTERN LIBRARY';
             // Insert before the file list container
             this.container.parentElement.insertBefore(header, this.container);
         }
@@ -73,7 +73,7 @@ class PatternExplorer {
             // Create header content wrapper
             const headerContent = document.createElement('div');
             headerContent.className = 'panel-header__content';
-            headerContent.textContent = 'PATTERN EXPLORER';
+            headerContent.textContent = 'PATTERN LIBRARY';
             
             header.appendChild(headerContent);
             
