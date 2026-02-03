@@ -83,15 +83,48 @@
             z-index: 1; /* Below sticky wrapper */
         }
         
-        /* Main Content Area (for future use) */
+        /* Main Content Area */
         .main-content {
             flex: 1;
             background: #fff;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        /* Placeholder when no file selected */
+        .main-content__placeholder {
+            flex: 1;
             display: flex;
             align-items: center;
             justify-content: center;
             color: #999;
             font-size: 12px;
+        }
+        
+        .main-content__placeholder.hidden {
+            display: none;
+        }
+        
+        /* Visualizer container */
+        .main-content__visualizer {
+            display: none;
+            background: #fafafa;
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        
+        .main-content__visualizer.active {
+            display: block;
+        }
+        
+        .main-content__visualizer #p5-container {
+            width: 100%;
+            height: 100%;
         }
     </style>
     
@@ -99,6 +132,7 @@
     <link rel="stylesheet" href="css/components/base/pattern-explorer.css?v=7">
     <link rel="stylesheet" href="css/components/base/filter-panel.css?v=7">
     <link rel="stylesheet" href="css/components/base/dual-slider.css?v=7">
+    <link rel="stylesheet" href="css/components/base/visualizer.css?v=2">
 </head>
 <body>
     <!-- Top Navigation Header -->
@@ -120,23 +154,47 @@
             <div id="fileList">Loading files...</div>
         </div>
         
-        <!-- Main Content Area (placeholder for now) -->
+        <!-- Main Content Area -->
         <div class="main-content">
-            <div>Select a pattern to view details</div>
+            <!-- Placeholder when no file selected -->
+            <div class="main-content__placeholder" id="mainPlaceholder">
+                Select a pattern to view details
+            </div>
+            
+            <!-- Visualizer (shown when file is playing) -->
+            <div class="main-content__visualizer" id="visualizerContainer">
+                <div id="p5-container"></div>
+            </div>
         </div>
     </div>
     
+    <!-- p5.js dependencies (for visualizer) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/p5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/addons/p5.sound.min.js"></script>
+    
     <!-- Component JavaScript -->
     <script src="js/modules/filters.js?v=2"></script>
+    <script src="js/modules/audioPlayer.js?v=2"></script>
     <script src="js/components/base/PatternExplorer.js?v=2"></script>
     <script src="js/components/base/FilterPanel.js?v=2"></script>
     <script src="js/components/base/DualSlider.js?v=2"></script>
+    <script src="js/components/base/Visualizer.js?v=14"></script>
     <script src="js/components/variants/PatternExplorerWithFilters.js?v=2"></script>
     
     <!-- Initialization Script -->
     <script>
         let allFilesList = [];
         let patternMetadata = {};
+        
+        // Audio/Visualization state
+        let visualizer = null;
+        let audioPlayer = null;
+        let patternExplorer = null;
+        let currentFilePath = null;
+        
+        // DOM elements (set after DOM loads)
+        let mainPlaceholder = null;
+        let visualizerContainer = null;
         
         // Load pattern metadata
         async function loadPatternMetadata() {
@@ -231,29 +289,281 @@
             }
         }
         
+        // Initialize Visualizer (called once when first file is played)
+        function initializeVisualizer() {
+            if (visualizer) return; // Already initialized
+            console.log('Visualizer: init started');
+            
+            const container = document.getElementById('p5-container');
+            if (!container) {
+                console.error('p5-container not found!');
+                return;
+            }
+            console.log('Visualizer: container found');
+            
+            // Small delay to ensure container is rendered
+            setTimeout(() => {
+                console.log('Visualizer: timeout fired');
+                if (visualizer) return;
+                
+                console.log('Visualizer: creating instance');
+                visualizer = new Visualizer({
+                    containerId: 'p5-container',
+                    defaultMode: 'waveform',
+                    onReady: (loadSoundFn) => {
+                        console.log('Visualizer: ready');
+                        initializeAudioPlayer(loadSoundFn);
+                    }
+                });
+            }, 100);
+        }
+        
+        // Initialize AudioPlayer (called after Visualizer is ready)
+        function initializeAudioPlayer(loadSoundFn) {
+            if (audioPlayer) return; // Already initialized
+            
+            audioPlayer = new AudioPlayer({
+                loadSoundFn: loadSoundFn,
+                defaultLoop: true,
+                onPlay: () => {
+                    updatePlayState(true);
+                },
+                onPause: () => {
+                    updatePlayState(false);
+                },
+                onStop: () => {
+                    updatePlayState(false);
+                },
+                onEnd: () => {
+                    updatePlayState(false);
+                }
+            });
+            
+            // Set AudioPlayer reference in Visualizer
+            visualizer.setAudioPlayer(audioPlayer);
+            
+            // Wrap onLoad to setup stereo analyzers
+            const originalOnLoad = audioPlayer.onLoad;
+            audioPlayer.onLoad = (soundFile) => {
+                if (originalOnLoad) originalOnLoad(soundFile);
+            };
+            
+            // If there's a pending file to load, load it now
+            if (window._pendingFileToLoad) {
+                const pendingFile = window._pendingFileToLoad;
+                const pendingPath = window._pendingFilePath;  // Original path format
+                const pendingUrl = window._pendingAudioUrl;   // URL with leading slash
+                window._pendingFileToLoad = null;
+                window._pendingFilePath = null;
+                window._pendingAudioUrl = null;
+                
+                // Set currentFilePath (use original path for comparison)
+                currentFilePath = pendingPath;
+                
+                // Ensure audio context is started
+                if (visualizer) {
+                    visualizer.ensureAudioContextStarted();
+                }
+                
+                audioPlayer.loadFile(pendingUrl)
+                    .then(() => {
+                        audioPlayer.play();
+                    })
+                    .catch(error => {
+                        console.error('Error loading pending file:', error);
+                        currentFilePath = null;
+                        hideVisualizer();
+                        if (patternExplorer && patternExplorer.patternExplorer) {
+                            patternExplorer.patternExplorer.setActiveFile(null);
+                        }
+                    });
+            }
+        }
+        
+        // Update play state in PatternExplorer
+        function updatePlayState(isPlaying) {
+            if (patternExplorer && patternExplorer.patternExplorer) {
+                patternExplorer.patternExplorer.setPlayingFile(currentFilePath, isPlaying);
+            }
+        }
+        
+        // Show visualizer, hide placeholder
+        function showVisualizer() {
+            mainPlaceholder.classList.add('hidden');
+            visualizerContainer.classList.add('active');
+        }
+        
+        // Hide visualizer, show placeholder
+        function hideVisualizer() {
+            mainPlaceholder.classList.remove('hidden');
+            visualizerContainer.classList.remove('active');
+        }
+        
+        // Load and play a file
+        function loadAndPlayFile(file) {
+            // Keep original path for PatternExplorer matching
+            const originalPath = file.path || `audio_files/${file.name}`;
+            
+            // URL path for audio loading (with leading slash)
+            let audioUrl = originalPath;
+            if (!audioUrl.startsWith('/')) {
+                audioUrl = '/' + audioUrl;
+            }
+            
+            
+            // Show visualizer FIRST (so container has dimensions for p5.js)
+            showVisualizer();
+            
+            // Set active file in PatternExplorer (use original path format)
+            if (patternExplorer && patternExplorer.patternExplorer) {
+                patternExplorer.patternExplorer.setActiveFile(originalPath);
+            }
+            
+            // If AudioPlayer isn't ready yet, queue this file and initialize
+            if (!audioPlayer) {
+                window._pendingFileToLoad = file;
+                window._pendingFilePath = originalPath;
+                window._pendingAudioUrl = audioUrl;
+                currentFilePath = originalPath;  // Set immediately for comparison
+                initializeVisualizer();
+                return;
+            }
+            
+            // Ensure audio context is started
+            if (visualizer) {
+                visualizer.ensureAudioContextStarted();
+            }
+            
+            // Load and play
+            currentFilePath = originalPath;  // Store original path for comparison
+            audioPlayer.loadFile(audioUrl)   // Use URL path for loading
+                .then(() => {
+                    audioPlayer.play();
+                })
+                .catch(error => {
+                    console.error('Error loading file:', error);
+                    currentFilePath = null;
+                    hideVisualizer();
+                    // Clear active state on error
+                    if (patternExplorer && patternExplorer.patternExplorer) {
+                        patternExplorer.patternExplorer.setActiveFile(null);
+                    }
+                });
+        }
+        
+        // Unload current file (stop and hide visualizer)
+        function unloadCurrentFile() {
+            if (audioPlayer) {
+                audioPlayer.stop();
+            }
+            currentFilePath = null;
+            
+            // Clear pending file if exists
+            window._pendingFileToLoad = null;
+            window._pendingFilePath = null;
+            window._pendingAudioUrl = null;
+            
+            hideVisualizer();
+            
+            // Clear active state in PatternExplorer
+            if (patternExplorer && patternExplorer.patternExplorer) {
+                patternExplorer.patternExplorer.setActiveFile(null);
+                patternExplorer.patternExplorer.setPlayingFile(null, false);
+            }
+        }
+        
+        // Toggle play/pause for current file
+        function togglePlayPause() {
+            if (!audioPlayer || !audioPlayer.isLoaded()) return;
+            
+            if (audioPlayer.isPlaying()) {
+                audioPlayer.pause();
+            } else {
+                // Ensure audio context is started
+                if (visualizer) {
+                    visualizer.ensureAudioContextStarted();
+                }
+                audioPlayer.play();
+            }
+        }
+        
+        // Handle file click (from PatternExplorer)
+        function handleFileClick(file) {
+            // Use original path format (without leading slash) to match PatternExplorer
+            const filePath = file.path || `audio_files/${file.name}`;
+            
+            // If clicking the same file that's already loaded, unload it
+            if (currentFilePath === filePath) {
+                unloadCurrentFile();
+                return;
+            }
+            
+            // Stop current file if playing
+            if (audioPlayer && audioPlayer.isPlaying()) {
+                audioPlayer.stop();
+            }
+            
+            // Load and play the new file
+            loadAndPlayFile(file);
+        }
+        
+        // Handle preview button click (from PatternExplorer)
+        function handleFilePreview(file) {
+            // Use original path format (without leading slash) to match PatternExplorer
+            const filePath = file.path || `audio_files/${file.name}`;
+            
+            // If this file is already loaded, toggle play/pause
+            if (currentFilePath === filePath) {
+                togglePlayPause();
+                return;
+            }
+            
+            // Otherwise, load and play this file (same as file click)
+            handleFileClick(file);
+        }
+        
         // Initialize PatternExplorerWithFilters component
         function initializeComponent() {
-            const component = new PatternExplorerWithFilters({
+            patternExplorer = new PatternExplorerWithFilters({
                 containerId: 'fileList',
                 filterContainerId: 'filterPanel',
                 files: allFilesList,
                 metadata: patternMetadata,
                 onFileClick: (file) => {
-                    console.log('File clicked:', file);
-                    // TODO: Handle file click (e.g., show details in main content area)
+                    handleFileClick(file);
                 },
                 onFileHover: (file, metadata, event) => {
                     // Optional: Handle file hover
                 },
                 onFilePreview: (file) => {
-                    console.log('File preview:', file);
-                    // TODO: Handle file preview
+                    handleFilePreview(file);
+                },
+                onPlayStateChange: (file, isPlaying) => {
+                    // Handle play/pause toggle from PatternExplorer
+                    if (!audioPlayer || !audioPlayer.isLoaded()) return;
+                    
+                    const filePath = file.path || `audio_files/${file.name}`;
+                    if (currentFilePath !== filePath) return; // Not the current file
+                    
+                    if (isPlaying) {
+                        // Ensure audio context is started
+                        if (visualizer) {
+                            visualizer.ensureAudioContextStarted();
+                        }
+                        audioPlayer.play();
+                    } else {
+                        audioPlayer.pause();
+                    }
                 }
             });
         }
         
         // Initialize on page load
         window.addEventListener('DOMContentLoaded', async () => {
+            // Initialize DOM references
+            mainPlaceholder = document.getElementById('mainPlaceholder');
+            visualizerContainer = document.getElementById('visualizerContainer');
+            
             await loadPatternMetadata();
             await loadFileList();
         });

@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AudioControls Component Example</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Courier New', monospace;
+            background: #fafafa;
+            color: #333;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+        
+        .page-header {
+            padding: 20px;
+            background: #fff;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .page-header h1 {
+            font-size: 16px;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+        
+        .page-header p {
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .main-content {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .section {
+            background: #fff;
+            border: 1px solid #e0e0e0;
+            border-radius: 2px;
+            margin-bottom: 20px;
+        }
+        
+        .section-header {
+            padding: 12px 16px;
+            border-bottom: 1px solid #e0e0e0;
+            font-size: 12px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #666;
+        }
+        
+        /* Audio Controls container */
+        #audioControlsContainer {
+            /* Component will render here */
+        }
+        
+        /* Visualizer area */
+        #p5-container {
+            width: 100%;
+            height: 300px;
+            background: #fafafa;
+        }
+        
+        /* Status panel */
+        .status-panel {
+            padding: 16px;
+            font-size: 11px;
+        }
+        
+        .status-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .status-row:last-child {
+            border-bottom: none;
+        }
+        
+        .status-label {
+            color: #666;
+        }
+        
+        .status-value {
+            font-weight: 500;
+        }
+        
+        /* Test controls */
+        .test-controls {
+            padding: 16px;
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        
+        .test-btn {
+            padding: 6px 12px;
+            background: #000;
+            color: #fff;
+            border: none;
+            border-radius: 2px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 11px;
+        }
+        
+        .test-btn:hover {
+            background: #333;
+        }
+        
+        .test-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .test-btn--secondary {
+            background: #e0e0e0;
+            color: #333;
+        }
+        
+        .test-btn--secondary:hover {
+            background: #d0d0d0;
+        }
+    </style>
+    
+    <!-- Component CSS -->
+    <link rel="stylesheet" href="../../css/components/base/audio-controls.css">
+</head>
+<body>
+    <div class="page-header">
+        <h1>AudioControls Component Example</h1>
+        <p>Control bar with stop, loop modes (OFF/LOOP/30s), visualization selector, and progress bar. Play/Pause is handled by PatternExplorer.</p>
+    </div>
+    
+    <div class="main-content">
+        <!-- AudioControls Component -->
+        <div class="section">
+            <div class="section-header">Audio Controls</div>
+            <div id="audioControlsContainer"></div>
+        </div>
+        
+        <!-- Visualizer -->
+        <div class="section">
+            <div class="section-header">Visualizer</div>
+            <div id="p5-container"></div>
+        </div>
+        
+        <!-- Status Panel -->
+        <div class="section">
+            <div class="section-header">Status</div>
+            <div class="status-panel">
+                <div class="status-row">
+                    <span class="status-label">Audio Loaded</span>
+                    <span class="status-value" id="statusLoaded">No</span>
+                </div>
+                <div class="status-row">
+                    <span class="status-label">Playing</span>
+                    <span class="status-value" id="statusPlaying">No</span>
+                </div>
+                <div class="status-row">
+                    <span class="status-label">Loop Mode</span>
+                    <span class="status-value" id="statusLoop">loop</span>
+                </div>
+                <div class="status-row">
+                    <span class="status-label">Visualization Mode</span>
+                    <span class="status-value" id="statusMode">waveform</span>
+                </div>
+                <div class="status-row">
+                    <span class="status-label">Duration</span>
+                    <span class="status-value" id="statusDuration">0s</span>
+                </div>
+                <div class="status-row">
+                    <span class="status-label">Current Time</span>
+                    <span class="status-value" id="statusTime">0s</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Test Controls (simulating PatternExplorer) -->
+        <div class="section">
+            <div class="section-header">Test Controls (Simulating PatternExplorer)</div>
+            <div class="test-controls">
+                <button class="test-btn" id="loadBtn" disabled>Load Audio</button>
+                <button class="test-btn" id="playBtn" disabled>▶ Play</button>
+                <button class="test-btn" id="pauseBtn" disabled>⏸ Pause</button>
+                <button class="test-btn test-btn--secondary" id="setModeBtn">Set Mode: spectrum</button>
+                <button class="test-btn test-btn--secondary" id="toggleLoopBtn">Cycle Loop Mode</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- p5.js dependencies -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/p5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/addons/p5.sound.min.js"></script>
+    
+    <!-- Modules and Components -->
+    <script src="../../js/modules/audioPlayer.js"></script>
+    <script src="../../js/components/base/Visualizer.js"></script>
+    <script src="../../js/components/base/AudioControls.js"></script>
+    
+    <script>
+        let visualizer = null;
+        let audioPlayer = null;
+        let audioControls = null;
+        
+        // Initialize everything
+        function initialize() {
+            console.log('Initializing AudioControls example...');
+            
+            // Small delay to ensure container is rendered (p5.js timing workaround)
+            setTimeout(() => {
+                // Debug log required for p5.js timing (do not remove)
+                console.log('Creating Visualizer...');
+                
+                // Create Visualizer first (provides loadSoundFn)
+                visualizer = new Visualizer({
+                    containerId: 'p5-container',
+                    defaultMode: 'waveform',
+                    onModeChange: (mode) => {
+                        console.log('Visualizer mode changed to:', mode);
+                        updateStatus();
+                    },
+                    onReady: (loadSoundFn) => {
+                        console.log('Visualizer ready, loadSoundFn available');
+                        initializeAudioPlayer(loadSoundFn);
+                    }
+                });
+            }, 100);
+        }
+        
+        // Initialize AudioPlayer after Visualizer is ready
+        function initializeAudioPlayer(loadSoundFn) {
+            audioPlayer = new AudioPlayer({
+                loadSoundFn: loadSoundFn,
+                defaultLoop: true,
+                onLoad: (soundFile) => {
+                    console.log('Audio loaded');
+                    document.getElementById('playBtn').disabled = false;
+                    document.getElementById('pauseBtn').disabled = false;
+                    updateStatus();
+                },
+                onPlay: () => {
+                    console.log('Audio playing');
+                    updateStatus();
+                },
+                onPause: () => {
+                    console.log('Audio paused');
+                    updateStatus();
+                },
+                onStop: () => {
+                    console.log('Audio stopped');
+                    updateStatus();
+                },
+                onEnd: () => {
+                    console.log('Audio ended');
+                    updateStatus();
+                }
+            });
+            
+            // Connect Visualizer to AudioPlayer
+            visualizer.setAudioPlayer(audioPlayer);
+            
+            // Now initialize AudioControls
+            initializeAudioControls();
+        }
+        
+        // Initialize AudioControls component
+        function initializeAudioControls() {
+            audioControls = new AudioControls({
+                containerId: 'audioControlsContainer',
+                audioPlayer: audioPlayer,
+                visualizer: visualizer,
+                defaultLoopMode: 'loop',
+                defaultMode: 'waveform',
+                onLoopModeChange: (mode, duration) => {
+                    console.log('Loop mode changed:', mode, duration ? `(${duration}s)` : '');
+                    updateStatus();
+                },
+                onModeChange: (mode) => {
+                    console.log('Viz mode changed:', mode);
+                    updateStatus();
+                },
+                onStop: () => {
+                    console.log('Stop clicked');
+                    updateStatus();
+                },
+                onSeek: (time) => {
+                    console.log('Seeked to:', time.toFixed(2) + 's');
+                }
+            });
+            
+            // Setup test controls
+            setupTestControls();
+            
+            // Enable Load Audio button now that everything is ready
+            document.getElementById('loadBtn').disabled = false;
+            
+            console.log('AudioControls initialized');
+            updateStatus();
+        }
+        
+        // Setup test controls (simulating PatternExplorer behavior)
+        function setupTestControls() {
+            // Load button
+            document.getElementById('loadBtn').addEventListener('click', () => {
+                if (!audioPlayer) {
+                    console.warn('AudioPlayer not ready yet');
+                    return;
+                }
+                
+                // Try loading an audio file
+                const testPaths = [
+                    '/audio_files/A_100_1.mp3',
+                    '../../audio_files/A_100_1.mp3'
+                ];
+                
+                let pathIndex = 0;
+                const tryLoad = () => {
+                    if (pathIndex >= testPaths.length) {
+                        alert('Could not find audio file');
+                        return;
+                    }
+                    
+                    console.log('Trying to load:', testPaths[pathIndex]);
+                    audioPlayer.loadFile(testPaths[pathIndex])
+                        .then(() => console.log('Loaded:', testPaths[pathIndex]))
+                        .catch(() => {
+                            pathIndex++;
+                            tryLoad();
+                        });
+                };
+                
+                tryLoad();
+            });
+            
+            // Play button (simulates PatternExplorer play)
+            document.getElementById('playBtn').addEventListener('click', () => {
+                if (audioPlayer && audioPlayer.isLoaded()) {
+                    visualizer.ensureAudioContextStarted();
+                    audioPlayer.play();
+                }
+            });
+            
+            // Pause button (simulates PatternExplorer pause)
+            document.getElementById('pauseBtn').addEventListener('click', () => {
+                if (audioPlayer && audioPlayer.isLoaded()) {
+                    audioPlayer.pause();
+                }
+            });
+            
+            // Set mode programmatically
+            document.getElementById('setModeBtn').addEventListener('click', () => {
+                if (audioControls) {
+                    audioControls.setMode('spectrum');
+                    updateStatus();
+                }
+            });
+            
+            // Cycle loop mode programmatically
+            document.getElementById('toggleLoopBtn').addEventListener('click', () => {
+                if (audioControls) {
+                    const modes = ['off', 'loop', 'loop30s'];
+                    const currentIdx = modes.indexOf(audioControls.getLoopMode());
+                    const nextIdx = (currentIdx + 1) % modes.length;
+                    audioControls.setLoopMode(modes[nextIdx]);
+                    updateStatus();
+                }
+            });
+        }
+        
+        // Update status display
+        function updateStatus() {
+            document.getElementById('statusLoaded').textContent = 
+                (audioPlayer && audioPlayer.isLoaded()) ? 'Yes' : 'No';
+            document.getElementById('statusPlaying').textContent = 
+                (audioPlayer && audioPlayer.isPlaying()) ? 'Yes' : 'No';
+            document.getElementById('statusLoop').textContent = 
+                audioControls ? audioControls.getLoopMode() : '-';
+            document.getElementById('statusMode').textContent = 
+                audioControls ? audioControls.getMode() : '-';
+            document.getElementById('statusDuration').textContent = 
+                (audioPlayer && audioPlayer.isLoaded()) ? audioPlayer.getDuration().toFixed(2) + 's' : '0s';
+            document.getElementById('statusTime').textContent = 
+                (audioPlayer && audioPlayer.isLoaded()) ? audioPlayer.getCurrentTime().toFixed(2) + 's' : '0s';
+            
+            // Update time continuously when playing
+            if (audioPlayer && audioPlayer.isPlaying()) {
+                setTimeout(updateStatus, 100);
+            }
+        }
+        
+        // Initialize on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            // Small delay to ensure p5.js is ready
+            setTimeout(initialize, 100);
+        });
+    </script>
+</body>
+</html>

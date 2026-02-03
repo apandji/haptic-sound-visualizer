@@ -1,0 +1,231 @@
+/**
+ * AudioControls Component Styles
+ * 
+ * Control bar with stop button, loop mode selector, visualization mode selector,
+ * and progress bar.
+ */
+
+.audio-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px 16px;
+    background: #fff;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.audio-controls__row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Base button styles */
+.audio-controls__btn {
+    padding: 6px 12px;
+    background: #000;
+    color: #fff;
+    border: none;
+    border-radius: 2px;
+    cursor: pointer;
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Courier New', monospace;
+    font-size: 11px;
+    min-width: 40px;
+    text-align: center;
+    transition: background-color 0.15s ease;
+}
+
+.audio-controls__btn:hover {
+    background: #333;
+}
+
+.audio-controls__btn:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+}
+
+/* Stop button */
+.audio-controls__stop-btn {
+    min-width: 50px;
+}
+
+/* Loop button group */
+.audio-controls__loop-group {
+    display: flex;
+    gap: 2px;
+    background: #e0e0e0;
+    padding: 2px;
+    border-radius: 3px;
+}
+
+.audio-controls__loop-group .audio-controls__btn {
+    background: transparent;
+    color: #666;
+    min-width: 36px;
+    padding: 4px 8px;
+}
+
+.audio-controls__loop-group .audio-controls__btn:hover {
+    background: rgba(0, 0, 0, 0.1);
+}
+
+.audio-controls__loop-group .audio-controls__btn.active {
+    background: #000;
+    color: #fff;
+}
+
+.audio-controls__loop-group .audio-controls__btn.active:hover {
+    background: #333;
+}
+
+.audio-controls__loop-group .audio-controls__btn:disabled {
+    background: transparent;
+    color: #999;
+}
+
+/* Mode selector dropdown */
+.audio-controls__mode-selector {
+    margin-left: auto;
+    padding: 6px 12px;
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 2px;
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Courier New', monospace;
+    font-size: 11px;
+    color: #333;
+    cursor: pointer;
+    min-width: 140px;
+}
+
+.audio-controls__mode-selector:hover {
+    border-color: #ccc;
+}
+
+.audio-controls__mode-selector:focus {
+    outline: none;
+    border-color: #999;
+}
+
+.audio-controls__mode-selector:disabled {
+    background: #f5f5f5;
+    color: #999;
+    cursor: not-allowed;
+}
+
+/* Progress section */
+.audio-controls__progress {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+/* Progress bar */
+.audio-controls__progress-bar {
+    flex: 1;
+    height: 6px;
+    background: #e0e0e0;
+    border-radius: 3px;
+    cursor: pointer;
+    overflow: visible;
+    position: relative;
+}
+
+.audio-controls__progress-bar:hover {
+    background: #d0d0d0;
+}
+
+.audio-controls__progress-fill {
+    height: 100%;
+    background: #000;
+    border-radius: 3px;
+    width: 0%;
+    transition: width 0.1s linear;
+    position: relative;
+    z-index: 1;
+}
+
+/* Audio position marker (current position within audio file in 30s mode) */
+.audio-controls__progress-audio-marker {
+    display: none;
+    position: absolute;
+    top: -5px;
+    width: 3px;
+    height: 16px;
+    background: #e53935;
+    border-radius: 1px;
+    z-index: 3;
+    transform: translateX(-50%);
+    box-shadow: 0 0 2px rgba(229, 57, 53, 0.5);
+}
+
+/* Tick marks showing audio file loop boundaries */
+.audio-controls__progress-ticks {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    z-index: 2;
+}
+
+.audio-controls__tick {
+    position: absolute;
+    top: -2px;
+    width: 1px;
+    height: 10px;
+    background: rgba(0, 0, 0, 0.25);
+}
+
+/* Time display */
+.audio-controls__progress-time {
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Courier New', monospace;
+    font-size: 11px;
+    color: #666;
+    white-space: nowrap;
+    min-width: 75px;
+    text-align: right;
+}
+
+.audio-controls__time-separator {
+    margin: 0 2px;
+    color: #999;
+}
+
+/* Compact variant */
+.audio-controls--compact {
+    padding: 8px 12px;
+    gap: 6px;
+}
+
+.audio-controls--compact .audio-controls__btn {
+    padding: 4px 8px;
+    font-size: 10px;
+    min-width: 32px;
+}
+
+.audio-controls--compact .audio-controls__mode-selector {
+    padding: 4px 8px;
+    font-size: 10px;
+    min-width: 120px;
+}
+
+.audio-controls--compact .audio-controls__progress-bar {
+    height: 4px;
+}
+
+.audio-controls--compact .audio-controls__progress-time {
+    font-size: 10px;
+    min-width: 65px;
+}
+
+/* Floating variant (for overlay on visualizer) */
+.audio-controls--floating {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: rgba(255, 255, 255, 0.95);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    z-index: 100;
+}

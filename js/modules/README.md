@@ -14,12 +14,33 @@ Modules contain non-UI logic, state management, and utilities that can be used b
   - `calculateRanges(metadata)` - Calculate min/max ranges from metadata
   - **Example**: `dev/modules-examples/filters.example.html`
 
+- **audioPlayer.js** ✅ - Audio playback logic using p5.SoundFile
+  - `new AudioPlayer({ loadSoundFn, onLoad, onPlay, onPause, onStop, onEnd, defaultLoop })` - Create AudioPlayer instance
+  - `loadFile(filePath)` - Load audio file (returns Promise)
+  - `play()` - Start/resume playback
+  - `pause()` - Pause playback
+  - `stop()` - Stop playback
+  - `setLoop(loop)` - Enable/disable looping
+  - `setLoopDuration(duration)` - Set loop duration in seconds (e.g., 30 for 30-second loop, null to disable)
+  - `getLoopDuration()` - Get current loop duration setting (number or null)
+  - `checkLoopDuration()` - Check if duration exceeded and stop if needed (call periodically from draw loop)
+  - `getElapsedTime()` - Get elapsed time since playback started (for loop duration)
+  - `getRemainingLoopTime()` - Get remaining time until loop duration ends
+  - `getCurrentTime()` - Get current playback time (seconds)
+  - `getDuration()` - Get audio duration (seconds)
+  - `isPlaying()` - Check if playing
+  - `isLoaded()` - Check if file is loaded
+  - `getSoundFile()` - Get p5.SoundFile instance
+  - `getCurrentFilePath()` - Get current file path (string or null)
+  - `getLoop()` - Get current loop state
+  - `destroy()` - Cleanup
+  - **Example**: `dev/modules-examples/audio-player.example.html`
+
 ### Planned Modules
 
 - **SelectionManager** - Manages multi-select state
 - **DragDropManager** - Manages drag & drop state
 - **fileLoader.js** - File loading utilities
-- **audioPlayer.js** - Audio playback logic
 
 ---
 

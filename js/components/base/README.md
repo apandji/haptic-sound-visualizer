@@ -86,6 +86,43 @@ filterPanel.destroy()            // Cleanup
 
 ---
 
+### Visualizer
+**File**: `Visualizer.js`  
+**CSS**: `../../css/components/base/visualizer.css`  
+**Purpose**: Wraps p5.js sketch with visualization mode selection. Provides all 8 visualization modes from index.html.
+
+**API**:
+```javascript
+new Visualizer({
+  containerId: 'p5-container',
+  audioPlayer: audioPlayer,  // AudioPlayer instance (optional, can be set later)
+  defaultMode: 'waveform',    // Default visualization mode
+  onModeChange: (mode) => {
+    // Called when mode changes
+  }
+})
+
+// Methods
+visualizer.setMode(mode)           // Switch visualization mode
+visualizer.getMode()               // Get current mode
+visualizer.setAudioPlayer(player)  // Update audio player reference
+visualizer.destroy()               // Cleanup
+```
+
+**Visualization Modes**:
+- `waveform` - Waveform visualization
+- `intensity` - Intensity bars
+- `stereo` - Stereo field visualization
+- `spectrum` - Frequency spectrum
+- `pulses` - Directional pulses
+- `blob` - Liquid blob
+- `particles` - Particle swarm
+- `landscape` - Frequency terrain
+
+**Example**: `../../dev/components-examples/visualizer.example.html`
+
+---
+
 ## Adding a New Base Component
 
 1. Create component file: `ComponentName.js`
