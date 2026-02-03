@@ -38,7 +38,7 @@ class AudioControls {
         this.audioPlayer = options.audioPlayer || null;
         this.visualizer = options.visualizer || null;
 
-        // Loop modes: 'off', 'loop', 'loop30s'
+        // Loop modes: 'off', 'loop', 'loop30s', 'test'
         this.loopMode = options.defaultLoopMode || 'loop';
         this.currentMode = options.defaultMode || 'waveform';
 
@@ -65,6 +65,8 @@ class AudioControls {
         this.loopOffBtn = null;
         this.loopBtn = null;
         this.loop30sBtn = null;
+        this.testBtn = null;
+        this.phaseIndicator = null;
         this.modeSelector = null;
         this.progressBar = null;
         this.progressFill = null;
@@ -94,6 +96,10 @@ class AudioControls {
                         <button class="audio-controls__btn audio-controls__loop-off-btn ${this.loopMode === 'off' ? 'active' : ''}" title="No Loop" data-mode="off">OFF</button>
                         <button class="audio-controls__btn audio-controls__loop-btn ${this.loopMode === 'loop' ? 'active' : ''}" title="Loop Infinitely" data-mode="loop">LOOP</button>
                         <button class="audio-controls__btn audio-controls__loop-30s-btn ${this.loopMode === 'loop30s' ? 'active' : ''}" title="Loop for 30 seconds" data-mode="loop30s">30s</button>
+                        <button class="audio-controls__btn audio-controls__test-btn ${this.loopMode === 'test' ? 'active' : ''}" title="Manual Test: 30s baseline + 30s audio" data-mode="test">TEST</button>
+                    </div>
+                    <div class="audio-controls__phase-indicator" style="display: none;">
+                        <span class="audio-controls__phase-label"></span>
                     </div>
                     <select class="audio-controls__mode-selector" title="Visualization Mode">
                         ${this.modes.map(mode => 
@@ -121,6 +127,9 @@ class AudioControls {
         this.loopOffBtn = this.container.querySelector('.audio-controls__loop-off-btn');
         this.loopBtn = this.container.querySelector('.audio-controls__loop-btn');
         this.loop30sBtn = this.container.querySelector('.audio-controls__loop-30s-btn');
+        this.testBtn = this.container.querySelector('.audio-controls__test-btn');
+        this.phaseIndicator = this.container.querySelector('.audio-controls__phase-indicator');
+        this.phaseLabel = this.container.querySelector('.audio-controls__phase-label');
         this.modeSelector = this.container.querySelector('.audio-controls__mode-selector');
         this.progressBar = this.container.querySelector('.audio-controls__progress-bar');
         this.progressFill = this.container.querySelector('.audio-controls__progress-fill');
@@ -142,9 +151,11 @@ class AudioControls {
         this.boundHandlers.loopOffClick = () => this.handleLoopModeChange('off');
         this.boundHandlers.loopClick = () => this.handleLoopModeChange('loop');
         this.boundHandlers.loop30sClick = () => this.handleLoopModeChange('loop30s');
+        this.boundHandlers.testClick = () => this.handleLoopModeChange('test');
         this.loopOffBtn.addEventListener('click', this.boundHandlers.loopOffClick);
         this.loopBtn.addEventListener('click', this.boundHandlers.loopClick);
         this.loop30sBtn.addEventListener('click', this.boundHandlers.loop30sClick);
+        this.testBtn.addEventListener('click', this.boundHandlers.testClick);
 
         // Mode selector
         this.boundHandlers.modeChange = (e) => this.handleModeChange(e.target.value);
@@ -173,7 +184,7 @@ class AudioControls {
 
     /**
      * Handle loop mode change
-     * @param {string} mode - 'off', 'loop', or 'loop30s'
+     * @param {string} mode - 'off', 'loop', 'loop30s', or 'test'
      */
     handleLoopModeChange(mode) {
         this.loopMode = mode;
@@ -182,13 +193,19 @@ class AudioControls {
         this.loopOffBtn.classList.toggle('active', mode === 'off');
         this.loopBtn.classList.toggle('active', mode === 'loop');
         this.loop30sBtn.classList.toggle('active', mode === 'loop30s');
+        this.testBtn.classList.toggle('active', mode === 'test');
+        
+        // Show/hide phase indicator for test mode
+        if (this.phaseIndicator) {
+            this.phaseIndicator.style.display = mode === 'test' ? 'block' : 'none';
+        }
 
         // Apply to AudioPlayer
         this.applyLoopMode();
 
         // Call callback
         if (this.onLoopModeChange) {
-            const duration = mode === 'loop30s' ? 30 : null;
+            const duration = mode === 'loop30s' ? 30 : (mode === 'test' ? 60 : null);
             this.onLoopModeChange(mode, duration);
         }
     }
@@ -198,6 +215,11 @@ class AudioControls {
      */
     applyLoopMode() {
         if (!this.audioPlayer) return;
+
+        // First disable test mode if switching away from it
+        if (this.loopMode !== 'test' && this.audioPlayer.getTestMode()) {
+            this.audioPlayer.setTestMode(false);
+        }
 
         switch (this.loopMode) {
             case 'off':
@@ -211,6 +233,11 @@ class AudioControls {
             case 'loop30s':
                 this.audioPlayer.setLoop(true);
                 this.audioPlayer.setLoopDuration(30);
+                break;
+            case 'test':
+                this.audioPlayer.setLoop(true);
+                this.audioPlayer.setLoopDuration(null); // Test mode handles its own timing
+                this.audioPlayer.setTestMode(true);
                 break;
         }
     }
@@ -269,6 +296,12 @@ class AudioControls {
                 this.audioPlayer.checkLoopDuration();
             }
             
+            // Check test mode timing
+            if (this.audioPlayer && this.loopMode === 'test') {
+                this.audioPlayer.checkTestMode();
+                this.updatePhaseIndicator();
+            }
+            
             this.progressAnimationId = requestAnimationFrame(animate);
         };
         animate();
@@ -290,8 +323,29 @@ class AudioControls {
         const currentTime = this.audioPlayer.getCurrentTime();
         const audioDuration = this.audioPlayer.getDuration();
         
+        // Handle test mode (30s baseline + 30s stimulation = 60s total)
+        if (this.loopMode === 'test') {
+            const testDuration = 60;
+            const elapsed = this.audioPlayer.getTestElapsedTime() || 0;
+            const phase = this.audioPlayer.getTestPhase();
+            
+            // Progress fill shows elapsed time out of 60s
+            const fillPercentage = Math.min((elapsed / testDuration) * 100, 100);
+            this.progressFill.style.width = `${fillPercentage}%`;
+            
+            // Red marker at 30s boundary (phase transition)
+            this.progressMarker.style.display = 'block';
+            this.progressMarker.style.left = '50%'; // 30s mark = 50% of 60s
+            
+            // Clear loop tick marks (not applicable in test mode)
+            this.progressTicks.innerHTML = '';
+            
+            // Time display shows elapsed / 60s
+            this.timeCurrent.textContent = this.formatTime(elapsed);
+            this.timeTotal.textContent = '1:00';
+        }
         // Handle 30s loop mode differently
-        if (this.loopMode === 'loop30s') {
+        else if (this.loopMode === 'loop30s') {
             const loopDuration = 30;
             const elapsed = this.audioPlayer.getElapsedTime() || 0;
             
@@ -359,6 +413,31 @@ class AudioControls {
     }
 
     /**
+     * Update phase indicator for test mode
+     */
+    updatePhaseIndicator() {
+        if (!this.phaseIndicator || !this.phaseLabel || !this.audioPlayer) return;
+        
+        const phase = this.audioPlayer.getTestPhase();
+        const elapsed = this.audioPlayer.getTestElapsedTime();
+        
+        if (phase === 'baseline') {
+            const remaining = Math.ceil(30 - elapsed);
+            this.phaseLabel.textContent = `BASELINE (${remaining}s)`;
+            this.phaseIndicator.classList.remove('stimulating');
+            this.phaseIndicator.classList.add('baseline');
+        } else if (phase === 'stimulating') {
+            const remaining = Math.ceil(60 - elapsed);
+            this.phaseLabel.textContent = `STIMULATING (${remaining}s)`;
+            this.phaseIndicator.classList.remove('baseline');
+            this.phaseIndicator.classList.add('stimulating');
+        } else {
+            this.phaseLabel.textContent = '';
+            this.phaseIndicator.classList.remove('baseline', 'stimulating');
+        }
+    }
+
+    /**
      * Format time in seconds to M:SS format
      * @param {number} seconds
      * @returns {string}
@@ -372,7 +451,7 @@ class AudioControls {
 
     /**
      * Set loop mode programmatically
-     * @param {string} mode - 'off', 'loop', or 'loop30s'
+     * @param {string} mode - 'off', 'loop', 'loop30s', or 'test'
      */
     setLoopMode(mode) {
         this.handleLoopModeChange(mode);
@@ -437,6 +516,7 @@ class AudioControls {
         this.loopOffBtn.disabled = disabled;
         this.loopBtn.disabled = disabled;
         this.loop30sBtn.disabled = disabled;
+        this.testBtn.disabled = disabled;
         this.modeSelector.disabled = disabled;
     }
 
@@ -461,6 +541,9 @@ class AudioControls {
         }
         if (this.loop30sBtn && this.boundHandlers.loop30sClick) {
             this.loop30sBtn.removeEventListener('click', this.boundHandlers.loop30sClick);
+        }
+        if (this.testBtn && this.boundHandlers.testClick) {
+            this.testBtn.removeEventListener('click', this.boundHandlers.testClick);
         }
         if (this.modeSelector && this.boundHandlers.modeChange) {
             this.modeSelector.removeEventListener('change', this.boundHandlers.modeChange);

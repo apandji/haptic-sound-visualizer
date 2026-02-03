@@ -42,6 +42,11 @@ class AudioPlayer {
         this.playStartTime = null; // Timestamp when playback started (for loop duration)
         this.pauseStartTime = null; // Timestamp when paused (for tracking pause duration)
         this.totalPauseDuration = 0; // Total milliseconds paused (accumulated)
+        
+        // Test mode: 30s baseline (silence) + 30s stimulation (audio)
+        this.testMode = false;
+        this.testStartTime = null; // When test mode started
+        this.testPhase = null; // 'baseline' or 'stimulating'
 
         // Setup end callback on sound file
         this.setupEndCallback();
@@ -330,6 +335,101 @@ class AudioPlayer {
         }
         const elapsed = this.getElapsedTime();
         return Math.max(0, this.loopDuration - elapsed);
+    }
+
+    /**
+     * Enable/disable test mode (30s baseline + 30s stimulation)
+     * @param {boolean} enabled - Whether to enable test mode
+     */
+    setTestMode(enabled) {
+        this.testMode = enabled;
+        if (enabled) {
+            this.testStartTime = Date.now();
+            this.testPhase = 'baseline';
+            // Don't play audio yet - wait for stimulation phase
+            if (this.soundFile && this.soundFile.isPlaying()) {
+                this.soundFile.pause();
+            }
+        } else {
+            this.testStartTime = null;
+            this.testPhase = null;
+        }
+    }
+
+    /**
+     * Get test mode state
+     * @returns {boolean}
+     */
+    getTestMode() {
+        return this.testMode;
+    }
+
+    /**
+     * Get elapsed time since test mode started
+     * @returns {number} - Elapsed seconds, or 0 if not in test mode
+     */
+    getTestElapsedTime() {
+        if (!this.testMode || !this.testStartTime) {
+            return 0;
+        }
+        return (Date.now() - this.testStartTime) / 1000;
+    }
+
+    /**
+     * Get current test phase
+     * @returns {string|null} - 'baseline', 'stimulating', or null if not in test mode
+     */
+    getTestPhase() {
+        return this.testPhase;
+    }
+
+    /**
+     * Check test mode timing and handle phase transitions
+     * Should be called periodically (e.g., from draw loop)
+     * @returns {boolean} - True if test completed and was stopped
+     */
+    checkTestMode() {
+        if (!this.testMode || !this.testStartTime) {
+            return false;
+        }
+
+        const elapsed = this.getTestElapsedTime();
+
+        // Phase 1: Baseline (0-30s) - no audio
+        if (elapsed < 30) {
+            if (this.testPhase !== 'baseline') {
+                this.testPhase = 'baseline';
+                // Ensure audio is not playing during baseline
+                if (this.soundFile && this.soundFile.isPlaying()) {
+                    this.soundFile.pause();
+                }
+            }
+            return false;
+        }
+
+        // Phase 2: Stimulation (30-60s) - play audio
+        if (elapsed < 60) {
+            if (this.testPhase !== 'stimulating') {
+                this.testPhase = 'stimulating';
+                // Start playing audio for stimulation phase
+                if (this.soundFile && this.soundFile.isLoaded() && !this.soundFile.isPlaying()) {
+                    this.soundFile.setLoop(true); // Loop during stimulation
+                    this.soundFile.play();
+                    if (this.onPlay) {
+                        this.onPlay();
+                    }
+                }
+            }
+            return false;
+        }
+
+        // Test complete (60s reached)
+        this.stop();
+        this.setTestMode(false);
+        if (this.onEnd) {
+            this.onEnd();
+        }
+        return true;
     }
 
     /**
