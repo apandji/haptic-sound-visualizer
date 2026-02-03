@@ -243,6 +243,10 @@ class AudioControls {
                 this.audioPlayer.setLoop(true);
                 this.audioPlayer.setLoopDuration(null); // Test mode handles its own timing
                 this.audioPlayer.setTestMode(true);
+                // Reset visualizer playhead to beginning when entering TEST mode
+                if (this.visualizer && typeof this.visualizer.clearPauseState === 'function') {
+                    this.visualizer.clearPauseState();
+                }
                 break;
         }
     }
