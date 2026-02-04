@@ -120,6 +120,10 @@ class TestExecutionOverlay {
         this.currentPhase = 'calibration';
         this.show();
         this.showNextButton(false); // Hide NEXT during countdown phases
+        // Show ABORT button during active phases
+        if (this.abortButton) {
+            this.abortButton.style.display = 'block';
+        }
         this.startCountdown(data.duration, () => {
             // Countdown complete - calibration done
         });
@@ -144,6 +148,10 @@ class TestExecutionOverlay {
         this.currentPhase = 'baseline';
         this.show();
         this.showNextButton(false); // Hide NEXT during countdown phases
+        // Show ABORT button during active phases
+        if (this.abortButton) {
+            this.abortButton.style.display = 'block';
+        }
         this.startCountdown(data.duration, () => {
             // Countdown complete - baseline done
         });
@@ -176,6 +184,10 @@ class TestExecutionOverlay {
     showStimulation(data) {
         this.currentPhase = 'stimulation';
         this.show();
+        // Show ABORT button during active phases
+        if (this.abortButton) {
+            this.abortButton.style.display = 'block';
+        }
         this.startCountdown(data.duration, () => {
             // Countdown complete - stimulation done
         });
@@ -234,6 +246,10 @@ class TestExecutionOverlay {
         this.show();
         this.stopCountdown();
         this.showNextButton(true); // Show NEXT button for survey
+        // Show ABORT button during active phases
+        if (this.abortButton) {
+            this.abortButton.style.display = 'block';
+        }
 
         // Clear any existing survey instance
         if (window.currentTrialTagsSurvey) {
@@ -263,6 +279,10 @@ class TestExecutionOverlay {
         this.show();
         this.stopCountdown();
         this.showNextButton(false); // Hide NEXT on complete screen
+        // Hide ABORT button on complete screen
+        if (this.abortButton) {
+            this.abortButton.style.display = 'none';
+        }
 
         this.contentContainer.innerHTML = `
             <div class="test-execution-overlay__phase test-execution-overlay__phase--complete">
@@ -295,6 +315,11 @@ class TestExecutionOverlay {
         this.currentPhase = 'aborted';
         this.show();
         this.stopCountdown();
+        this.showNextButton(false); // Hide NEXT button
+        // Hide ABORT button on aborted screen
+        if (this.abortButton) {
+            this.abortButton.style.display = 'none';
+        }
 
         this.contentContainer.innerHTML = `
             <div class="test-execution-overlay__phase test-execution-overlay__phase--aborted">

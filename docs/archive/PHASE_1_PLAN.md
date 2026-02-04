@@ -214,6 +214,6 @@ css/
 
 ## Next Steps After Phase 1
 
-- Phase 2: SelectionManager module
-- Phase 3: DragDropManager module
-- Phase 4: PatternExplorerTestMode variant
+- ✅ Phase 2: SelectionManager - COMPLETE (implemented as integrated selection in `PatternExplorerWithSelection`)
+- ✅ Phase 3: DragDropManager - COMPLETE (implemented as queue reordering in `PatternQueue`)
+- ✅ Phase 4: PatternExplorerTestMode - COMPLETE (implemented as `PatternExplorerWithSelection` variant)

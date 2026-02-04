@@ -569,6 +569,30 @@ class SessionInfo {
         metadataGroup.querySelector('.session-info__field-group-fields').appendChild(sessionNotesField);
         form.appendChild(metadataGroup);
         
+        // START SESSION button - placed right after Notes field
+        const startButtonContainer = document.createElement('div');
+        startButtonContainer.className = 'session-info__start-button-container';
+        
+        const startButton = document.createElement('button');
+        startButton.className = 'session-info__start-button';
+        startButton.id = `${this.containerId}_start`;
+        startButton.textContent = 'START SESSION';
+        startButton.setAttribute('aria-label', 'Start session');
+        startButton.disabled = !this.isValid || this.isSessionStarted;
+        
+        startButton.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (!startButton.disabled) {
+                this.startSession();
+            }
+        });
+        
+        startButtonContainer.appendChild(startButton);
+        form.appendChild(startButtonContainer);
+        
+        // Store reference to button
+        this.startButton = startButton;
+        
         return form;
     }
     
@@ -925,17 +949,13 @@ class SessionInfo {
     }
     
     /**
-     * Create footer with START SESSION button
+     * Create footer with EXPORT SESSIONS button (auxiliary function)
      */
     createFooter() {
         const footer = document.createElement('div');
         footer.className = 'session-info__footer';
         
-        // Create button container for side-by-side layout
-        const buttonContainer = document.createElement('div');
-        buttonContainer.className = 'session-info__footer-buttons';
-        
-        // Export Sessions button
+        // Export Sessions button (auxiliary function)
         const exportButton = document.createElement('button');
         exportButton.className = 'session-info__export-button';
         exportButton.id = 'exportSessionsBtn';
@@ -950,26 +970,9 @@ class SessionInfo {
             }
         });
         
-        // START SESSION button
-        const startButton = document.createElement('button');
-        startButton.className = 'session-info__start-button';
-        startButton.id = `${this.containerId}_start`;
-        startButton.textContent = 'START SESSION';
-        startButton.setAttribute('aria-label', 'Start session');
-        startButton.disabled = !this.isValid || this.isSessionStarted;
+        footer.appendChild(exportButton);
         
-        startButton.addEventListener('click', (e) => {
-            e.stopPropagation();
-            if (!startButton.disabled) {
-                this.startSession();
-            }
-        });
-        
-        buttonContainer.appendChild(exportButton);
-        buttonContainer.appendChild(startButton);
-        footer.appendChild(buttonContainer);
-        
-        this.startButton = startButton;
+        // Store reference to export button
         this.exportButton = exportButton;
         
         return footer;

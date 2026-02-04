@@ -189,6 +189,61 @@ sessionInfo.destroy()              // Cleanup
 
 ---
 
+### SignalQualityVisualizer
+**File**: `signalQualityVisualizer.js`  
+**CSS**: `../../css/components/base/signalQualityVisualizer.css`  
+**Purpose**: Intercom-style floating widget that displays real-time signal quality metrics for OpenBCI Ganglion EEG channels. Appears automatically when device is connected.
+
+**API**:
+```javascript
+const signalQuality = new SignalQualityVisualizer({
+    containerId: 'signalQualityVisualizer',
+    updateInterval: 1000,        // Update frequency in ms (default: 1000)
+    windowLength: 2.0,           // PSD window length in seconds (default: 2.0)
+    useMockData: true,           // Use mock data from CSV (default: true)
+    mockDataPath: 'data/ganglion_sample_data.csv',
+    onQualityChange: (qualities) => {
+        // qualities = [
+        //   { channel: 'CH1', rms_uV: 45.2, p60_rel: 0.12, quality: 'good', ... },
+        //   ...
+        // ]
+    },
+    onConnectionChange: (isConnected) => {
+        // Called when device connects/disconnects
+    }
+});
+
+// Methods
+signalQuality.start()              // Start monitoring (shows widget)
+signalQuality.stop()               // Stop monitoring (hides widget)
+signalQuality.toggle()             // Toggle expanded/collapsed panel
+signalQuality.expand()             // Expand panel
+signalQuality.collapse()           // Collapse panel
+signalQuality.getQualities()       // Get current quality metrics
+signalQuality.isDeviceConnected()  // Check connection status
+signalQuality.destroy()            // Cleanup
+```
+
+**Features**:
+- Intercom-style floating widget (bottom-right corner)
+- Minimized button with color-coded status dot (green/orange/red)
+- Expandable panel with quality table
+- Real-time updates (configurable interval)
+- Mock data support (loads from CSV file)
+- Quality classification: good/ok/poor based on RMS and 60Hz noise
+
+**Quality Metrics**:
+- **RMS (μV)**: Root mean square amplitude (1-45 Hz band)
+- **60Hz (rel)**: 60Hz noise relative to total power
+- **Quality**: Classification based on thresholds:
+  - **Good**: RMS 3-100 μV, 60Hz < 0.3
+  - **OK**: RMS 0.5-300 μV, 60Hz < 0.6
+  - **Poor**: Everything else
+
+**Example**: `../../dev/components-examples/signal-quality-visualizer.example.html`
+
+---
+
 ## Adding a New Base Component
 
 1. Create component file: `ComponentName.js`

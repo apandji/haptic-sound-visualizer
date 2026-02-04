@@ -14,8 +14,7 @@ js/
 │   │
 │   ├── variants/                      # Composed variants (combine base components)
 │   │   ├── PatternExplorerWithFilters.js
-│   │   ├── PatternExplorerSelectable.js
-│   │   └── PatternExplorerTestMode.js
+│   │   └── PatternExplorerWithSelection.js  # PatternExplorer + FilterPanel + Selection (used on test page)
 │   │
 │   ├── examples/                      # Example/test pages for components
 │   │   ├── pattern-explorer.example.html
@@ -25,11 +24,11 @@ js/
 │   └── README.md                      # Component documentation
 │
 ├── modules/                           # Utility modules (non-UI logic)
-│   ├── SelectionManager.js           # Multi-select state management
-│   ├── DragDropManager.js            # Drag & drop logic
 │   ├── filters.js                    # Filter application logic
-│   ├── fileLoader.js                 # File loading utilities
-│   └── audioPlayer.js                # Audio playback logic
+│   ├── audioPlayer.js                # Audio playback logic
+│   ├── sessionTimeEstimator.js       # Session time estimation
+│   ├── testSession.js                # Test session state management
+│   └── eegDataCollector.js           # EEG data collection (dummy for now)
 │
 ├── pages/                            # Page-specific logic
 │   ├── library.js                    # Library page
@@ -111,8 +110,8 @@ css/
 - Pure functions or stateful managers
 
 **Examples**:
-- `SelectionManager` - Manages selection state
-- `DragDropManager` - Manages drag & drop state
+- Selection functionality is integrated into `PatternExplorerWithSelection`
+- Drag & drop reordering is integrated into `PatternQueue`
 - `filters.js` - Filter application logic
 - `fileLoader.js` - File loading utilities
 
@@ -320,15 +319,14 @@ class PatternExplorer { }
 2. Create `js/modules/` directory
 3. Create `js/components/examples/` directory
 
-### Phase 3: Build New Components
-1. Create `FilterPanel` in `js/components/base/`
-2. Create `DualSlider` in `js/components/base/`
-3. Create `SelectionManager` in `js/modules/`
+### Phase 3: Build New Components ✅
+1. ✅ Create `FilterPanel` in `js/components/base/`
+2. ✅ Create `DualSlider` in `js/components/base/`
+3. ✅ Selection functionality integrated into `PatternExplorerWithSelection`
 
-### Phase 4: Create Variants
-1. Create `PatternExplorerWithFilters` in `js/components/variants/`
-2. Create `PatternExplorerSelectable` in `js/components/variants/`
-3. Create `PatternExplorerTestMode` in `js/components/variants/`
+### Phase 4: Create Variants ✅
+1. ✅ Create `PatternExplorerWithFilters` in `js/components/variants/`
+2. ✅ Create `PatternExplorerWithSelection` in `js/components/variants/` (combines PatternExplorer + FilterPanel + Selection)
 
 ## Benefits of This Organization
 
@@ -347,7 +345,7 @@ class PatternExplorer { }
 |------|----------|---------|
 | Standalone UI component | `js/components/base/` | `PatternExplorer.js` |
 | Composed component | `js/components/variants/` | `PatternExplorerWithFilters.js` |
-| Non-UI logic | `js/modules/` | `SelectionManager.js` |
+| Non-UI logic | `js/modules/` | `filters.js`, `audioPlayer.js`, `testSession.js`, etc. |
 | Page logic | `js/pages/` | `library.js` |
 | Component CSS | `css/components/base/` | `patternExplorer.css` |
 | Variant CSS | `css/components/variants/` | `pattern-explorer-test-mode.css` |
