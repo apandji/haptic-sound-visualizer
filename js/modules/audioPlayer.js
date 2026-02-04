@@ -95,6 +95,32 @@ class AudioPlayer {
                                 // Set loop state
                                 this.soundFile.setLoop(this.isLooping);
                                 
+                                // Ensure volume is set to 1.0 (full volume)
+                                try {
+                                    const currentVolume = this.soundFile.getVolume();
+                                    if (currentVolume === 0 || currentVolume === undefined || currentVolume === null) {
+                                        console.log('Setting audio volume to 1.0');
+                                        this.soundFile.setVolume(1.0);
+                                    } else {
+                                        console.log('Audio volume:', currentVolume);
+                                    }
+                                } catch (e) {
+                                    console.warn('Could not set/get volume:', e);
+                                }
+                                
+                                // Ensure sound is connected to output (important for hidden p5 instances)
+                                try {
+                                    // p5.SoundFile should automatically connect, but let's verify
+                                    // by checking if we can access the audio node
+                                    if (this.soundFile.output && typeof this.soundFile.output.connect === 'function') {
+                                        console.log('Sound file output node available');
+                                    }
+                                    // Force connection by setting volume again (this can help ensure connection)
+                                    this.soundFile.setVolume(this.soundFile.getVolume() || 1.0);
+                                } catch (e) {
+                                    console.warn('Could not verify audio connection:', e);
+                                }
+                                
                                 // Setup end callback
                                 this.attachEndCallback();
                                 

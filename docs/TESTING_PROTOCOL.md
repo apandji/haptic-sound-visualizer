@@ -316,6 +316,32 @@ This document outlines the complete testing protocol for collecting EEG data whi
 
 ---
 
+## Session Time Estimation
+
+**Current Implementation:**
+- Session duration is estimated based on pattern count and timing configuration
+- Configuration file: `js/modules/sessionTimingConfig.json`
+- Formula: `calibrationDuration + (patternCount × (baselineDuration + stimulationDuration + taggingDuration))`
+- Default timings:
+  - Calibration: 60 seconds
+  - Baseline per pattern: 30 seconds
+  - Stimulation per pattern: 30 seconds
+  - Tagging per pattern: 10 seconds
+
+**Future Improvements (TODO):**
+- Load configuration from database/API instead of static JSON file
+- Allow per-pattern timing variations based on pattern metadata (e.g., longer patterns may need more time)
+- Support different timing profiles (e.g., "quick test" vs "full session" modes)
+- Account for participant-specific factors (e.g., first-time participants may need more time)
+- Real-time adjustment based on actual trial durations (learn from past sessions)
+- Consider pattern complexity or duration in estimates
+- Add buffer time for transitions between patterns
+
+**Configuration File:**
+Edit `js/modules/sessionTimingConfig.json` to adjust timing values. The file is loaded automatically when using `SessionTimeEstimator.create()`.
+
+---
+
 ## Data Structure
 
 ### Session Structure

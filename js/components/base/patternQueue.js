@@ -7,14 +7,22 @@ class PatternQueue {
         this.containerId = options.containerId || 'queue';
         this.container = document.getElementById(this.containerId);
         this.metadata = options.metadata || {};
+        this.onItemAdd = options.onItemAdd || null; // Called when item is added
         this.onItemRemove = options.onItemRemove || null;
+        this.onItemClick = options.onItemClick || null; // Called when item is clicked
         this.onReorder = options.onReorder || null;
         this.onClear = options.onClear || null;
         this.onRandomSelect = options.onRandomSelect || null; // Called when random selection is made
         this.getAvailableFiles = options.getAvailableFiles || null; // Callback to get filtered/available files for random selection
+        this.onFilePreview = options.onFilePreview || null; // Preview callback (play button)
+        this.onPlayStateChange = options.onPlayStateChange || null; // Called when play/pause state changes
         
         // Queue state: array of file objects with order
         this.items = [];
+        
+        // Play state tracking
+        this.playingFilePath = null; // Currently playing file path
+        this.isPlaying = false; // Current play state
         
         // Drag & drop state
         this.draggedItem = null;
@@ -249,7 +257,17 @@ class PatternQueue {
         if (this.items.length === 0) {
             const emptyState = document.createElement('div');
             emptyState.className = 'queue__empty';
-            emptyState.textContent = 'Select patterns to include in session';
+            
+            const message = document.createElement('div');
+            message.className = 'queue__empty-message';
+            message.textContent = 'No patterns selected';
+            emptyState.appendChild(message);
+            
+            const hint = document.createElement('div');
+            hint.className = 'queue__empty-hint';
+            hint.textContent = 'Click + to add patterns from the library';
+            emptyState.appendChild(hint);
+            
             container.appendChild(emptyState);
             return;
         }
@@ -268,6 +286,9 @@ class PatternQueue {
                 }, 600);
             }
         });
+        
+        // Update play buttons after rendering to reflect current play state
+        this.updateAllPlayButtons();
     }
     
     /**
@@ -285,6 +306,20 @@ class PatternQueue {
         orderNumber.className = 'queue__item-order';
         orderNumber.textContent = `${index + 1}`;
         item.appendChild(orderNumber);
+        
+        // Play/pause button
+        const playButton = document.createElement('button');
+        playButton.className = 'queue__item-play-btn';
+        playButton.dataset.filePath = file.path;
+        this.updatePlayButtonIcon(playButton, file.path === this.playingFilePath && this.isPlaying, file.name);
+        
+        // Prevent click event from bubbling to item
+        playButton.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.handlePlayClick(file, item, playButton, index);
+        });
+        
+        item.appendChild(playButton);
         
         // Pattern name
         const name = document.createElement('span');
@@ -336,7 +371,8 @@ class PatternQueue {
         // Tooltip handlers
         item.addEventListener('mouseenter', (e) => {
             // Don't show tooltip if hovering over buttons
-            if (e.target !== removeBtn && e.target !== dragHandle && !removeBtn.contains(e.target) && !dragHandle.contains(e.target)) {
+            if (e.target !== removeBtn && e.target !== dragHandle && e.target !== playButton && 
+                !removeBtn.contains(e.target) && !dragHandle.contains(e.target) && !playButton.contains(e.target)) {
                 this.showTooltip(item, file);
             }
         });
@@ -346,14 +382,112 @@ class PatternQueue {
         });
         
         item.addEventListener('mousemove', (e) => {
-            if (e.target !== removeBtn && e.target !== dragHandle && !removeBtn.contains(e.target) && !dragHandle.contains(e.target)) {
+            if (e.target !== removeBtn && e.target !== dragHandle && e.target !== playButton && 
+                !removeBtn.contains(e.target) && !dragHandle.contains(e.target) && !playButton.contains(e.target)) {
                 if (this.tooltip.classList.contains('show')) {
                     this.showTooltip(item, file);
                 }
             }
         });
         
+        // Click handler for playing audio (don't trigger on remove button, drag handle, or play button)
+        item.addEventListener('click', (e) => {
+            // Don't trigger if clicking on remove button, drag handle, or play button
+            if (e.target === removeBtn || e.target === dragHandle || e.target === playButton || 
+                removeBtn.contains(e.target) || dragHandle.contains(e.target) || playButton.contains(e.target)) {
+                return;
+            }
+            
+            // Call onItemClick callback if provided
+            if (this.onItemClick) {
+                this.onItemClick(file, index);
+            }
+        });
+        
         return item;
+    }
+    
+    /**
+     * Update play button icon (play or pause)
+     */
+    updatePlayButtonIcon(button, isPlaying, fileName = null) {
+        const currentLabel = button.getAttribute('aria-label') || '';
+        const fileDisplayName = fileName || (currentLabel.replace(/^(Preview|Pause)\s+/, '') || 'file');
+        
+        if (isPlaying) {
+            // Heroicon Pause (solid/filled style)
+            button.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="heroicon-pause">
+                    <path fill-rule="evenodd" d="M6.75 5.25a.75.75 0 01.75-.75H9a.75.75 0 01.75.75v13.5a.75.75 0 01-.75.75H7.5a.75.75 0 01-.75-.75V5.25zm7.5 0A.75.75 0 0115 4.5h1.5a.75.75 0 01.75.75v13.5a.75.75 0 01-.75.75H15a.75.75 0 01-.75-.75V5.25z" clip-rule="evenodd" />
+                </svg>
+            `;
+            button.title = 'Pause';
+            button.setAttribute('aria-label', `Pause ${fileDisplayName}`);
+        } else {
+            // Heroicon Play (solid/filled style)
+            button.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="heroicon-play">
+                    <path fill-rule="evenodd" d="M4.5 5.653c0-1.426 1.529-2.33 2.779-1.643l11.54 6.348c1.295.712 1.295 2.573 0 3.285L7.28 19.991c-1.25.687-2.779-.217-2.779-1.643V5.653z" clip-rule="evenodd" />
+                </svg>
+            `;
+            button.title = 'Preview';
+            button.setAttribute('aria-label', `Preview ${fileDisplayName}`);
+        }
+    }
+    
+    /**
+     * Handle play button click (preview/pause)
+     */
+    handlePlayClick(file, item, playButton, index) {
+        const isCurrentlyPlaying = this.playingFilePath === file.path && this.isPlaying;
+        
+        // Toggle play state
+        if (isCurrentlyPlaying) {
+            // Currently playing this file - pause it
+            this.setPlayingFile(null, false);
+            if (this.onPlayStateChange) {
+                this.onPlayStateChange(file, false);
+            }
+        } else {
+            // Not playing or different file - start playing
+            this.setPlayingFile(file.path, true);
+            
+            // Call preview callback if provided
+            if (this.onFilePreview) {
+                this.onFilePreview(file);
+            }
+            
+            if (this.onPlayStateChange) {
+                this.onPlayStateChange(file, true);
+            }
+        }
+    }
+    
+    /**
+     * Set playing file state
+     */
+    setPlayingFile(filePath, isPlaying) {
+        this.playingFilePath = filePath;
+        this.isPlaying = isPlaying;
+        
+        // Update all play buttons
+        this.updateAllPlayButtons();
+    }
+    
+    /**
+     * Update all play button icons based on current play state
+     */
+    updateAllPlayButtons() {
+        const items = this.container.querySelectorAll('.queue__item');
+        items.forEach((item) => {
+            const playButton = item.querySelector('.queue__item-play-btn');
+            if (playButton) {
+                const filePath = playButton.dataset.filePath;
+                const isCurrentlyPlaying = filePath === this.playingFilePath && this.isPlaying;
+                const fileName = item.querySelector('.queue__item-name')?.textContent || '';
+                this.updatePlayButtonIcon(playButton, isCurrentlyPlaying, fileName);
+            }
+        });
     }
     
     /**
@@ -696,6 +830,12 @@ class PatternQueue {
         
         this.items.push(file);
         this.render();
+        
+        // Call callback if provided
+        if (this.onItemAdd) {
+            this.onItemAdd(file, this.items.length - 1);
+        }
+        
         return true;
     }
     
@@ -776,9 +916,10 @@ class PatternQueue {
         this.render();
         
         // Call callbacks for each added item
-        if (this.onItemRemove) {
-            // Note: onItemRemove is called for removals, but we can use it to sync
-            // The PatternExplorerWithSelection will sync via syncWithQueue
+        if (this.onItemAdd) {
+            selected.forEach((file, index) => {
+                this.onItemAdd(file, index);
+            });
         }
         
         // Call random select callback if provided

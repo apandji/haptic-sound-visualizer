@@ -36,6 +36,18 @@ Modules contain non-UI logic, state management, and utilities that can be used b
   - `destroy()` - Cleanup
   - **Example**: `dev/modules-examples/audio-player.example.html`
 
+- **sessionTimeEstimator.js** ✅ - Session duration estimation based on pattern count
+  - `new SessionTimeEstimator(config)` - Create estimator with optional config override
+  - `SessionTimeEstimator.create(configPath)` - Create instance with config loaded from JSON file (async)
+  - `calculateDuration(patternCount)` - Calculate total duration in seconds
+  - `formatDuration(seconds)` - Format duration as human-readable string
+  - `getEstimate(patternCount)` - Get full estimate object with formatted duration
+  - `updateConfig(newConfig)` - Update timing configuration
+  - `getConfig()` - Get current configuration
+  - **Config File**: `sessionTimingConfig.json` - Edit this file to adjust timing values
+  - **Example**: See `dev/components-examples/session-info.example.html`
+  - **Documentation**: See `docs/TESTING_PROTOCOL.md` for timing details and future improvements
+
 ### Planned Modules
 
 - **SessionManager** - Manages test sessions and trials (localStorage persistence)

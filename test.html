@@ -1,0 +1,1407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SAIL Pattern Library - Test</title>
+    <style>
+        /* Typography & Spacing System */
+        :root {
+            /* Typography Scale */
+            --font-size-xs: 10px;
+            --font-size-sm: 11px;
+            --font-size-base: 13px;
+            --font-size-md: 14px;
+            --font-size-lg: 16px;
+            
+            /* Font Weights */
+            --font-weight-normal: 400;
+            --font-weight-medium: 500;
+            --font-weight-semibold: 600;
+            
+            /* Line Heights */
+            --line-height-tight: 1.2;
+            --line-height-normal: 1.5;
+            --line-height-relaxed: 1.75;
+            
+            /* Spacing Scale (4px base unit) */
+            --spacing-xs: 4px;
+            --spacing-sm: 8px;
+            --spacing-md: 12px;
+            --spacing-lg: 16px;
+            --spacing-xl: 20px;
+            --spacing-2xl: 24px;
+            --spacing-3xl: 32px;
+            
+            /* Component Padding */
+            --padding-component: var(--spacing-md);
+            --padding-component-lg: var(--spacing-lg);
+            --padding-component-xl: var(--spacing-xl);
+            
+            /* Component Gaps */
+            --gap-sm: var(--spacing-sm);
+            --gap-md: var(--spacing-md);
+            --gap-lg: var(--spacing-lg);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Courier New', monospace;
+            background: #fafafa;
+            color: #333;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            font-size: var(--font-size-base);
+            line-height: var(--line-height-normal);
+            overflow: hidden;
+        }
+        
+        /* Top Navigation Header */
+        .top-header {
+            width: 100%;
+            background: #fff;
+            border-bottom: 1px solid #e0e0e0;
+            padding: var(--spacing-md) var(--spacing-xl);
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-xl);
+            flex-shrink: 0;
+            z-index: 1000;
+        }
+        
+        .nav-link {
+            font-size: var(--font-size-sm);
+            font-weight: var(--font-weight-medium);
+            color: #666;
+            text-decoration: none;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            transition: color 0.15s ease;
+            cursor: pointer;
+        }
+        
+        .nav-link:hover {
+            color: #000;
+        }
+        
+        .nav-link.active {
+            color: #000;
+        }
+        
+        .nav-separator {
+            color: #e0e0e0;
+            font-size: var(--font-size-sm);
+        }
+        
+        /* Page Title Header */
+        .page-title-header {
+            width: 100%;
+            background: #fff;
+            border-bottom: 1px solid #e0e0e0;
+            padding: var(--spacing-lg) var(--spacing-xl);
+            flex-shrink: 0;
+        }
+        
+        .page-title {
+            font-size: var(--font-size-lg);
+            font-weight: var(--font-weight-semibold);
+            color: #000;
+            margin: 0;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        
+        /* Audio Progress Bar (Fixed Bottom) */
+        .audio-progress-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #000;
+            color: #fff;
+            padding: var(--spacing-sm) var(--spacing-lg);
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+            z-index: 10000;
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Courier New', monospace;
+            font-size: var(--font-size-xs);
+            opacity: 0;
+            transform: translateY(100%);
+            transition: opacity 0.2s ease, transform 0.2s ease;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
+        }
+        
+        .audio-progress-bar.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        .audio-progress-bar__file {
+            min-width: 200px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-weight: var(--font-weight-medium);
+        }
+        
+        .audio-progress-bar__progress {
+            flex: 1;
+            height: 2px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 1px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .audio-progress-bar__progress-fill {
+            height: 100%;
+            background: #fff;
+            width: 0%;
+            transition: width 0.1s linear;
+        }
+        
+        .audio-progress-bar__time {
+            min-width: 80px;
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+        
+        /* Main Layout Container */
+        .layout {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+            min-height: 0;
+        }
+        
+        /* Left Sidebar - Pattern Explorer */
+        .sidebar {
+            width: 300px;
+            background: #fff;
+            border-right: 1px solid #e0e0e0;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            overflow-x: hidden;
+            flex-shrink: 0;
+            padding: 0;
+            position: relative;
+            z-index: 1;
+        }
+        
+        /* Queue Sidebar - Slightly more prominent (active work area) */
+        .queue-sidebar {
+            width: 380px;
+            background: transparent;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            padding: var(--spacing-lg);
+            padding-left: var(--spacing-xl);
+            padding-right: 0; /* Remove right padding to match spacing from LIBRARY to PATTERNS */
+            padding-bottom: var(--spacing-lg);
+            z-index: 1001;
+            position: relative;
+        }
+        
+        #queue {
+            flex: 1;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+        
+        /* Right Sidebar - Session Info - Subtle background for visual hierarchy */
+        .session-sidebar {
+            width: 400px;
+            background: #fafafa;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            padding: var(--spacing-lg);
+            padding-left: var(--spacing-xl); /* This creates the same gap as LIBRARY to PATTERNS */
+            padding-right: var(--spacing-xl);
+            padding-bottom: var(--spacing-lg);
+            z-index: 1001;
+            position: relative;
+        }
+        
+        #sessionInfo {
+            flex: 1;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+        
+        /* Tooltip styles (for file metadata) */
+        .file-tooltip {
+            position: fixed;
+            background: #000;
+            color: #fff;
+            padding: 8px 10px;
+            border-radius: 3px;
+            font-size: 11px;
+            max-width: 250px;
+            white-space: normal;
+            z-index: 10000;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.15s ease;
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Courier New', monospace;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            line-height: 1.4;
+        }
+        
+        .file-tooltip.show {
+            opacity: 1;
+        }
+        
+        .tooltip-row {
+            margin: 2px 0;
+        }
+        
+        /* Loading State */
+        .loading-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: var(--spacing-3xl);
+            color: #999;
+            font-size: var(--font-size-sm);
+        }
+        
+        .loading-spinner {
+            width: 24px;
+            height: 24px;
+            border: 2px solid #e0e0e0;
+            border-top-color: #666;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-bottom: var(--spacing-md);
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .loading-text {
+            color: #999;
+            font-size: var(--font-size-sm);
+        }
+        
+        /* Session Start Message */
+        .session-start-message {
+            position: fixed;
+            top: var(--spacing-lg);
+            right: var(--spacing-lg);
+            z-index: 10000;
+            max-width: 400px;
+            animation: slideDown 0.3s ease;
+            pointer-events: auto;
+        }
+        
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .session-start-message__content {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            padding: var(--spacing-md);
+            background: #f0f8f0;
+            border: 1px solid #4caf50;
+            border-radius: 4px;
+            font-size: var(--font-size-sm);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        .session-start-message__icon {
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #4caf50;
+            color: #fff;
+            border-radius: 50%;
+            font-size: 12px;
+            font-weight: var(--font-weight-semibold);
+            flex-shrink: 0;
+        }
+        
+        .session-start-message__text {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        
+        .session-start-message__text strong {
+            color: #2e7d32;
+            font-weight: var(--font-weight-medium);
+        }
+        
+        .session-start-message__text span {
+            color: #666;
+            font-size: var(--font-size-xs);
+        }
+        
+        .session-start-message__close {
+            background: transparent;
+            border: none;
+            color: #666;
+            cursor: pointer;
+            font-size: 18px;
+            line-height: 1;
+            padding: 0;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: color 0.15s ease;
+        }
+        
+        .session-start-message__close:hover {
+            color: #333;
+        }
+        
+        
+        /* Export Message */
+        .export-message {
+            margin-bottom: var(--spacing-md);
+            padding: var(--spacing-sm) var(--spacing-md);
+            border-radius: 4px;
+            font-size: var(--font-size-xs);
+            animation: slideDown 0.3s ease;
+        }
+        
+        .export-message--success {
+            background: #f0f8f0;
+            border: 1px solid #4caf50;
+            color: #2e7d32;
+        }
+        
+        .export-message--error {
+            background: #fff5f5;
+            border: 1px solid #ffcdd2;
+            color: #d32f2f;
+        }
+    </style>
+    
+    <!-- Component CSS -->
+    <link rel="stylesheet" href="css/components/base/patternExplorer.css?v=7">
+    <link rel="stylesheet" href="css/components/base/filterPanel.css?v=7">
+    <link rel="stylesheet" href="css/components/base/dualSlider.css?v=7">
+    <link rel="stylesheet" href="css/components/base/patternQueue.css?v=1">
+    <link rel="stylesheet" href="css/components/base/sessionInfo.css?v=1">
+    <link rel="stylesheet" href="css/components/base/audioControls.css?v=1">
+</head>
+<body>
+    <!-- Top Navigation Header -->
+    <div class="top-header">
+        <a href="index.html" class="nav-link">Explore</a>
+        <span class="nav-separator">|</span>
+        <a href="test.html" class="nav-link active">Test</a>
+        <span class="nav-separator">|</span>
+        <a href="#" class="nav-link">Analyze</a>
+    </div>
+    
+    <!-- Page Title Header -->
+    <div class="page-title-header">
+        <h1 class="page-title">Setup Test</h1>
+    </div>
+    
+    <!-- Main Layout -->
+    <div class="layout">
+        <!-- Left Sidebar: Pattern Explorer with Selection -->
+        <div class="sidebar">
+            <div id="filterPanel"></div>
+            <div id="fileList">Loading files...</div>
+        </div>
+        
+        <!-- Middle: Queue -->
+        <div class="queue-sidebar">
+            <div id="queue"></div>
+        </div>
+        
+        <!-- Right Sidebar: Session Info -->
+        <div class="session-sidebar">
+            <div id="sessionInfo"></div>
+        </div>
+    </div>
+    
+    <!-- Audio Progress Bar (Fixed Bottom) -->
+    <div class="audio-progress-bar" id="audioProgressBar">
+        <div class="audio-progress-bar__file" id="audioProgressFile">No file playing</div>
+        <div class="audio-progress-bar__progress">
+            <div class="audio-progress-bar__progress-fill" id="audioProgressFill"></div>
+        </div>
+        <div class="audio-progress-bar__time" id="audioProgressTime">0:00 / 0:00</div>
+    </div>
+    
+    <!-- Tooltip element (for file metadata) -->
+    <div id="fileTooltip" class="file-tooltip"></div>
+    
+    <!-- p5.js dependencies for audio playback -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/p5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/addons/p5.sound.min.js"></script>
+    
+    <!-- Component JavaScript -->
+    <script src="js/modules/filters.js?v=2"></script>
+    <script src="js/modules/sessionTimeEstimator.js?v=1"></script>
+    <script src="js/modules/audioPlayer.js?v=1"></script>
+    <script src="js/components/base/patternExplorer.js?v=2"></script>
+    <script src="js/components/base/filterPanel.js?v=2"></script>
+    <script src="js/components/base/dualSlider.js?v=2"></script>
+    <script src="js/components/base/patternQueue.js?v=1"></script>
+    <script src="js/components/base/sessionInfo.js?v=1"></script>
+    <script src="js/components/variants/patternExplorerWithSelection.js?v=1"></script>
+    
+    <!-- Initialization Script -->
+    <script>
+        let allFilesList = [];
+        let patternMetadata = {};
+        
+        // Component instances
+        let patternExplorer = null;
+        let queue = null;
+        let sessionInfo = null;
+        let timeEstimator = null;
+        
+        // Simple audio preview
+        let audioPlayerInstance = null;
+        let currentPreviewFile = null;
+        
+        // Load pattern metadata
+        async function loadPatternMetadata() {
+            try {
+                const response = await fetch('pattern_metadata.json');
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.patterns && Array.isArray(data.patterns)) {
+                        patternMetadata = {};
+                        data.patterns.forEach(pattern => {
+                            patternMetadata[pattern.filename] = pattern;
+                        });
+                        console.log('Loaded metadata for', Object.keys(patternMetadata).length, 'patterns');
+                    }
+                }
+            } catch (error) {
+                console.warn('Could not load pattern metadata:', error);
+            }
+        }
+        
+        // Load file list from server or static JSON file
+        async function loadFileList() {
+            // Try API endpoint first (for local development)
+            try {
+                const apiResponse = await fetch('/api/list-audio-files');
+                if (apiResponse.ok) {
+                    const contentType = apiResponse.headers.get('content-type');
+                    if (contentType && contentType.includes('application/json')) {
+                        const data = await apiResponse.json();
+                        if (Array.isArray(data)) {
+                            allFilesList = data.map(file => {
+                                const filename = typeof file === 'string' ? file : file.name || file.filename;
+                                return {
+                                    name: filename,
+                                    path: `audio_files/${filename}`
+                                };
+                            });
+                            console.log('Loaded', allFilesList.length, 'files from API');
+                            initializeComponents();
+                            return;
+                        }
+                    }
+                }
+            } catch (apiError) {
+                console.log('API endpoint not available:', apiError.message);
+            }
+            
+            // Fallback to static JSON file (for GitHub Pages)
+            const basePath = window.location.pathname.replace(/\/[^/]*$/, '') || '';
+            const jsonPaths = [
+                basePath + '/audio-files.json',
+                './audio-files.json',
+                'audio-files.json',
+                '/audio-files.json'
+            ];
+            
+            for (const path of jsonPaths) {
+                try {
+                    console.log('Trying to load from:', path);
+                    const response = await fetch(path);
+                    
+                    if (!response.ok) {
+                        console.log('Response not OK, status:', response.status, 'for path:', path);
+                        continue;
+                    }
+                    
+                    const contentType = response.headers.get('content-type') || '';
+                    const text = await response.text();
+                    
+                    const isJson = contentType.includes('application/json') || 
+                                  contentType.includes('text/json') ||
+                                  text.trim().startsWith('[') || 
+                                  text.trim().startsWith('{');
+                    
+                    if (!isJson) {
+                        console.log('Response does not appear to be JSON, starts with:', text.substring(0, 50));
+                        continue;
+                    }
+                    
+                    const data = JSON.parse(text);
+                    let fileArray = [];
+                    
+                    if (data.files && Array.isArray(data.files)) {
+                        fileArray = data.files;
+                    } else if (Array.isArray(data)) {
+                        fileArray = data;
+                    }
+                    
+                    if (fileArray.length > 0) {
+                        allFilesList = fileArray.map(file => {
+                            const filename = typeof file === 'string' ? file : file.name || file.filename;
+                            return {
+                                name: filename,
+                                path: `audio_files/${filename}`
+                            };
+                        });
+                        console.log('Successfully loaded', allFilesList.length, 'files from:', path);
+                        initializeComponents();
+                        return;
+                    }
+                } catch (fetchError) {
+                    console.log('Error loading from', path, ':', fetchError.message);
+                    continue;
+                }
+            }
+            
+            // If we get here, all attempts failed
+            console.error('Failed to load audio files from any source');
+            const fileListEl = document.getElementById('fileList');
+            if (fileListEl) {
+                fileListEl.innerHTML = '<div style="padding: 20px; color: #999; font-size: 12px;">Failed to load audio files</div>';
+            }
+        }
+        
+        // Initialize all components
+        function initializeComponents() {
+            // Initialize time estimator
+            timeEstimator = new SessionTimeEstimator({
+                // Values can be overridden here, or edit js/modules/sessionTimingConfig.json
+            });
+            
+            // Initialize Queue
+            queue = new PatternQueue({
+                containerId: 'queue',
+                metadata: patternMetadata,
+                getAvailableFiles: () => {
+                    // Return currently filtered files for random selection
+                    if (patternExplorer && patternExplorer.getFilteredFiles) {
+                        return patternExplorer.getFilteredFiles();
+                    }
+                    return [];
+                },
+                onItemClick: (file, index) => {
+                    console.log('Queue item clicked:', file, 'at index:', index);
+                    // Play clicked file in audio player (legacy - now handled by play button)
+                    // playFileFromLibrary(file);
+                },
+                onFilePreview: (file) => {
+                    // Play file when play button is clicked
+                    playFileFromLibrary(file);
+                },
+                onPlayStateChange: (file, isPlaying) => {
+                    // Handle play/pause state changes
+                    if (!isPlaying) {
+                        // Paused - stop playback and hide progress bar
+                        pauseAudioPlayback();
+                    }
+                },
+                onItemAdd: (file, index) => {
+                    console.log('Item added to queue:', file.name);
+                    // Update session estimate after a short delay to ensure queue is updated
+                    setTimeout(() => {
+                        if (sessionInfo && queue) {
+                            sessionInfo.updateSessionEstimate(queue.getItems().length);
+                        }
+                    }, 0);
+                },
+                onItemRemove: (file, index) => {
+                    console.log('Item removed from queue:', file.name);
+                    // Sync selection state with PatternExplorer
+                    if (patternExplorer) {
+                        patternExplorer.syncWithQueue();
+                    }
+                    // Update session estimate after a short delay to ensure queue is updated
+                    // Skip update if queue is empty (likely being cleared)
+                    setTimeout(() => {
+                        if (sessionInfo && queue) {
+                            const count = queue.getItems().length;
+                            // Only update if queue is not empty, otherwise onClear will handle it
+                            if (count > 0) {
+                                sessionInfo.updateSessionEstimate(count);
+                            }
+                        }
+                    }, 0);
+                },
+                onClear: (clearedItems) => {
+                    console.log('Queue cleared:', clearedItems.length, 'items');
+                    // Sync selection state with PatternExplorer
+                    if (patternExplorer) {
+                        patternExplorer.syncWithQueue();
+                    }
+                    // Update session estimate immediately to 0 (queue is already empty)
+                    if (sessionInfo) {
+                        // Set pattern count to 0 and update visibility
+                        sessionInfo.patternCount = 0;
+                        sessionInfo.updateEstimatePanelVisibility();
+                        sessionInfo.updateSessionEstimate(0);
+                    }
+                },
+                onRandomSelect: (selected, requestedCount) => {
+                    console.log(`Randomly selected ${selected.length} patterns (requested ${requestedCount})`);
+                    // Sync selection state with PatternExplorer
+                    if (patternExplorer) {
+                        patternExplorer.syncWithQueue();
+                    }
+                    // Update session estimate after all items are added - use setTimeout to ensure it happens after render
+                    setTimeout(() => {
+                        if (sessionInfo && queue) {
+                            sessionInfo.updateSessionEstimate(queue.getItems().length);
+                        }
+                    }, 0);
+                },
+                onReorder: (items) => {
+                    console.log('Queue reordered:', items.map(i => i.name));
+                }
+            });
+            
+            // Initialize SessionInfo
+            sessionInfo = new SessionInfo({
+                containerId: 'sessionInfo',
+                participants: [], // Will load from localStorage
+                locations: [
+                    { location_id: 1, name: 'MDes Lab' },
+                    { location_id: 2, name: 'Steinberg 204' },
+                    { location_id: 3, name: 'Weil Hall' }
+                ],
+                timeEstimator: timeEstimator,
+                queue: queue, // Pass queue reference for validation
+                getQueueItemCount: () => queue ? queue.getItems().length : 0,
+                onChange: (change) => {
+                    console.log('SessionInfo changed:', change);
+                },
+                onValidationChange: (isValid, data) => {
+                    console.log('SessionInfo validation changed:', isValid);
+                },
+                onStartSession: (sessionData) => {
+                    console.log('Session started!', sessionData);
+                    handleSessionStart(sessionData);
+                }
+            });
+            
+            // Initialize PatternExplorerWithSelection
+            patternExplorer = new PatternExplorerWithSelection({
+                containerId: 'fileList',
+                filterContainerId: 'filterPanel',
+                files: allFilesList,
+                metadata: patternMetadata,
+                queue: queue,
+                onFileClick: (file) => {
+                    // Optional: Handle file click (e.g., preview)
+                    console.log('File clicked:', file.name);
+                },
+                onFileHover: (file, metadata, event) => {
+                    // Show tooltip
+                    showTooltip(file, metadata, event);
+                },
+                onFilePreview: (file) => {
+                    // Play file when play button is clicked
+                    playFileFromLibrary(file);
+                    
+                    // Sync play state with Queue
+                    if (queue) {
+                        queue.setPlayingFile(file.path, true);
+                    }
+                },
+                onPlayStateChange: (file, isPlaying) => {
+                    // Handle play/pause state changes
+                    if (!isPlaying) {
+                        // Paused - stop playback and hide progress bar
+                        pauseAudioPlayback();
+                        
+                        // Sync play state with Queue
+                        if (queue) {
+                            queue.setPlayingFile(null, false);
+                        }
+                    } else {
+                        // Sync play state with Queue
+                        if (queue) {
+                            queue.setPlayingFile(file.path, true);
+                        }
+                    }
+                },
+                onSelectionChange: (file, isSelected) => {
+                    console.log('Selection changed:', file.name, isSelected);
+                    // Update session estimate when selection changes
+                    if (sessionInfo) {
+                        sessionInfo.updateSessionEstimate(queue.getItems().length);
+                    }
+                },
+                onFilterChange: (filters) => {
+                    console.log('Filters changed:', filters);
+                }
+            });
+            
+            // Initial session estimate update
+            if (sessionInfo) {
+                sessionInfo.updateSessionEstimate(queue.getItems().length);
+            }
+        }
+        
+        // Tooltip handling
+        function showTooltip(file, metadata, event) {
+            const tooltip = document.getElementById('fileTooltip');
+            if (!tooltip || !metadata) return;
+            
+            const tooltipRows = [];
+            if (metadata.rms_mean !== undefined) {
+                tooltipRows.push(`RMS Mean: ${metadata.rms_mean.toFixed(3)}`);
+            }
+            if (metadata.duration !== undefined) {
+                tooltipRows.push(`Duration: ${metadata.duration.toFixed(2)}s`);
+            }
+            if (metadata.stereo_balance !== undefined) {
+                tooltipRows.push(`Stereo Balance: ${metadata.stereo_balance.toFixed(3)}`);
+            }
+            if (metadata.stereo_movement !== undefined) {
+                tooltipRows.push(`Stereo Movement: ${metadata.stereo_movement.toFixed(3)}`);
+            }
+            
+            if (tooltipRows.length === 0) {
+                tooltip.classList.remove('show');
+                return;
+            }
+            
+            tooltip.innerHTML = tooltipRows.map(row => 
+                `<div class="tooltip-row">${row}</div>`
+            ).join('');
+            
+            // Position tooltip near cursor (if event is provided)
+            if (event && event.clientX !== undefined && event.clientY !== undefined) {
+                const x = event.clientX + 10;
+                const y = event.clientY + 10;
+                tooltip.style.left = x + 'px';
+                tooltip.style.top = y + 'px';
+            }
+            tooltip.classList.add('show');
+        }
+        
+        // Hide tooltip on mouse leave
+        document.addEventListener('mousemove', (e) => {
+            if (!e.target.closest('.pattern-explorer__item')) {
+                const tooltip = document.getElementById('fileTooltip');
+                if (tooltip) {
+                    tooltip.classList.remove('show');
+                }
+            }
+        });
+        
+        // Handle session start
+        function handleSessionStart(sessionData) {
+            // Get queue items
+            const queueItems = queue ? queue.getItems() : [];
+            
+            // Prepare session data with queue information
+            const fullSessionData = {
+                ...sessionData,
+                queueItems: queueItems.map((item, index) => ({
+                    name: item.name,
+                    path: item.path,
+                    order: index + 1
+                })),
+                queueItemCount: queueItems.length,
+                startedAt: new Date().toISOString(),
+                browserInfo: {
+                    userAgent: navigator.userAgent,
+                    platform: navigator.platform,
+                    language: navigator.language
+                },
+                screenInfo: {
+                    width: screen.width,
+                    height: screen.height,
+                    availWidth: screen.availWidth,
+                    availHeight: screen.availHeight
+                }
+            };
+            
+            // Save to localStorage
+            try {
+                const sessions = JSON.parse(localStorage.getItem('sessions') || '[]');
+                sessions.push(fullSessionData);
+                localStorage.setItem('sessions', JSON.stringify(sessions));
+                console.log('Session saved to localStorage');
+            } catch (error) {
+                console.error('Error saving session to localStorage:', error);
+            }
+            
+            // Show success message (inline, not alert)
+            showSessionStartMessage(sessionData.sessionId, queueItems.length);
+            
+            // Enable export button if it exists
+            // Enable export button (it's now in SessionInfo component)
+            if (sessionInfo && sessionInfo.exportButton) {
+                sessionInfo.exportButton.disabled = false;
+            } else {
+                // Fallback: try to find it in DOM
+                const exportBtn = document.getElementById('exportSessionsBtn');
+                if (exportBtn) {
+                    exportBtn.disabled = false;
+                }
+            }
+        }
+        
+        // Export sessions to JSON file
+        function exportSessionsToJSON() {
+            try {
+                const sessions = JSON.parse(localStorage.getItem('sessions') || '[]');
+                if (sessions.length === 0) {
+                    showExportMessage('No sessions to export', 'error');
+                    return;
+                }
+                
+                const dataStr = JSON.stringify(sessions, null, 2);
+                const dataBlob = new Blob([dataStr], { type: 'application/json' });
+                const url = URL.createObjectURL(dataBlob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `sessions_${new Date().toISOString().split('T')[0]}.json`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+                
+                showExportMessage(`Exported ${sessions.length} session(s)`, 'success');
+            } catch (error) {
+                console.error('Error exporting sessions:', error);
+                showExportMessage('Error exporting sessions', 'error');
+            }
+        }
+        
+        // Show export message
+        function showExportMessage(message, type) {
+            const existingMsg = document.getElementById('exportMessage');
+            if (existingMsg) {
+                existingMsg.remove();
+            }
+            
+            const msg = document.createElement('div');
+            msg.id = 'exportMessage';
+            msg.className = `export-message export-message--${type}`;
+            msg.textContent = message;
+            
+            const sessionSidebar = document.querySelector('.session-sidebar');
+            if (sessionSidebar) {
+                sessionSidebar.insertBefore(msg, sessionSidebar.firstChild);
+                setTimeout(() => {
+                    if (msg.parentElement) {
+                        msg.remove();
+                    }
+                }, 3000);
+            }
+        }
+        
+        // Show session start success message
+        function showSessionStartMessage(sessionId, patternCount) {
+            // Remove any existing message
+            const existingMessage = document.getElementById('sessionStartMessage');
+            if (existingMessage) {
+                existingMessage.remove();
+            }
+            
+            // Create message element
+            const message = document.createElement('div');
+            message.id = 'sessionStartMessage';
+            message.className = 'session-start-message';
+            message.innerHTML = `
+                <div class="session-start-message__content">
+                    <div class="session-start-message__icon">✓</div>
+                    <div class="session-start-message__text">
+                        <strong>Session ${sessionId} started</strong>
+                        <span>${patternCount} ${patternCount === 1 ? 'pattern' : 'patterns'} in queue</span>
+                    </div>
+                    <button class="session-start-message__close" onclick="this.parentElement.parentElement.remove()">×</button>
+                </div>
+            `;
+            
+            // Append to body so it overlays everything
+            document.body.appendChild(message);
+            
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                if (message.parentElement) {
+                    message.style.opacity = '0';
+                    message.style.transform = 'translateY(-10px)';
+                    setTimeout(() => {
+                        if (message.parentElement) {
+                            message.remove();
+                        }
+                    }, 300);
+                }
+            }, 5000);
+        }
+        
+        // Simple audio preview setup
+        function setupAudioPreview() {
+            if (window.p5Instance) return;
+            
+            const sketch = function(p) {
+                p.setup = function() {
+                    // Create loadSound function
+                    window.loadSoundFn = function(path, onSuccess, onError) {
+                        try {
+                            return p.loadSound(path, onSuccess, onError);
+                        } catch (error) {
+                            console.error('Error loading sound:', error);
+                            if (onError) onError(error);
+                            return null;
+                        }
+                    };
+                    
+                    // Initialize AudioPlayer
+                    setTimeout(() => {
+                        initializeSimpleAudioPlayer();
+                    }, 100);
+                };
+                
+                p.draw = function() {
+                    // Check loop duration if needed
+                    if (audioPlayerInstance) {
+                        audioPlayerInstance.checkLoopDuration();
+                    }
+                };
+            };
+            
+            // Create container for p5
+            // Note: Some browsers require the container to be at least partially visible for audio
+            // We'll make it tiny and off-screen rather than completely hidden
+            const p5Container = document.createElement('div');
+            p5Container.id = 'p5-audio-container';
+            p5Container.style.width = '1px';
+            p5Container.style.height = '1px';
+            p5Container.style.position = 'fixed';
+            p5Container.style.top = '-10px';
+            p5Container.style.left = '-10px';
+            p5Container.style.overflow = 'hidden';
+            p5Container.style.opacity = '0.01'; // Very faint but not completely invisible
+            p5Container.style.pointerEvents = 'none';
+            p5Container.style.zIndex = '-1';
+            // Keep it in the DOM (don't use display: none as it can break audio)
+            document.body.appendChild(p5Container);
+            
+            try {
+                window.p5Instance = new p5(sketch, p5Container);
+            } catch (error) {
+                console.error('Error initializing p5.js:', error);
+            }
+        }
+        
+        // Initialize simple AudioPlayer
+        function initializeSimpleAudioPlayer() {
+            if (!window.loadSoundFn) {
+                setTimeout(initializeSimpleAudioPlayer, 100);
+                return;
+            }
+            
+            if (audioPlayerInstance) return;
+            
+            try {
+                audioPlayerInstance = new AudioPlayer({
+                    loadSoundFn: window.loadSoundFn,
+                    defaultLoop: false,
+                    onLoad: () => {
+                        updateAudioProgressBar();
+                    },
+                    onPlay: () => {
+                        startProgressUpdates();
+                    },
+                    onPause: () => {
+                        updateAudioProgressBar();
+                    },
+                    onStop: () => {
+                        currentPreviewFile = null;
+                        updateAudioProgressBar();
+                    },
+                    onEnd: () => {
+                        currentPreviewFile = null;
+                        updateAudioProgressBar();
+                    }
+                });
+            } catch (error) {
+                console.error('Error initializing AudioPlayer:', error);
+            }
+        }
+        
+        // Update audio progress bar
+        function updateAudioProgressBar() {
+            const progressBar = document.getElementById('audioProgressBar');
+            const fileEl = document.getElementById('audioProgressFile');
+            const progressFill = document.getElementById('audioProgressFill');
+            const timeEl = document.getElementById('audioProgressTime');
+            
+            if (!audioPlayerInstance || !currentPreviewFile) {
+                if (progressBar) progressBar.classList.remove('show');
+                return;
+            }
+            
+            const isLoaded = audioPlayerInstance.isLoaded();
+            const isPlaying = audioPlayerInstance.isPlaying();
+            
+            // Hide progress bar if not playing
+            if (!isLoaded || !isPlaying) {
+                if (progressBar) progressBar.classList.remove('show');
+                return;
+            }
+            
+            // Show progress bar
+            if (progressBar) progressBar.classList.add('show');
+            
+            // Update file name
+            if (fileEl && currentPreviewFile) {
+                fileEl.textContent = currentPreviewFile.name || 'Unknown file';
+            }
+            
+            // Update progress
+            const currentTime = audioPlayerInstance.getCurrentTime();
+            const duration = audioPlayerInstance.getDuration();
+            const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
+            
+            if (progressFill) {
+                progressFill.style.width = progress + '%';
+            }
+            
+            // Update time display
+            if (timeEl) {
+                const currentMin = Math.floor(currentTime / 60);
+                const currentSec = Math.floor(currentTime % 60);
+                const durationMin = Math.floor(duration / 60);
+                const durationSec = Math.floor(duration % 60);
+                timeEl.textContent = `${currentMin}:${currentSec.toString().padStart(2, '0')} / ${durationMin}:${durationSec.toString().padStart(2, '0')}`;
+            }
+        }
+        
+        // Animation frame for progress updates
+        let progressAnimationFrame = null;
+        function startProgressUpdates() {
+            if (progressAnimationFrame) return;
+            
+            function update() {
+                updateAudioProgressBar();
+                if (audioPlayerInstance && audioPlayerInstance.isPlaying()) {
+                    progressAnimationFrame = requestAnimationFrame(update);
+                } else {
+                    progressAnimationFrame = null;
+                }
+            }
+            progressAnimationFrame = requestAnimationFrame(update);
+        }
+        
+        // Pause audio playback
+        function pauseAudioPlayback() {
+            if (audioPlayerInstance && audioPlayerInstance.isPlaying()) {
+                audioPlayerInstance.pause();
+            }
+            currentPreviewFile = null;
+            updateAudioProgressBar();
+        }
+        
+        // Start audio context (required for browser autoplay policy)
+        function startAudioContext() {
+            if (!window.p5Instance) {
+                console.error('p5Instance not available for audio context');
+                return Promise.resolve(false);
+            }
+            
+            return new Promise((resolve) => {
+                try {
+                    const audioContext = window.p5Instance.getAudioContext();
+                    if (!audioContext) {
+                        console.error('Audio context not available');
+                        resolve(false);
+                        return;
+                    }
+                    
+                    console.log('Audio context state:', audioContext.state);
+                    
+                    if (audioContext.state === 'running') {
+                        console.log('Audio context already running');
+                        resolve(true);
+                        return;
+                    }
+                    
+                    // Start audio context (requires user gesture)
+                    console.log('Starting audio context...');
+                    window.p5Instance.userStartAudio().then(() => {
+                        console.log('Audio context started successfully');
+                        resolve(true);
+                    }).catch((error) => {
+                        console.error('Error starting audio context:', error);
+                        // Try resuming directly as fallback
+                        if (audioContext.state === 'suspended') {
+                            audioContext.resume().then(() => {
+                                console.log('Audio context resumed');
+                                resolve(true);
+                            }).catch((resumeError) => {
+                                console.error('Error resuming audio context:', resumeError);
+                                resolve(false);
+                            });
+                        } else {
+                            resolve(false);
+                        }
+                    });
+                } catch (e) {
+                    console.error('Exception starting audio context:', e);
+                    resolve(false);
+                }
+            });
+        }
+        
+        // Play file from library (when play button clicked)
+        function playFileFromLibrary(file) {
+            console.log('playFileFromLibrary called with file:', file);
+            if (!file) {
+                console.error('No file provided to playFileFromLibrary');
+                return;
+            }
+            
+            // Check if this file is already playing - if so, pause it
+            if (currentPreviewFile && currentPreviewFile.path === file.path && 
+                audioPlayerInstance && audioPlayerInstance.isPlaying()) {
+                pauseAudioPlayback();
+                return;
+            }
+            
+            // Update current file
+            currentPreviewFile = file;
+            
+            if (!audioPlayerInstance) {
+                console.log('AudioPlayer not initialized yet, setting up...');
+                if (!window.p5Instance) {
+                    setupAudioPreview();
+                }
+                setTimeout(() => playFileFromLibrary(file), 300);
+                return;
+            }
+            
+            // Ensure p5.js instance exists
+            if (!window.p5Instance) {
+                console.error('p5.js instance not available');
+                return;
+            }
+            
+            const filePath = file.path || file;
+            console.log('Loading audio file:', filePath);
+            
+            // Start audio context first (required for browser autoplay policy)
+            startAudioContext().then((contextStarted) => {
+                console.log('Audio context started:', contextStarted);
+                
+                // Verify audio context is running
+                if (window.p5Instance) {
+                    const audioContext = window.p5Instance.getAudioContext();
+                    if (audioContext) {
+                        console.log('Audio context state after start:', audioContext.state);
+                    }
+                }
+                
+                console.log('Loading audio file:', filePath);
+                return audioPlayerInstance.loadFile(filePath);
+            }).then(() => {
+                console.log('Audio file loaded successfully, checking if ready to play...');
+                console.log('AudioPlayer isLoaded:', audioPlayerInstance.isLoaded());
+                console.log('AudioPlayer isPlaying:', audioPlayerInstance.isPlaying());
+                
+                // Ensure audio context is still running before playing
+                if (window.p5Instance) {
+                    const audioContext = window.p5Instance.getAudioContext();
+                    if (audioContext && audioContext.state !== 'running') {
+                        console.log('Audio context not running, attempting to resume...');
+                        audioContext.resume().then(() => {
+                            console.log('Audio context resumed, starting playback');
+                            tryPlay();
+                        }).catch((error) => {
+                            console.error('Failed to resume audio context:', error);
+                            tryPlay(); // Try anyway
+                        });
+                    } else {
+                        tryPlay();
+                    }
+                } else {
+                    tryPlay();
+                }
+                
+                function tryPlay() {
+                    // Small delay to ensure audio is ready
+                    setTimeout(() => {
+                        console.log('Attempting to play...');
+                        console.log('Before play - isLoaded:', audioPlayerInstance.isLoaded());
+                        
+                        try {
+                            // Set volume to 1.0 (full volume) if not already set
+                            if (audioPlayerInstance.soundFile) {
+                                // Force volume to 1.0
+                                console.log('Setting volume to 1.0 explicitly');
+                                audioPlayerInstance.soundFile.setVolume(1.0);
+                                
+                                // Also set gain node directly if available
+                                try {
+                                    if (audioPlayerInstance.soundFile.output && audioPlayerInstance.soundFile.output.gain) {
+                                        audioPlayerInstance.soundFile.output.gain.value = 1.0;
+                                        console.log('Set gain node value to 1.0');
+                                    }
+                                } catch (e) {
+                                    console.warn('Could not set gain node:', e);
+                                }
+                                
+                                const currentVolume = audioPlayerInstance.soundFile.getVolume();
+                                console.log('Current volume after setting:', currentVolume);
+                                
+                                // Check if sound is actually ready
+                                console.log('Sound file ready:', audioPlayerInstance.soundFile.isLoaded());
+                                console.log('Sound file duration:', audioPlayerInstance.soundFile.duration());
+                                console.log('Sound file current time:', audioPlayerInstance.soundFile.currentTime());
+                                
+                                // Ensure we start from the beginning
+                                if (audioPlayerInstance.soundFile.currentTime() > 0) {
+                                    console.log('Resetting to beginning');
+                                    audioPlayerInstance.soundFile.stop();
+                                }
+                            }
+                            
+                            const playResult = audioPlayerInstance.play();
+                            console.log('Play result:', playResult);
+                            
+                            // Check again after a brief moment
+                            setTimeout(() => {
+                                console.log('After play - isPlaying:', audioPlayerInstance.isPlaying());
+                                console.log('Sound file isPlaying:', audioPlayerInstance.soundFile ? audioPlayerInstance.soundFile.isPlaying() : 'no soundFile');
+                                
+                                if (audioPlayerInstance.soundFile) {
+                                    console.log('Sound file volume:', audioPlayerInstance.soundFile.getVolume());
+                                    const currentTime = audioPlayerInstance.soundFile.currentTime();
+                                    console.log('Sound file current time:', currentTime);
+                                    console.log('Sound file duration:', audioPlayerInstance.soundFile.duration());
+                                    
+                                    // Check audio node connection and gain
+                                    try {
+                                        if (audioPlayerInstance.soundFile.output) {
+                                            const outputNode = audioPlayerInstance.soundFile.output;
+                                            console.log('Sound file output node:', outputNode);
+                                            
+                                            // Check gain value
+                                            if (outputNode.gain) {
+                                                console.log('Gain node value:', outputNode.gain.value);
+                                                console.log('Gain node defaultValue:', outputNode.gain.defaultValue);
+                                                
+                                                // Ensure gain is not 0
+                                                if (outputNode.gain.value === 0) {
+                                                    console.warn('Gain is 0! Setting to 1.0');
+                                                    outputNode.gain.value = 1.0;
+                                                }
+                                            }
+                                            
+                                            // Try to verify it's connected
+                                            if (window.p5Instance) {
+                                                const audioContext = window.p5Instance.getAudioContext();
+                                                if (audioContext && audioContext.destination) {
+                                                    console.log('Audio context destination:', audioContext.destination);
+                                                    console.log('Audio context state:', audioContext.state);
+                                                    
+                                                    // Try to explicitly ensure connection
+                                                    // p5.sound should handle this, but let's verify
+                                                    try {
+                                                        // Check if output is connected to destination
+                                                        // Note: We can't directly check connections, but we can verify the chain exists
+                                                        console.log('Verifying audio chain...');
+                                                    } catch (e) {
+                                                        console.warn('Could not verify audio chain:', e);
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    } catch (e) {
+                                        console.warn('Could not check audio node:', e);
+                                    }
+                                    
+                                    // Check if time is progressing (audio is actually playing)
+                                    setTimeout(() => {
+                                        const newTime = audioPlayerInstance.soundFile.currentTime();
+                                        console.log('Time check - before:', currentTime, 'after:', newTime);
+                                        if (newTime > currentTime) {
+                                            console.log('✓ Audio is progressing - playback is working!');
+                                            console.log('⚠ But no sound heard - check browser/system volume and audio output');
+                                        } else {
+                                            console.warn('⚠ Audio time not progressing - playback may not be working');
+                                        }
+                                    }, 500);
+                                }
+                                
+                                if (audioPlayerInstance.isPlaying()) {
+                                    startProgressUpdates();
+                                } else {
+                                    console.error('Playback did not start - checking audio context...');
+                                    if (window.p5Instance) {
+                                        const ctx = window.p5Instance.getAudioContext();
+                                        console.log('Audio context state:', ctx ? ctx.state : 'no context');
+                                    }
+                                    currentPreviewFile = null;
+                                    updateAudioProgressBar();
+                                }
+                            }, 200);
+                        } catch (playError) {
+                            console.error('Exception during play():', playError);
+                            currentPreviewFile = null;
+                            updateAudioProgressBar();
+                        }
+                    }, 150);
+                }
+            }).catch(error => {
+                console.error('Error loading/playing audio file:', error);
+                currentPreviewFile = null;
+                updateAudioProgressBar();
+            });
+        }
+        
+        // Initialize on page load
+        window.addEventListener('DOMContentLoaded', async () => {
+            // Initialize audio preview
+            setupAudioPreview();
+            
+            await loadPatternMetadata();
+            await loadFileList();
+        });
+    </script>
+</body>
+</html>

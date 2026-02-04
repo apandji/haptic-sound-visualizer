@@ -135,9 +135,22 @@
 /* Empty State */
 .queue__empty {
     text-align: center;
-    padding: var(--spacing-3xl) var(--spacing-lg);
+    padding: var(--spacing-3xl) var(--spacing-xl);
     color: #999;
     font-size: var(--font-size-sm);
+    line-height: var(--line-height-relaxed);
+}
+
+.queue__empty-message {
+    margin-bottom: var(--spacing-xs);
+    color: #666;
+    font-weight: var(--font-weight-medium);
+}
+
+.queue__empty-hint {
+    color: #999;
+    font-size: var(--font-size-xs);
+    font-style: italic;
 }
 
 /* Queue Footer */
@@ -198,6 +211,39 @@
     cursor: move;
     transition: background 0.15s ease, border-color 0.15s ease;
     position: relative;
+}
+
+/* Queue Item Play Button */
+.queue__item-play-btn {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    background: transparent;
+    border: none;
+    color: inherit;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 2px;
+    transition: all 0.15s ease;
+    opacity: 0.6;
+}
+
+.queue__item-play-btn svg {
+    width: 16px;
+    height: 16px;
+    fill: currentColor;
+}
+
+.queue__item:hover .queue__item-play-btn {
+    opacity: 1;
+}
+
+.queue__item-play-btn:hover {
+    background: rgba(0, 0, 0, 0.1);
+    opacity: 1;
 }
 
 .queue__item:hover {

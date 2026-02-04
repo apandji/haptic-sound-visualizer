@@ -105,6 +105,14 @@
             <button onclick="getData()">Get Data</button>
             <button onclick="resetForm()">Reset</button>
             <button onclick="setTestData()">Set Test Data</button>
+            <button onclick="testStartSession()">Test START SESSION</button>
+            <br>
+            <small>Test pattern count:</small>
+            <button onclick="updatePatternCount(0)">0</button>
+            <button onclick="updatePatternCount(3)">3</button>
+            <button onclick="updatePatternCount(5)">5</button>
+            <button onclick="updatePatternCount(10)">10</button>
+            <button onclick="updatePatternCount(20)">20</button>
         </div>
         
         <div class="output">
@@ -113,6 +121,7 @@
         </div>
     </div>
     
+    <script src="../../js/modules/sessionTimeEstimator.js"></script>
     <script src="../../js/components/base/sessionInfo.js"></script>
     <script>
         // Sample data
@@ -128,11 +137,29 @@
             { location_id: 3, name: 'Field Site 1' }
         ];
         
+        // Initialize time estimator
+        // Option 1: Load from config file (async) - uncomment to use:
+        // (async () => {
+        //     const timeEstimator = await SessionTimeEstimator.create('../../js/modules/sessionTimingConfig.json');
+        //     // ... rest of initialization
+        // })();
+        
+        // Option 2: Use defaults or override specific values
+        // Edit js/modules/sessionTimingConfig.json to change default values
+        const timeEstimator = new SessionTimeEstimator({
+            // Values can be overridden here, or edit sessionTimingConfig.json
+            // calibrationDuration: 60,
+            // baselineDuration: 30,
+            // stimulationDuration: 30,
+            // taggingDuration: 10
+        });
+        
         // Initialize SessionInfo
         const sessionInfo = new SessionInfo({
             containerId: 'sessionInfo',
             participants: participants,
             locations: locations,
+            timeEstimator: timeEstimator,
             onChange: (change) => {
                 const output = document.getElementById('output');
                 output.textContent = JSON.stringify({
@@ -144,6 +171,14 @@
             },
             onValidationChange: (isValid, data) => {
                 console.log('Validation changed:', isValid, data);
+            },
+            onStartSession: (sessionData) => {
+                const output = document.getElementById('output');
+                output.textContent = 'SESSION STARTED!\n\n' + JSON.stringify({
+                    sessionId: sessionData.sessionId,
+                    data: sessionData.data
+                }, null, 2);
+                alert(`Session ${sessionData.sessionId} started!`);
             }
         });
         
@@ -168,14 +203,33 @@
             sessionInfo.setData({
                 participant_id: 2,
                 location_id: 1,
-                session_date: '2026-02-04T14:30',
                 equipment_info: 'EEG Headset v2.0',
                 experimenter: 'Dr. Smith',
                 notes: 'Test session for pattern validation'
             });
             const output = document.getElementById('output');
-            output.textContent = 'Test data set';
+            output.textContent = 'Test data set (note: session_date will be set when START SESSION is clicked)';
         }
+        
+        function testStartSession() {
+            if (sessionInfo.validate()) {
+                sessionInfo.startSession();
+            } else {
+                alert('Please fill in required fields (Participant and Location)');
+            }
+        }
+        
+        // Test updating pattern count
+        function updatePatternCount(count) {
+            sessionInfo.updateSessionEstimate(count);
+            const output = document.getElementById('output');
+            output.textContent = `Updated pattern count to ${count}`;
+        }
+        
+        // Simulate pattern count changes
+        setTimeout(() => updatePatternCount(5), 1000);
+        setTimeout(() => updatePatternCount(10), 3000);
+        setTimeout(() => updatePatternCount(3), 5000);
     </script>
 </body>
 </html>
