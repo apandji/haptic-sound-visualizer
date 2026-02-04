@@ -415,6 +415,8 @@
     <link rel="stylesheet" href="css/components/base/patternQueue.css?v=1">
     <link rel="stylesheet" href="css/components/base/sessionInfo.css?v=1">
     <link rel="stylesheet" href="css/components/base/audioControls.css?v=1">
+    <link rel="stylesheet" href="css/components/base/testExecutionOverlay.css?v=1">
+    <link rel="stylesheet" href="css/components/base/trialTagsSurvey.css?v=1">
 </head>
 <body>
     <!-- Top Navigation Header -->
@@ -462,6 +464,9 @@
     <!-- Tooltip element (for file metadata) -->
     <div id="fileTooltip" class="file-tooltip"></div>
     
+    <!-- Test Execution Overlay -->
+    <div id="testExecutionOverlay"></div>
+    
     <!-- p5.js dependencies for audio playback -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/p5.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/addons/p5.sound.min.js"></script>
@@ -470,11 +475,15 @@
     <script src="js/modules/filters.js?v=2"></script>
     <script src="js/modules/sessionTimeEstimator.js?v=1"></script>
     <script src="js/modules/audioPlayer.js?v=1"></script>
+    <script src="js/modules/testSession.js?v=1"></script>
+    <script src="js/modules/eegDataCollector.js?v=1"></script>
     <script src="js/components/base/patternExplorer.js?v=2"></script>
     <script src="js/components/base/filterPanel.js?v=2"></script>
     <script src="js/components/base/dualSlider.js?v=2"></script>
     <script src="js/components/base/patternQueue.js?v=1"></script>
     <script src="js/components/base/sessionInfo.js?v=1"></script>
+    <script src="js/components/base/testExecutionOverlay.js?v=1"></script>
+    <script src="js/components/base/trialTagsSurvey.js?v=1"></script>
     <script src="js/components/variants/patternExplorerWithSelection.js?v=1"></script>
     
     <!-- Initialization Script -->
@@ -829,21 +838,51 @@
             }
         });
         
-        // Handle session start
+        // Test execution state
+        let testSession = null;
+        let testExecutionOverlay = null;
+        let eegDataCollector = null;
+        let trialTagsSurvey = null;
+        let testAudioPlayer = null;
+        let calibrationTimer = null;
+        let baselineTimer = null;
+        let stimulationTimer = null;
+
+        // Handle session start - now starts test execution flow
         function handleSessionStart(sessionData) {
             // Get queue items
             const queueItems = queue ? queue.getItems() : [];
             
-            // Prepare session data with queue information
+            if (queueItems.length === 0) {
+                console.error('Cannot start session: queue is empty');
+                return;
+            }
+
+            // Stop any preview audio
+            if (audioPlayerInstance) {
+                audioPlayerInstance.stop();
+            }
+            pauseAudioPlayback();
+
+            // Initialize test execution components
+            initializeTestExecution(sessionData, queueItems);
+        }
+
+        /**
+         * Initialize test execution flow
+         */
+        function initializeTestExecution(sessionData, queueItems) {
+            // Prepare full session data structure
             const fullSessionData = {
-                ...sessionData,
+                sessionId: sessionData.sessionId,
+                ...sessionData.data, // participant_id, location_id, etc.
+                startedAt: new Date().toISOString(),
                 queueItems: queueItems.map((item, index) => ({
                     name: item.name,
                     path: item.path,
                     order: index + 1
                 })),
                 queueItemCount: queueItems.length,
-                startedAt: new Date().toISOString(),
                 browserInfo: {
                     userAgent: navigator.userAgent,
                     platform: navigator.platform,
@@ -856,30 +895,328 @@
                     availHeight: screen.availHeight
                 }
             };
+
+            // Create TestSession
+            testSession = new TestSession({
+                sessionId: sessionData.sessionId,
+                queue: queueItems,
+                sessionData: fullSessionData,
+                onPhaseChange: handlePhaseChange,
+                onTrialComplete: handleTrialComplete,
+                onSessionComplete: handleSessionComplete,
+                onError: handleTestError
+            });
+
+            // Create TestExecutionOverlay
+            testExecutionOverlay = new TestExecutionOverlay({
+                containerId: 'testExecutionOverlay',
+                onAbort: handleTestAbort
+            });
+
+            // Create EEGDataCollector
+            eegDataCollector = new EEGDataCollector({
+                sampleRate: 10, // 10 Hz
+                useDummyData: true,
+                onReading: (reading) => {
+                    if (testSession) {
+                        testSession.addReading(reading);
+                    }
+                }
+            });
+
+            // Create test audio player (separate from preview player)
+            testAudioPlayer = new AudioPlayer({
+                loadSoundFn: window.loadSoundFn,
+                defaultLoop: true,
+                onEnd: () => {
+                    // Update survey play button state if survey is active
+                    if (window.currentTrialTagsSurvey) {
+                        window.currentTrialTagsSurvey.setPlayingState(false);
+                    }
+                },
+                onStop: () => {
+                    // Update survey play button state if survey is active
+                    if (window.currentTrialTagsSurvey) {
+                        window.currentTrialTagsSurvey.setPlayingState(false);
+                    }
+                }
+            });
+
+            // Start the session
+            testSession.start();
+        }
+
+        /**
+         * Handle phase changes from TestSession
+         */
+        function handlePhaseChange(phase, data) {
+            console.log('Phase change:', phase, data);
+
+            // Stop any existing timers
+            clearTimers();
+
+            // Stop audio if needed
+            if (testAudioPlayer && testAudioPlayer.isPlaying()) {
+                testAudioPlayer.stop();
+            }
+
+            // Stop EEG collection during transitions
+            if (eegDataCollector && eegDataCollector.isActive()) {
+                eegDataCollector.stop();
+            }
+
+            switch (phase) {
+                case 'calibration':
+                    testExecutionOverlay.showCalibration(data);
+                    eegDataCollector.start();
+                    // Start calibration timer
+                    calibrationTimer = setTimeout(() => {
+                        testSession.completeCalibration();
+                    }, data.duration * 1000);
+                    break;
+
+                case 'baseline':
+                    testExecutionOverlay.showBaseline(data);
+                    eegDataCollector.start();
+                    // Start baseline timer
+                    baselineTimer = setTimeout(() => {
+                        testSession.completeBaseline();
+                    }, data.duration * 1000);
+                    break;
+
+                case 'stimulation':
+                    testExecutionOverlay.showStimulation(data);
+                    eegDataCollector.start();
+                    // Load and play audio
+                    playTestAudio(data.pattern, () => {
+                        // Audio started - record offset
+                        testSession.recordAudioStart();
+                    });
+                    // Start stimulation timer
+                    stimulationTimer = setTimeout(() => {
+                        testSession.completeStimulation();
+                    }, data.duration * 1000);
+                    break;
+
+                case 'survey':
+                    // Stop any currently playing audio from stimulation phase
+                    if (testAudioPlayer && testAudioPlayer.isPlaying()) {
+                        testAudioPlayer.stop();
+                    }
+                    testExecutionOverlay.showSurvey(data);
+                    // Initialize survey component
+                    const surveyContainer = testExecutionOverlay.getSurveyContainer();
+                    if (surveyContainer) {
+                        // Store reference globally so we can clear it later
+                        window.currentTrialTagsSurvey = new TrialTagsSurvey({
+                            container: surveyContainer,
+                            pattern: data.pattern,
+                            onPlayAudio: (pattern) => {
+                                // Stop any currently playing audio first
+                                if (testAudioPlayer && testAudioPlayer.isPlaying()) {
+                                    testAudioPlayer.stop();
+                                    if (window.currentTrialTagsSurvey) {
+                                        window.currentTrialTagsSurvey.setPlayingState(false);
+                                    }
+                                }
+                                // Play audio using test audio player
+                                playTestAudio(pattern, () => {
+                                    console.log('Audio playing for survey preview');
+                                    if (window.currentTrialTagsSurvey) {
+                                        window.currentTrialTagsSurvey.setPlayingState(true);
+                                    }
+                                });
+                            },
+                            onPauseAudio: () => {
+                                // Stop audio when pause is clicked
+                                if (testAudioPlayer && testAudioPlayer.isPlaying()) {
+                                    testAudioPlayer.stop();
+                                }
+                            },
+                            onComplete: (selectedTags) => {
+                                // Stop audio when survey is completed
+                                if (testAudioPlayer && testAudioPlayer.isPlaying()) {
+                                    testAudioPlayer.stop();
+                                }
+                                testSession.completeSurvey(selectedTags);
+                                // Clear survey reference after completion
+                                window.currentTrialTagsSurvey = null;
+                            }
+                        });
+                        trialTagsSurvey = window.currentTrialTagsSurvey;
+                        
+                        // Connect survey to overlay's NEXT button
+                        const overlayNextBtn = document.querySelector('.test-execution-overlay__next-btn');
+                        if (overlayNextBtn && window.currentTrialTagsSurvey) {
+                            window.currentTrialTagsSurvey.setOverlayNextButton(overlayNextBtn);
+                        }
+                        
+                        // Listen for audio end to update button state
+                        if (testAudioPlayer) {
+                            // Store original onEnd callback
+                            const originalOnEnd = testAudioPlayer.onEnd;
+                            testAudioPlayer.onEnd = () => {
+                                if (originalOnEnd) originalOnEnd();
+                                if (window.currentTrialTagsSurvey) {
+                                    window.currentTrialTagsSurvey.setPlayingState(false);
+                                }
+                            };
+                        }
+                    }
+                    break;
+
+                // Pattern-complete phase removed - survey now goes directly to next pattern
+
+                case 'complete':
+                    testExecutionOverlay.showComplete();
+                    saveSessionData();
+                    break;
+
+                case 'aborted':
+                    testExecutionOverlay.showAborted();
+                    saveSessionData();
+                    break;
+            }
+        }
+
+        /**
+         * Play audio for test stimulation phase
+         */
+        function playTestAudio(pattern, onStart) {
+            if (!testAudioPlayer || !window.loadSoundFn) {
+                console.error('Test audio player not initialized');
+                return;
+            }
+
+            // Get pattern duration from metadata
+            const patternMeta = patternMetadata[pattern.name] || {};
+            const duration = patternMeta.duration || 0; // in seconds
+
+            // Load and play audio
+            testAudioPlayer.loadFile(pattern.path).then(() => {
+                // Determine if we need looping or fade-out
+                if (duration < 30) {
+                    // Pattern < 30s: loop seamlessly
+                    testAudioPlayer.setLoop(true);
+                } else {
+                    // Pattern > 30s: will fade out at 25s, cut at 30s
+                    testAudioPlayer.setLoop(false);
+                    // TODO: Implement fade-out logic
+                }
+
+                // Start audio context if needed
+                if (window.p5Instance) {
+                    window.p5Instance.userStartAudio();
+                }
+
+                // Play with a small delay to ensure readiness
+                setTimeout(() => {
+                    testAudioPlayer.play();
+                    if (onStart) {
+                        onStart();
+                    }
+                }, 100);
+            }).catch(error => {
+                console.error('Error loading test audio:', error);
+                // Retry logic could go here
+            });
+        }
+
+        // Pattern complete checkpoint removed - survey now goes directly to next pattern
+
+        /**
+         * Handle trial complete
+         */
+        function handleTrialComplete(trialData) {
+            console.log('Trial complete:', trialData);
+            // Trial data is already stored in testSession
+            // We'll save everything when session completes
+        }
+
+        /**
+         * Handle session complete
+         */
+        function handleSessionComplete(sessionData) {
+            console.log('Session complete:', sessionData);
+            saveSessionData();
+        }
+
+        /**
+         * Handle test error
+         */
+        function handleTestError(error) {
+            console.error('Test error:', error);
+            // Could show error UI here
+        }
+
+        /**
+         * Handle test abort
+         */
+        function handleTestAbort() {
+            if (confirm('Are you sure you want to abort this session? Partial data will be saved.')) {
+                if (testSession) {
+                    testSession.abort();
+                }
+                clearTimers();
+                if (testAudioPlayer) {
+                    testAudioPlayer.stop();
+                }
+                if (eegDataCollector) {
+                    eegDataCollector.stop();
+                }
+            }
+        }
+
+        /**
+         * Clear all timers
+         */
+        function clearTimers() {
+            if (calibrationTimer) {
+                clearTimeout(calibrationTimer);
+                calibrationTimer = null;
+            }
+            if (baselineTimer) {
+                clearTimeout(baselineTimer);
+                baselineTimer = null;
+            }
+            if (stimulationTimer) {
+                clearTimeout(stimulationTimer);
+                stimulationTimer = null;
+            }
+        }
+
+        /**
+         * Save session data to localStorage
+         */
+        function saveSessionData() {
+            if (!testSession) return;
+
+            const sessionData = testSession.getSessionData();
             
+            // Prepare full session data for localStorage
+            const fullSessionData = {
+                ...sessionData.sessionData,
+                sessionId: sessionData.sessionId,
+                trials: sessionData.trials,
+                calibrationReadings: sessionData.calibrationReadings,
+                isAborted: sessionData.isAborted,
+                completedAt: sessionData.completedAt,
+                startedAt: sessionData.sessionData.startedAt || new Date().toISOString()
+            };
+
             // Save to localStorage
             try {
                 const sessions = JSON.parse(localStorage.getItem('sessions') || '[]');
                 sessions.push(fullSessionData);
                 localStorage.setItem('sessions', JSON.stringify(sessions));
-                console.log('Session saved to localStorage');
+                console.log('Session data saved to localStorage');
             } catch (error) {
                 console.error('Error saving session to localStorage:', error);
             }
-            
-            // Show success message (inline, not alert)
-            showSessionStartMessage(sessionData.sessionId, queueItems.length);
-            
-            // Enable export button if it exists
-            // Enable export button (it's now in SessionInfo component)
+
+            // Enable export button
             if (sessionInfo && sessionInfo.exportButton) {
                 sessionInfo.exportButton.disabled = false;
-            } else {
-                // Fallback: try to find it in DOM
-                const exportBtn = document.getElementById('exportSessionsBtn');
-                if (exportBtn) {
-                    exportBtn.disabled = false;
-                }
             }
         }
         

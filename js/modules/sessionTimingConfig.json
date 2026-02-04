@@ -1,5 +1,5 @@
 {
-  "calibrationDuration": 60,
+  "calibrationDuration": 20,
   "baselineDuration": 30,
   "stimulationDuration": 30,
   "taggingDuration": 10,

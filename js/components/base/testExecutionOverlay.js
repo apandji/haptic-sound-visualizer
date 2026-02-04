@@ -1,0 +1,393 @@
+/**
+ * TestExecutionOverlay Component
+ * 
+ * Full-screen overlay for test execution flow.
+ * Handles calibration, baseline, stimulation, checkpoint, and survey phases.
+ */
+
+class TestExecutionOverlay {
+    /**
+     * Create a TestExecutionOverlay instance
+     * @param {Object} options - Configuration options
+     * @param {string} [options.containerId='testExecutionOverlay'] - Container ID
+     * @param {Function} [options.onAbort] - Callback when session is aborted: () => void
+     */
+    constructor(options = {}) {
+        this.containerId = options.containerId || 'testExecutionOverlay';
+        this.container = document.getElementById(this.containerId);
+        this.onAbort = options.onAbort || null;
+
+        // State
+        this.isVisible = false;
+        this.currentPhase = null;
+        this.countdown = 0;
+        this.countdownInterval = null;
+
+        if (!this.container) {
+            console.error(`TestExecutionOverlay: Container #${this.containerId} not found`);
+            // Try to create container if it doesn't exist
+            this.container = document.createElement('div');
+            this.container.id = this.containerId;
+            document.body.appendChild(this.container);
+            console.log(`TestExecutionOverlay: Created container #${this.containerId}`);
+        }
+
+        this.init();
+    }
+
+    /**
+     * Initialize the overlay
+     */
+    init() {
+        this.container.innerHTML = '';
+        this.container.className = 'test-execution-overlay';
+        
+        // Create main content container
+        this.contentContainer = document.createElement('div');
+        this.contentContainer.className = 'test-execution-overlay__content';
+        this.container.appendChild(this.contentContainer);
+
+        // Create top-right button container
+        this.topRightButtons = document.createElement('div');
+        this.topRightButtons.className = 'test-execution-overlay__top-right-buttons';
+        this.container.appendChild(this.topRightButtons);
+
+        // Create abort button (always visible, destructive) - on LEFT
+        this.abortButton = document.createElement('button');
+        this.abortButton.className = 'test-execution-overlay__abort-btn';
+        this.abortButton.textContent = 'ABORT';
+        this.abortButton.addEventListener('click', () => {
+            if (this.onAbort) {
+                this.onAbort();
+            }
+        });
+        this.topRightButtons.appendChild(this.abortButton);
+
+        // Create NEXT button (shown conditionally) - on RIGHT
+        this.nextButton = document.createElement('button');
+        this.nextButton.className = 'test-execution-overlay__next-btn';
+        this.nextButton.textContent = 'NEXT';
+        this.nextButton.style.display = 'none'; // Hidden by default
+        this.nextButton.addEventListener('click', () => {
+            this.handleNext();
+        });
+        this.topRightButtons.appendChild(this.nextButton);
+
+        // Initially hidden
+        this.hide();
+    }
+
+    /**
+     * Show the overlay
+     */
+    show() {
+        if (!this.container) {
+            console.error('TestExecutionOverlay: Cannot show - container not found');
+            return;
+        }
+        // Trigger reflow for smooth transition
+        this.container.style.display = 'flex';
+        this.container.offsetHeight; // Force reflow
+        this.container.classList.add('active');
+        this.isVisible = true;
+    }
+
+    /**
+     * Hide the overlay
+     */
+    hide() {
+        if (!this.container) {
+            return;
+        }
+        this.container.classList.remove('active');
+        this.isVisible = false;
+        this.stopCountdown();
+        this.currentPhase = null;
+        // Wait for transition before hiding display
+        setTimeout(() => {
+            if (!this.isVisible) {
+                this.container.style.display = 'none';
+            }
+        }, 300);
+    }
+
+    /**
+     * Show calibration phase
+     * @param {Object} data - Phase data
+     * @param {number} data.duration - Duration in seconds
+     */
+    showCalibration(data) {
+        this.currentPhase = 'calibration';
+        this.show();
+        this.showNextButton(false); // Hide NEXT during countdown phases
+        this.startCountdown(data.duration, () => {
+            // Countdown complete - calibration done
+        });
+
+        this.contentContainer.innerHTML = `
+            <div class="test-execution-overlay__phase test-execution-overlay__phase--calibration">
+                <div class="test-execution-overlay__phase-label">CALIBRATING</div>
+                <div class="test-execution-overlay__countdown" id="calibrationCountdown">${data.duration}</div>
+            </div>
+        `;
+    }
+
+    /**
+     * Show baseline phase
+     * @param {Object} data - Phase data
+     * @param {number} data.duration - Duration in seconds
+     * @param {number} data.patternNumber - Current pattern number
+     * @param {number} data.totalPatterns - Total number of patterns
+     * @param {Object} data.pattern - Pattern file object
+     */
+    showBaseline(data) {
+        this.currentPhase = 'baseline';
+        this.show();
+        this.showNextButton(false); // Hide NEXT during countdown phases
+        this.startCountdown(data.duration, () => {
+            // Countdown complete - baseline done
+        });
+
+        // Ensure we have valid data
+        const patternNumber = data.patternNumber || (data.patternIndex !== undefined ? data.patternIndex + 1 : 1);
+        const totalPatterns = data.totalPatterns || (data.trials ? data.trials.length : 1);
+        const patternName = data.pattern ? data.pattern.name : 'Unknown';
+
+        this.contentContainer.innerHTML = `
+            <div class="test-execution-overlay__phase test-execution-overlay__phase--baseline">
+                <div class="test-execution-overlay__phase-label">BASELINE</div>
+                <div class="test-execution-overlay__countdown" id="baselineCountdown">${data.duration}</div>
+                <div class="test-execution-overlay__pattern-info">
+                    Pattern ${patternNumber} of ${totalPatterns}
+                </div>
+                <div class="test-execution-overlay__pattern-name">${patternName}</div>
+            </div>
+        `;
+    }
+
+    /**
+     * Show stimulation phase
+     * @param {Object} data - Phase data
+     * @param {number} data.duration - Duration in seconds
+     * @param {number} data.patternNumber - Current pattern number
+     * @param {number} data.totalPatterns - Total number of patterns
+     * @param {Object} data.pattern - Pattern file object
+     */
+    showStimulation(data) {
+        this.currentPhase = 'stimulation';
+        this.show();
+        this.startCountdown(data.duration, () => {
+            // Countdown complete - stimulation done
+        });
+
+        // Ensure we have valid data
+        const patternNumber = data.patternNumber || (data.patternIndex !== undefined ? data.patternIndex + 1 : 1);
+        const totalPatterns = data.totalPatterns || (data.trials ? data.trials.length : 1);
+        const patternName = data.pattern ? data.pattern.name : 'Unknown';
+
+        this.contentContainer.innerHTML = `
+            <div class="test-execution-overlay__phase test-execution-overlay__phase--stimulation">
+                <div class="test-execution-overlay__phase-label">STIMULATION</div>
+                <div class="test-execution-overlay__countdown" id="stimulationCountdown">${data.duration}</div>
+                <div class="test-execution-overlay__pattern-info">
+                    Pattern ${patternNumber} of ${totalPatterns}
+                </div>
+                <div class="test-execution-overlay__pattern-name">${patternName}</div>
+            </div>
+        `;
+    }
+
+    // Pattern-complete checkpoint removed - survey now goes directly to next pattern
+
+    /**
+     * Show/hide NEXT button
+     * @param {boolean} show - Whether to show the button
+     */
+    showNextButton(show) {
+        if (this.nextButton) {
+            this.nextButton.style.display = show ? 'block' : 'none';
+        }
+    }
+
+    /**
+     * Handle NEXT button click
+     */
+    handleNext() {
+        if (this.currentPhase === 'survey') {
+            // Trigger survey submission
+            if (window.currentTrialTagsSurvey) {
+                window.currentTrialTagsSurvey.submit();
+            }
+        }
+        // Pattern-complete phase removed - survey goes directly to next pattern
+    }
+
+    /**
+     * Show survey phase
+     * @param {Object} data - Phase data
+     * @param {number} data.patternNumber - Current pattern number
+     * @param {number} data.totalPatterns - Total number of patterns
+     * @param {Object} data.pattern - Pattern file object
+     */
+    showSurvey(data) {
+        this.currentPhase = 'survey';
+        this.show();
+        this.stopCountdown();
+        this.showNextButton(true); // Show NEXT button for survey
+
+        // Clear any existing survey instance
+        if (window.currentTrialTagsSurvey) {
+            try {
+                window.currentTrialTagsSurvey.reset();
+            } catch (e) {
+                // Ignore errors
+            }
+        }
+
+        // Survey will be rendered by TrialTagsSurvey component
+        // This overlay just provides the container
+        this.contentContainer.innerHTML = `
+            <div class="test-execution-overlay__phase test-execution-overlay__phase--survey">
+                <div class="test-execution-overlay__survey-container" id="surveyContainer">
+                    <!-- Survey will be rendered here by TrialTagsSurvey component -->
+                </div>
+            </div>
+        `;
+    }
+
+    /**
+     * Show session complete
+     */
+    showComplete() {
+        this.currentPhase = 'complete';
+        this.show();
+        this.stopCountdown();
+        this.showNextButton(false); // Hide NEXT on complete screen
+
+        this.contentContainer.innerHTML = `
+            <div class="test-execution-overlay__phase test-execution-overlay__phase--complete">
+                <div class="test-execution-overlay__complete-content">
+                    <div class="test-execution-overlay__complete-title">Session Complete</div>
+                    <div class="test-execution-overlay__complete-message">
+                        All patterns have been completed successfully.
+                    </div>
+                    <button class="test-execution-overlay__close-btn" id="completeCloseBtn">
+                        Return to Setup
+                    </button>
+                </div>
+            </div>
+        `;
+
+        const closeBtn = document.getElementById('completeCloseBtn');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+                this.hide();
+                // Reload page to return to setup
+                window.location.reload();
+            });
+        }
+    }
+
+    /**
+     * Show aborted state
+     */
+    showAborted() {
+        this.currentPhase = 'aborted';
+        this.show();
+        this.stopCountdown();
+
+        this.contentContainer.innerHTML = `
+            <div class="test-execution-overlay__phase test-execution-overlay__phase--aborted">
+                <div class="test-execution-overlay__aborted-content">
+                    <div class="test-execution-overlay__aborted-title">Session Aborted</div>
+                    <div class="test-execution-overlay__aborted-message">
+                        The session has been aborted. Partial data may have been saved.
+                    </div>
+                    <button class="test-execution-overlay__close-btn" id="abortedCloseBtn">
+                        Return to Setup
+                    </button>
+                </div>
+            </div>
+        `;
+
+        const closeBtn = document.getElementById('abortedCloseBtn');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+                this.hide();
+                // Reload page to return to setup
+                window.location.reload();
+            });
+        }
+    }
+
+    /**
+     * Start countdown timer
+     * @param {number} duration - Duration in seconds
+     * @param {Function} onComplete - Callback when countdown completes
+     */
+    startCountdown(duration, onComplete) {
+        this.stopCountdown();
+        this.countdown = duration;
+
+        const updateCountdown = () => {
+            const countdownEl = this.contentContainer.querySelector('.test-execution-overlay__countdown');
+            if (countdownEl) {
+                countdownEl.textContent = this.countdown;
+                
+                // Add urgency classes for visual feedback
+                countdownEl.classList.remove('urgent', 'critical');
+                if (this.countdown <= 5) {
+                    countdownEl.classList.add('critical');
+                } else if (this.countdown <= 10) {
+                    countdownEl.classList.add('urgent');
+                }
+            }
+
+            if (this.countdown <= 0) {
+                this.stopCountdown();
+                if (onComplete) {
+                    onComplete();
+                }
+            } else {
+                this.countdown--;
+            }
+        };
+
+        // Update immediately
+        updateCountdown();
+
+        // Then update every second
+        this.countdownInterval = setInterval(updateCountdown, 1000);
+    }
+
+    /**
+     * Stop countdown timer
+     */
+    stopCountdown() {
+        if (this.countdownInterval) {
+            clearInterval(this.countdownInterval);
+            this.countdownInterval = null;
+        }
+        this.countdown = 0;
+    }
+
+    /**
+     * Update countdown display (for external control)
+     * @param {number} seconds - Remaining seconds
+     */
+    updateCountdown(seconds) {
+        this.countdown = seconds;
+        const countdownEl = this.contentContainer.querySelector('.test-execution-overlay__countdown');
+        if (countdownEl) {
+            countdownEl.textContent = seconds;
+        }
+    }
+
+    /**
+     * Get survey container element
+     * @returns {HTMLElement|null}
+     */
+    getSurveyContainer() {
+        return document.getElementById('surveyContainer');
+    }
+}
