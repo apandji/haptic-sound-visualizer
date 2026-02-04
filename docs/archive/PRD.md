@@ -22,6 +22,20 @@ Create an interactive web-based dashboard to upload, analyze, and visualize soun
 
 ## 2. Data Structure
 
+### 2.0 Database Schema (Test Page Context)
+
+The Test page will use a SESSION/TRIAL data model for experimental data collection. The database schema is defined in `docs/database_schema.txt` and includes:
+
+- **sessions**: Contains participant, location, date, equipment info, experimenter, notes
+- **trials**: Contains session_id, pattern_id, trial_order, start_time, end_time, baseline_taken, notes
+- **patterns**: Contains pattern info (name, file_path, duration_ms, metadata_json)
+- **participants**: Participant information
+- **locations**: Test location information
+- **tags**: Categorization tags for trials
+- **brainwave_readings**: Brainwave data associated with trials
+
+**Note**: For the initial implementation, sessions and trials will be stored in localStorage. The database schema serves as a reference for the data structure and will be implemented in a future phase.
+
 ### 2.1 Input File Format
 - **Supported Formats**: WAV, MP3, OGG, M4A (common audio formats)
 - **File Characteristics**: 

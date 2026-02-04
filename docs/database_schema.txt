@@ -1,0 +1,84 @@
+CREATE TABLE participants (
+    participant_id    INT PRIMARY KEY AUTO_INCREMENT,
+    participant_code  VARCHAR(50) UNIQUE NOT NULL,
+    age               INT,
+    gender            VARCHAR(20),
+    handedness        VARCHAR(10),
+    created_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    notes             TEXT
+);
+
+CREATE TABLE locations (
+    location_id    INT PRIMARY KEY AUTO_INCREMENT,
+    name           VARCHAR(100) NOT NULL,
+    description    TEXT,
+    address        VARCHAR(255)
+);
+
+CREATE TABLE patterns (
+    pattern_id     INT PRIMARY KEY AUTO_INCREMENT,
+    name           VARCHAR(100) NOT NULL,
+    file_path      VARCHAR(500) NOT NULL,
+    duration_ms    INT,
+    description    TEXT,
+    metadata_json  JSON
+);
+
+CREATE TABLE tags (
+    tag_id      INT PRIMARY KEY AUTO_INCREMENT,
+    tag_name    VARCHAR(50) NOT NULL UNIQUE,
+    category    VARCHAR(50),
+    description TEXT
+);
+
+CREATE TABLE sessions (
+    session_id      INT PRIMARY KEY AUTO_INCREMENT,
+    participant_id  INT NOT NULL,
+    location_id     INT NOT NULL,
+    session_date    DATETIME NOT NULL,
+    equipment_info  VARCHAR(255),
+    experimenter    VARCHAR(100),
+    notes           TEXT,
+    FOREIGN KEY (participant_id) REFERENCES participants(participant_id),
+    FOREIGN KEY (location_id) REFERENCES locations(location_id)
+);
+
+CREATE TABLE trials (
+    trial_id       INT PRIMARY KEY AUTO_INCREMENT,
+    session_id     INT NOT NULL,
+    pattern_id     INT NOT NULL,
+    trial_order    INT NOT NULL,
+    start_time     DATETIME(3) NOT NULL,
+    end_time       DATETIME(3),
+    baseline_taken BOOLEAN DEFAULT FALSE,
+    notes          TEXT,
+    FOREIGN KEY (session_id) REFERENCES sessions(session_id),
+    FOREIGN KEY (pattern_id) REFERENCES patterns(pattern_id)
+);
+
+CREATE TABLE trial_tags (
+    trial_id    INT NOT NULL,
+    tag_id      INT NOT NULL,
+    selected_at DATETIME(3),
+    PRIMARY KEY (trial_id, tag_id),
+    FOREIGN KEY (trial_id) REFERENCES trials(trial_id),
+    FOREIGN KEY (tag_id) REFERENCES tags(tag_id)
+);
+
+CREATE TABLE brainwave_readings (
+    reading_id      BIGINT PRIMARY KEY AUTO_INCREMENT,
+    trial_id        INT NOT NULL,
+    timestamp_ms    BIGINT NOT NULL,
+    delta_abs       DECIMAL(12,6),
+    theta_abs       DECIMAL(12,6),
+    alpha_abs       DECIMAL(12,6),
+    beta_abs        DECIMAL(12,6),
+    gamma_abs       DECIMAL(12,6),
+    delta_rel       DECIMAL(6,5),
+    theta_rel       DECIMAL(6,5),
+    alpha_rel       DECIMAL(6,5),
+    beta_rel        DECIMAL(6,5),
+    gamma_rel       DECIMAL(6,5),
+    FOREIGN KEY (trial_id) REFERENCES trials(trial_id),
+    INDEX idx_trial_time (trial_id, timestamp_ms)
+);

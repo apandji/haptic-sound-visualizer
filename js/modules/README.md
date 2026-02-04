@@ -38,8 +38,15 @@ Modules contain non-UI logic, state management, and utilities that can be used b
 
 ### Planned Modules
 
-- **SelectionManager** - Manages multi-select state
-- **DragDropManager** - Manages drag & drop state
+- **SessionManager** - Manages test sessions and trials (localStorage persistence)
+  - `createSession(sessionData)` - Create new session
+  - `getSession(sessionId)` - Get session by ID
+  - `addTrial(sessionId, trialData)` - Add trial to session
+  - `getTrials(sessionId)` - Get all trials for session
+  - `saveSession(session)` - Persist session to localStorage
+  - `loadSessions()` - Load all sessions from localStorage
+  - See `docs/database_schema.txt` for data structure reference
+
 - **fileLoader.js** - File loading utilities
 
 ---

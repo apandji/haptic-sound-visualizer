@@ -20,8 +20,10 @@ Standalone UI components that can be used independently.
 - **PatternExplorer** ✅ - File list with tooltips and play buttons
 - **DualSlider** ✅ - Dual-handle range slider
 - **FilterPanel** ✅ - Search + filter sliders
-- **Visualizer** - p5.js audio visualization (planned)
-- **AudioControls** - Playback controls (planned)
+- **PatternQueue** ✅ - Queue of selected patterns with drag & drop reordering
+- **SessionInfo** ✅ - Form for collecting session metadata
+- **Visualizer** ✅ - p5.js audio visualization
+- **AudioControls** ✅ - Playback controls
 
 See `base/README.md` for details.
 
@@ -30,7 +32,7 @@ See `base/README.md` for details.
 Composed components that combine multiple base components.
 
 - **PatternExplorerWithFilters** ✅ - PatternExplorer + FilterPanel (inline)
-- **PatternExplorerSelectable** - PatternExplorer + SelectionManager (planned)
+- **PatternExplorerWithSelection** ✅ - PatternExplorer + selection icons + Queue integration
 - **PatternExplorerTestMode** - Full featured for Test page (planned)
 
 See `variants/README.md` for details.
@@ -40,7 +42,7 @@ See `variants/README.md` for details.
 ### Base Component
 ```javascript
 // Import base component
-<script src="js/components/base/PatternExplorer.js"></script>
+<script src="js/components/base/patternExplorer.js"></script>
 
 // Use it
 const explorer = new PatternExplorer({
@@ -53,7 +55,7 @@ const explorer = new PatternExplorer({
 ### Variant Component
 ```javascript
 // Import variant
-<script src="js/components/variants/PatternExplorerWithFilters.js"></script>
+<script src="js/components/variants/patternExplorerWithFilters.js"></script>
 
 // Use it
 const explorer = new PatternExplorerWithFilters({

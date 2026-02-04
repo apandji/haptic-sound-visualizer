@@ -172,6 +172,75 @@
     background: rgba(255, 255, 255, 0.2);
 }
 
+/* Selection Icon (plus/checkmark) */
+.file-item-selection-icon {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    background: transparent;
+    border: none;
+    color: #999;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 2px;
+    transition: all 0.15s ease;
+    opacity: 0.7;
+}
+
+.file-item-selection-icon svg {
+    width: 14px;
+    height: 14px;
+    stroke-width: 2;
+}
+
+.file-item-selection-icon {
+    transition: opacity 0.15s ease, color 0.15s ease, background 0.15s ease, transform 0.15s ease;
+}
+
+.file-item-selection-icon:hover {
+    opacity: 1;
+    color: #000;
+    background: rgba(0, 0, 0, 0.05);
+    transform: scale(1.1);
+}
+
+.file-item-selection-icon:active {
+    transform: scale(0.95);
+}
+
+.file-item-selection-icon:focus {
+    outline: 2px solid #000;
+    outline-offset: 2px;
+    border-radius: 2px;
+}
+
+.file-item-selection-icon--selected {
+    color: #000;
+    opacity: 1;
+}
+
+.file-item-selection-icon--selected svg {
+    fill: currentColor;
+    stroke: none;
+    transition: fill 0.2s ease, stroke 0.2s ease;
+}
+
+.file-item-selection-icon--selected:hover {
+    transform: scale(1.1);
+}
+
+.file-item.active .file-item-selection-icon {
+    color: #fff;
+    opacity: 1;
+}
+
+.file-item.active .file-item-selection-icon:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
 /* Progress Bar (optional) */
 .file-item-progress {
     position: absolute;

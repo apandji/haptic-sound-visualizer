@@ -27,10 +27,39 @@ Variants are composed components that combine multiple base components to create
     })
     ```
 
+- **PatternExplorerWithSelection** ✅ - PatternExplorer + FilterPanel + selection icons (plus/checkmark) + PatternQueue integration
+  - Includes all FilterPanel features (search, metadata filters, collapsible)
+  - Adds plus icon to each pattern item
+  - Plus icon changes to checkmark when added to queue
+  - Clicking checkmark removes from queue
+  - Integrates with PatternQueue component
+  - Shows pattern count (filtered / total)
+  - **Example**: `dev/components-examples/pattern-explorer-with-selection.example.html`
+  - **API**:
+    ```javascript
+    new PatternExplorerWithSelection({
+      containerId: 'fileList',
+      filterContainerId: 'filterPanel',
+      queue: queue,  // PatternQueue component instance
+      files: allFiles,
+      metadata: metadata,
+      compact: true,
+      collapsible: true,
+      defaultCollapsed: true,
+      onSelectionChange: (file, isAdded) => {
+        // Called when item added/removed from queue
+      },
+      onFilterChange: (filters, filteredFiles) => {
+        // Called when filters change
+      },
+      onFileClick: (file) => {},
+      onFilePreview: (file, isPlaying) => {}
+    })
+    ```
+
 ### Planned Variants
 
-- **PatternExplorerSelectable** - PatternExplorer + SelectionManager
-- **PatternExplorerTestMode** - PatternExplorer + FilterPanel + SelectionManager + DragDropManager
+- **PatternExplorerTestMode** - PatternExplorer + FilterPanel + PatternExplorerWithSelection + PatternQueue (full Test page)
 
 ---
 

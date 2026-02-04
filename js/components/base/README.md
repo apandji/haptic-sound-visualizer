@@ -5,7 +5,7 @@ Base components are standalone, reusable UI components that can be used independ
 ## Components
 
 ### PatternExplorer
-**File**: `PatternExplorer.js`  
+**File**: `patternExplorer.js`  
 **CSS**: `../../css/components/base/patternExplorer.css`  
 **Purpose**: Renders a list of audio files with tooltips, play/pause buttons, and click handlers.
 
@@ -26,7 +26,7 @@ new PatternExplorer({
 ---
 
 ### DualSlider
-**File**: `DualSlider.js`  
+**File**: `dualSlider.js`  
 **CSS**: `../../css/components/base/dualSlider.css`  
 **Purpose**: A dual-handle range slider for selecting min/max values.
 
@@ -58,7 +58,7 @@ slider.destroy()          // Cleanup
 ---
 
 ### FilterPanel
-**File**: `FilterPanel.js`  
+**File**: `filterPanel.js`  
 **CSS**: `../../css/components/base/filterPanel.css`  
 **Purpose**: Search box + multiple dual sliders for filtering audio files.
 
@@ -87,7 +87,7 @@ filterPanel.destroy()            // Cleanup
 ---
 
 ### Visualizer
-**File**: `Visualizer.js`  
+**File**: `visualizer.js`  
 **CSS**: `../../css/components/base/visualizer.css`  
 **Purpose**: Wraps p5.js sketch with visualization mode selection. Provides all 8 visualization modes from index.html.
 
@@ -120,6 +120,72 @@ visualizer.destroy()               // Cleanup
 - `landscape` - Frequency terrain
 
 **Example**: `../../dev/components-examples/visualizer.example.html`
+
+---
+
+### PatternQueue
+**File**: `patternQueue.js`  
+**CSS**: `../../css/components/base/patternQueue.css`  
+**Purpose**: Displays a queue of selected patterns with drag & drop reordering for test sessions.
+
+**API**:
+```javascript
+new PatternQueue({
+  containerId: 'queue',
+  metadata: {...}, // Pattern metadata for tooltips
+  onItemRemove: (file, index) => {
+    // Called when item is removed
+  },
+  onReorder: (items) => {
+    // Called when items are reordered via drag & drop
+  }
+})
+
+// Methods
+queue.addItem(file)        // Add pattern to queue
+queue.removeItem(index)     // Remove item at index
+queue.getItems()            // Get all items in queue
+queue.clear()               // Clear all items
+queue.isInQueue(filePath)   // Check if file is in queue
+queue.updateMetadata(metadata) // Update metadata
+queue.destroy()             // Cleanup
+```
+
+**Example**: `../../dev/components-examples/queue.example.html`
+
+---
+
+### SessionInfo
+**File**: `sessionInfo.js`  
+**CSS**: `../../css/components/base/sessionInfo.css`  
+**Purpose**: Form component for collecting session metadata (participant, location, date, equipment, experimenter, notes).
+
+**API**:
+```javascript
+new SessionInfo({
+  containerId: 'sessionInfo',
+  participants: [...], // Array of {participant_id, participant_code, ...}
+  locations: [...],     // Array of {location_id, name, ...}
+  initialData: {...},   // Optional: initial form values
+  onChange: (change) => {
+    // change = {field, value, data, isValid}
+  },
+  onValidationChange: (isValid, data) => {
+    // Called when validation state changes
+  }
+})
+
+// Methods
+sessionInfo.getData()              // Get current form data
+sessionInfo.setData(data)          // Set form data programmatically
+sessionInfo.validate()             // Validate form (returns boolean)
+sessionInfo.reset()                // Reset form to defaults
+sessionInfo.updateParticipants(participants) // Update participants list
+sessionInfo.updateLocations(locations)        // Update locations list
+sessionInfo.destroy()              // Cleanup
+```
+
+**Example**: `../../dev/components-examples/session-info.example.html`
 
 ---
 
