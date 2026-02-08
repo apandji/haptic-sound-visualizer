@@ -1,0 +1,113 @@
+.tag-frequency-chart__header {
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
+    color: #999;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: var(--spacing-md);
+}
+
+.tag-frequency-chart__list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.tag-frequency-chart__row {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+}
+
+.tag-frequency-chart__label {
+    width: 80px;
+    flex-shrink: 0;
+    font-size: var(--font-size-sm);
+    color: #333;
+    text-align: right;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.tag-frequency-chart__label--custom {
+    font-style: italic;
+    color: #666;
+}
+
+.tag-frequency-chart__bar-wrapper {
+    flex: 1;
+    height: 18px;
+    background: #f5f5f5;
+    overflow: hidden;
+}
+
+.tag-frequency-chart__bar {
+    height: 100%;
+    background: #333;
+    transition: width 0.3s ease;
+    min-width: 2px;
+}
+
+.tag-frequency-chart__count {
+    width: 30px;
+    flex-shrink: 0;
+    font-size: var(--font-size-xs);
+    color: #999;
+    text-align: right;
+}
+
+.tag-frequency-chart__empty {
+    font-size: var(--font-size-sm);
+    color: #999;
+    padding: var(--spacing-lg) 0;
+    text-align: center;
+}
+
+/* Comparison mode */
+.tag-frequency-chart__legend {
+    display: flex;
+    gap: var(--spacing-lg);
+    margin-bottom: var(--spacing-md);
+    padding-bottom: var(--spacing-sm);
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.tag-frequency-chart__legend-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    font-size: var(--font-size-xs);
+    color: #666;
+}
+
+.tag-frequency-chart__legend-swatch {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    flex-shrink: 0;
+}
+
+.tag-frequency-chart__bars-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.tag-frequency-chart__bar-row {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    height: 14px;
+}
+
+.tag-frequency-chart__bar-row .tag-frequency-chart__bar {
+    height: 100%;
+    flex-shrink: 0;
+}
+
+.tag-frequency-chart__count--inline {
+    width: auto;
+    font-size: 9px;
+}

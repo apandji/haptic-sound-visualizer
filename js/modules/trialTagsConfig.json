@@ -1,226 +1,36 @@
 {
-  "_comment": "Trial tags configuration. These tags are used in the post-trial survey. Update this file to change available tag options. Currently contains placeholder tags (A-Z, AA-AR) - replace with actual tag names and descriptions.",
+  "_comment": "Trial tags configuration. These tags are used in the post-trial survey for qualitative description of the haptic/audio pattern experience.",
   "question": "What did this pattern feel like?",
   "tags": [
-    {
-      "id": "A",
-      "label": "A",
-      "description": "Tag A"
-    },
-    {
-      "id": "B",
-      "label": "B",
-      "description": "Tag B"
-    },
-    {
-      "id": "C",
-      "label": "C",
-      "description": "Tag C"
-    },
-    {
-      "id": "D",
-      "label": "D",
-      "description": "Tag D"
-    },
-    {
-      "id": "E",
-      "label": "E",
-      "description": "Tag E"
-    },
-    {
-      "id": "F",
-      "label": "F",
-      "description": "Tag F"
-    },
-    {
-      "id": "G",
-      "label": "G",
-      "description": "Tag G"
-    },
-    {
-      "id": "H",
-      "label": "H",
-      "description": "Tag H"
-    },
-    {
-      "id": "I",
-      "label": "I",
-      "description": "Tag I"
-    },
-    {
-      "id": "J",
-      "label": "J",
-      "description": "Tag J"
-    },
-    {
-      "id": "K",
-      "label": "K",
-      "description": "Tag K"
-    },
-    {
-      "id": "L",
-      "label": "L",
-      "description": "Tag L"
-    },
-    {
-      "id": "M",
-      "label": "M",
-      "description": "Tag M"
-    },
-    {
-      "id": "N",
-      "label": "N",
-      "description": "Tag N"
-    },
-    {
-      "id": "O",
-      "label": "O",
-      "description": "Tag O"
-    },
-    {
-      "id": "P",
-      "label": "P",
-      "description": "Tag P"
-    },
-    {
-      "id": "Q",
-      "label": "Q",
-      "description": "Tag Q"
-    },
-    {
-      "id": "R",
-      "label": "R",
-      "description": "Tag R"
-    },
-    {
-      "id": "S",
-      "label": "S",
-      "description": "Tag S"
-    },
-    {
-      "id": "T",
-      "label": "T",
-      "description": "Tag T"
-    },
-    {
-      "id": "U",
-      "label": "U",
-      "description": "Tag U"
-    },
-    {
-      "id": "V",
-      "label": "V",
-      "description": "Tag V"
-    },
-    {
-      "id": "W",
-      "label": "W",
-      "description": "Tag W"
-    },
-    {
-      "id": "X",
-      "label": "X",
-      "description": "Tag X"
-    },
-    {
-      "id": "Y",
-      "label": "Y",
-      "description": "Tag Y"
-    },
-    {
-      "id": "Z",
-      "label": "Z",
-      "description": "Tag Z"
-    },
-    {
-      "id": "AA",
-      "label": "AA",
-      "description": "Tag AA"
-    },
-    {
-      "id": "AB",
-      "label": "AB",
-      "description": "Tag AB"
-    },
-    {
-      "id": "AC",
-      "label": "AC",
-      "description": "Tag AC"
-    },
-    {
-      "id": "AD",
-      "label": "AD",
-      "description": "Tag AD"
-    },
-    {
-      "id": "AE",
-      "label": "AE",
-      "description": "Tag AE"
-    },
-    {
-      "id": "AF",
-      "label": "AF",
-      "description": "Tag AF"
-    },
-    {
-      "id": "AG",
-      "label": "AG",
-      "description": "Tag AG"
-    },
-    {
-      "id": "AH",
-      "label": "AH",
-      "description": "Tag AH"
-    },
-    {
-      "id": "AI",
-      "label": "AI",
-      "description": "Tag AI"
-    },
-    {
-      "id": "AJ",
-      "label": "AJ",
-      "description": "Tag AJ"
-    },
-    {
-      "id": "AK",
-      "label": "AK",
-      "description": "Tag AK"
-    },
-    {
-      "id": "AL",
-      "label": "AL",
-      "description": "Tag AL"
-    },
-    {
-      "id": "AM",
-      "label": "AM",
-      "description": "Tag AM"
-    },
-    {
-      "id": "AN",
-      "label": "AN",
-      "description": "Tag AN"
-    },
-    {
-      "id": "AO",
-      "label": "AO",
-      "description": "Tag AO"
-    },
-    {
-      "id": "AP",
-      "label": "AP",
-      "description": "Tag AP"
-    },
-    {
-      "id": "AQ",
-      "label": "AQ",
-      "description": "Tag AQ"
-    },
-    {
-      "id": "AR",
-      "label": "AR",
-      "description": "Tag AR"
-    }
+    { "id": "calming", "label": "Calming", "description": "Felt soothing or relaxing" },
+    { "id": "energizing", "label": "Energizing", "description": "Felt invigorating or stimulating" },
+    { "id": "warm", "label": "Warm", "description": "Evoked a sense of warmth" },
+    { "id": "cold", "label": "Cold", "description": "Evoked a sense of coldness" },
+    { "id": "sharp", "label": "Sharp", "description": "Felt pointed or piercing" },
+    { "id": "smooth", "label": "Smooth", "description": "Felt even and flowing" },
+    { "id": "rhythmic", "label": "Rhythmic", "description": "Had a strong beat or pulse" },
+    { "id": "chaotic", "label": "Chaotic", "description": "Felt disorganized or unpredictable" },
+    { "id": "tingling", "label": "Tingling", "description": "Produced a tingling sensation" },
+    { "id": "pulsing", "label": "Pulsing", "description": "Felt like waves or throbs" },
+    { "id": "pleasant", "label": "Pleasant", "description": "Overall positive feeling" },
+    { "id": "unsettling", "label": "Unsettling", "description": "Felt uncomfortable or disturbing" },
+    { "id": "focused", "label": "Focused", "description": "Helped concentration" },
+    { "id": "dreamy", "label": "Dreamy", "description": "Felt spacey or meditative" },
+    { "id": "heavy", "label": "Heavy", "description": "Felt deep or weighty" },
+    { "id": "light", "label": "Light", "description": "Felt airy or delicate" },
+    { "id": "expansive", "label": "Expansive", "description": "Felt wide or open" },
+    { "id": "immersive", "label": "Immersive", "description": "Felt enveloping or absorbing" },
+    { "id": "metallic", "label": "Metallic", "description": "Had a mechanical or metal quality" },
+    { "id": "organic", "label": "Organic", "description": "Felt natural or earthy" },
+    { "id": "bright", "label": "Bright", "description": "Felt vivid or luminous" },
+    { "id": "dark", "label": "Dark", "description": "Felt somber or muted" },
+    { "id": "tense", "label": "Tense", "description": "Created a feeling of tension" },
+    { "id": "flowing", "label": "Flowing", "description": "Felt continuous and fluid" },
+    { "id": "staccato", "label": "Staccato", "description": "Felt choppy or disconnected" },
+    { "id": "resonant", "label": "Resonant", "description": "Felt vibrant or echoing" },
+    { "id": "hollow", "label": "Hollow", "description": "Felt empty or thin" },
+    { "id": "grounding", "label": "Grounding", "description": "Felt centering or stabilizing" },
+    { "id": "uplifting", "label": "Uplifting", "description": "Felt elevating or inspiring" },
+    { "id": "hypnotic", "label": "Hypnotic", "description": "Felt mesmerizing or trance-like" }
   ]
 }

@@ -1,0 +1,29 @@
+.summary-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--spacing-lg);
+}
+
+.summary-stats__card {
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    padding: var(--spacing-lg);
+    text-align: center;
+}
+
+.summary-stats__card-value {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
+    color: #000;
+    margin-bottom: var(--spacing-xs);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.summary-stats__card-label {
+    font-size: var(--font-size-xs);
+    color: #999;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}

@@ -1,0 +1,13 @@
+.box-plot-chart__header {
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
+    color: #999;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: var(--spacing-md);
+}
+
+.box-plot-chart__plot {
+    width: 100%;
+    min-height: 340px;
+}
