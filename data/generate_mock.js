@@ -124,9 +124,9 @@ const patterns = [
     ids: ["SMOCK_GEN_001", "SMOCK_GEN_002", "SMOCK_GEN_003"],
     pids: [901, 902, 903],
     tags: [
-      ["calming", "warm", "smooth", "flowing", "pleasant"],
+      ["calming", "warm", "smooth", "pleasant", "grounding"],
       ["calming", "dreamy", "smooth", "hypnotic"],
-      ["calming", "warm", "pleasant", "immersive", "grounding"]
+      ["calming", "warm", "pleasant", "heavy", "grounding"]
     ],
     sRel: { d: 0.127, t: 0.208, a: 0.366, b: 0.244, g: 0.056 },
     eRel: { d: 0.127, t: 0.23, a: 0.42, b: 0.21, g: 0.056 },
@@ -138,9 +138,9 @@ const patterns = [
     ids: ["SMOCK_GEN_004", "SMOCK_GEN_005", "SMOCK_GEN_006"],
     pids: [901, 902, 903],
     tags: [
-      ["energizing", "rhythmic", "sharp", "focused", "bright"],
-      ["energizing", "pulsing", "focused", "tense", "metallic"],
-      ["energizing", "rhythmic", "bright", "uplifting", "staccato"]
+      ["energizing", "rhythmic", "sharp", "focused", "tingling"],
+      ["energizing", "pulsing", "focused", "tense", "chaotic"],
+      ["energizing", "rhythmic", "sharp", "light", "expansive"]
     ],
     sRel: { d: 0.127, t: 0.208, a: 0.366, b: 0.244, g: 0.056 },
     eRel: { d: 0.127, t: 0.208, a: 0.30, b: 0.31, g: 0.08 },

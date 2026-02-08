@@ -209,29 +209,68 @@ This document outlines the complete testing protocol for collecting EEG data whi
 
 **Process:**
 - After test completes, display survey
-- Question: **"What does this pattern feel like?"**
-- Present 4 multi-choice options (options TBD)
-- Participant selects answer(s)
-- Researcher clicks "Continue" or "Next"
+- Question: **"What did this pattern feel like?"**
+- Present 20 multi-select tag buttons (see Tag Definitions below)
+- Participant selects one or more tags
+- Participant can also add custom free-text tags
+- Participant clicks "Next" when done
 
 **Decisions:**
 - ✅ **Survey timing:** Immediately after each test
-- ✅ **Survey options:** A, B, C, D (placeholder options for now, specific definitions TBD)
-- ✅ **Multi-select:** Yes, participant can select multiple options
+- ✅ **Survey options:** 20 tags across 7 dimensions (see below), loaded from `js/modules/trialTagsConfig.json`
+- ✅ **Multi-select:** Yes, participant can select multiple tags
 - ✅ **Multi-select UI:** Buttons (not checkboxes)
+- ✅ **Custom tags:** Participant can add free-text custom tags via input field
 - ✅ **Required vs optional:** Participant CANNOT skip survey (required)
-- ✅ **Survey validation:** Require at least one option selected before proceeding
+- ✅ **Survey validation:** Require at least one tag selected before proceeding
 - ✅ **Survey data linkage:** Link survey response to specific `test_id`
 - ✅ **Survey display:** Full-screen overlay
 - ✅ **Participant interaction:** Participant interacts with survey directly
-- ✅ **Survey completion:** Participant clicks "Complete Survey" button when done
-- ✅ **Researcher awareness:** Researcher knows participant is done when participant clicks "Complete Survey" on final test in session
+- ✅ **Survey completion:** Participant clicks "Next" button when done
+- ✅ **Audio replay:** Play button available during survey so participant can re-listen to pattern
+- ✅ **Instructions:** "Select one or more options that describe how this pattern feels"
 
 **Questions/Considerations:**
-- ❓ **Survey options definition:** What are the actual A, B, C, D options? (Placeholder for now, need research team input)
 - ❓ **Pattern status display:** How to show pattern playing status (or not playing) while survey overlay is full-screen? (Need visual design solution - e.g., small indicator in corner, audio waveform visualization, etc.)
 - ❓ **Survey timing:** Should there be a time limit? Or can participant take as long as needed?
-- ❓ **Survey instructions:** Should there be instructions displayed on survey overlay? (e.g., "Select one or more options that describe how this pattern feels")
+
+##### Tag Definitions (20 tags, 7 dimensions)
+
+Tags were selected based on two criteria:
+1. **Pattern coverage** — tags that meaningfully describe the haptic/audio patterns in the library (bursts, drones, swells, pansweeps, etc.)
+2. **EEG correlation probes** — tags whose subjective states have established associations with specific brainwave frequency bands, enabling analysis of whether participant self-reports match their EEG readings
+
+| # | Tag | Dimension | Description | EEG Band Probe |
+|---|-----|-----------|-------------|----------------|
+| 1 | Pleasant | Valence | Overall positive feeling | Alpha |
+| 2 | Unsettling | Valence | Felt uncomfortable or disturbing | High Beta |
+| 3 | Calming | Arousal | Felt soothing or relaxing | Alpha |
+| 4 | Energizing | Arousal | Felt invigorating or stimulating | Beta |
+| 5 | Tense | Arousal | Created a feeling of tension or stress | High Beta |
+| 6 | Chaotic | Arousal | Felt disorganized or scattered | High Beta |
+| 7 | Sharp | Texture | Felt pointed or piercing | — |
+| 8 | Smooth | Texture | Felt even and flowing | — |
+| 9 | Rhythmic | Temporal | Had a strong beat or pulse | — |
+| 10 | Pulsing | Temporal | Felt like waves or throbs | — |
+| 11 | Heavy | Weight | Felt deep or weighty | Delta |
+| 12 | Light | Weight | Felt airy or delicate | — |
+| 13 | Warm | Sensation | Evoked a sense of warmth | — |
+| 14 | Tingling | Sensation | Produced a tingling sensation | — |
+| 15 | Focused | Cognitive | Helped concentration or attention | Low Beta / Gamma |
+| 16 | Dreamy | Cognitive | Felt spacey or meditative | Theta |
+| 17 | Drowsy | Cognitive | Felt sleepy or drifting off | Delta |
+| 18 | Hypnotic | Cognitive | Felt mesmerizing or trance-like | Theta / Delta |
+| 19 | Expansive | Spatial | Felt wide or open | Gamma |
+| 20 | Grounding | Spatial | Felt centering or stabilizing | Alpha / Delta |
+
+**EEG Band Reference:**
+- **Delta (0.5–4 Hz):** Deep stillness, drowsiness, detachment
+- **Theta (4–8 Hz):** Daydreaming, trance, meditative absorption
+- **Alpha (8–13 Hz):** Relaxed alertness, calm, pleasant ease
+- **Beta (13–30 Hz):** Active thinking, concentration (low), anxiety/tension (high)
+- **Gamma (30–100 Hz):** Peak awareness, vivid perception, integrative states
+
+**Configuration:** Tags are loaded from `js/modules/trialTagsConfig.json` and can be updated without code changes.
 
 ---
 
@@ -416,8 +455,12 @@ Edit `js/modules/sessionTimingConfig.json` to adjust timing values. The file is 
     "eeg_samples": [ /* EEG data */ ]
   },
   "survey_response": {
-    "question": "What does this pattern feel like?",
-    "selected_options": ["A", "B"], // Multi-select buttons: A, B, C, D (placeholder options)
+    "question": "What did this pattern feel like?",
+    "selected_tags": [  // Multi-select from 20 tags + optional custom tags
+      { "id": "calming", "label": "Calming", "isCustom": false },
+      { "id": "smooth", "label": "Smooth", "isCustom": false },
+      { "id": "custom_abc123", "label": "Vibrating", "isCustom": true }
+    ],
     "response_time": "ISO-8601-timestamp",
     "required": true, // Cannot be skipped
     "completed": true // false if survey failed/missing
@@ -488,7 +531,7 @@ Edit `js/modules/sessionTimingConfig.json` to adjust timing values. The file is 
 
 ### High Priority
 
-1. ✅ ~~**Survey Options:** What are the 4 multi-choice options for "What does this pattern feel like?"?~~ → **RESOLVED:** A, B, C, D (placeholder options, specific definitions TBD)
+1. ✅ ~~**Survey Options:** What are the multi-choice options for "What did this pattern feel like?"?~~ → **RESOLVED:** 20 tags across 7 dimensions (see Section 2.3 Tag Definitions)
 2. ✅ ~~**Survey Completion:** How does researcher know participant is done?~~ → **RESOLVED:** Participant clicks "Complete Survey" button
 3. ✅ ~~**Survey UI:** Multi-select UI design~~ → **RESOLVED:** Multi-select buttons, full-screen overlay, require at least one selection
 4. ✅ ~~**Audio Duration Handling:** How to handle patterns < 30s or > 30s?~~ → **RESOLVED:** Seamless loop if <30s, 5s fade-out + cut if >30s
@@ -556,7 +599,7 @@ Edit `js/modules/sessionTimingConfig.json` to adjust timing values. The file is 
 
 ## Next Steps
 
-1. ✅ ~~**Define survey options**~~ → **PARTIAL:** A, B, C, D format decided, specific options TBD
+1. ✅ ~~**Define survey options**~~ → **RESOLVED:** 20 tags finalized across 7 dimensions with EEG band probes
 2. ✅ ~~**Clarify audio duration handling**~~ → **RESOLVED:** Loop if <30s, cut if >30s
 3. **Design UI mockups** - Researcher vs participant views, overlay design
 4. **Define verification criteria** - EEG signal quality thresholds (with device)
@@ -696,10 +739,12 @@ Edit `js/modules/sessionTimingConfig.json` to adjust timing values. The file is 
 ### Survey Options
 
 **✅ RESOLVED:**
-21. **Survey options:** 
-   - ✅ A, B, C, D as placeholder options for now
-   - ✅ Specific definitions TBD (need research team input)
+21. **Survey options:**
+   - ✅ 20 tags across 7 dimensions (Valence, Arousal, Texture, Temporal, Weight, Sensation, Cognitive, Spatial)
+   - ✅ Tags selected based on pattern coverage and EEG band correlation potential
    - ✅ Multi-select buttons (participant can select multiple)
+   - ✅ Custom free-text tags supported
+   - ✅ Configuration: `js/modules/trialTagsConfig.json`
    - ❓ Should options be randomized? Or fixed order?
 
 ### UI/UX Clarity
