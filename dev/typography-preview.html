@@ -1,0 +1,1086 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SAIL — Typography Proposal</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --font-size-xs: 0.625rem;
+            --font-size-sm: 0.6875rem;
+            --font-size-base: 0.8125rem;
+            --font-size-md: 0.875rem;
+            --font-size-lg: 1rem;
+
+            --font-weight-normal: 400;
+            --font-weight-medium: 500;
+            --font-weight-semibold: 600;
+            --font-weight-bold: 600;
+
+            --line-height-tight: 1.2;
+            --line-height-normal: 1.5;
+            --line-height-relaxed: 1.75;
+
+            --spacing-xs: 4px;
+            --spacing-sm: 8px;
+            --spacing-md: 12px;
+            --spacing-lg: 16px;
+            --spacing-xl: 20px;
+            --spacing-2xl: 24px;
+            --spacing-3xl: 32px;
+
+            --font-heading: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Courier New', monospace;
+            --font-ui: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Courier New', monospace;
+            --font-data: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Courier New', monospace;
+
+            --tracking-xs: 0.5px;
+            --title-tracking: 1px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: var(--font-ui);
+            background: #fafafa;
+            color: #333;
+            font-size: var(--font-size-base);
+            line-height: var(--line-height-normal);
+        }
+
+        /* ─── Sticky Toolbar ─────────────────────────── */
+
+        .toolbar {
+            position: sticky;
+            top: 0;
+            z-index: 9999;
+            background: #111;
+            color: #fff;
+            padding: 0 24px;
+            display: flex;
+            align-items: center;
+            height: 56px;
+            gap: 16px;
+        }
+
+        .toolbar__title {
+            font-family: 'SF Mono', monospace;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            color: #fff;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .toolbar__sep {
+            width: 1px;
+            height: 24px;
+            background: #333;
+            flex-shrink: 0;
+        }
+
+        .toggle-group {
+            display: flex;
+            gap: 0;
+        }
+
+        .toggle-btn {
+            font-family: 'SF Mono', monospace;
+            font-size: 11px;
+            font-weight: 500;
+            padding: 6px 16px;
+            border: 2px solid #444;
+            background: transparent;
+            color: #777;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            letter-spacing: 0.3px;
+            white-space: nowrap;
+        }
+
+        .toggle-btn:first-child { border-radius: 4px 0 0 4px; }
+        .toggle-btn:last-child { border-radius: 0 4px 4px 0; }
+        .toggle-btn + .toggle-btn { border-left: 1px solid #444; }
+
+        .toggle-btn:hover { background: #222; color: #ccc; }
+
+        .toggle-btn.active {
+            font-weight: 700;
+        }
+
+        .toggle-btn[data-mode="current"].active {
+            background: #fff;
+            color: #000;
+            border-color: #fff;
+        }
+
+        .toggle-btn[data-mode="a"].active {
+            background: #3b82f6;
+            color: #fff;
+            border-color: #3b82f6;
+        }
+
+        .toggle-btn[data-mode="b"].active {
+            background: #a855f7;
+            color: #fff;
+            border-color: #a855f7;
+        }
+
+        .toggle-btn[data-mode="c"].active {
+            background: #f59e0b;
+            color: #000;
+            border-color: #f59e0b;
+        }
+
+        .toolbar__desc {
+            font-family: 'SF Mono', monospace;
+            font-size: 10px;
+            color: #555;
+            margin-left: auto;
+            white-space: nowrap;
+        }
+        .toolbar__desc span { color: #999; }
+
+        /* ─── Changes Summary ────────────────────────── */
+
+        .changes-bar {
+            background: #fff;
+            border-bottom: 1px solid #e0e0e0;
+            max-height: 0;
+            overflow: hidden;
+            opacity: 0;
+            transition: max-height 0.3s ease, opacity 0.2s ease, padding 0.3s ease;
+            padding: 0 24px;
+        }
+
+        .changes-bar.visible {
+            max-height: 200px;
+            opacity: 1;
+            padding: 16px 24px;
+        }
+
+        .changes-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 24px;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        .change-item__label {
+            font-family: 'SF Mono', monospace;
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: #999;
+            margin-bottom: 5px;
+        }
+
+        .change-item__before {
+            font-family: 'SF Mono', monospace;
+            font-size: 11px;
+            color: #bbb;
+            text-decoration: line-through;
+            margin-bottom: 2px;
+        }
+
+        .change-item__after {
+            font-family: 'SF Mono', monospace;
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .changes-bar[data-accent="a"] .change-item__after { color: #3b82f6; }
+        .changes-bar[data-accent="b"] .change-item__after { color: #a855f7; }
+        .changes-bar[data-accent="c"] .change-item__after { color: #f59e0b; }
+
+        /* ─── Preview Container ──────────────────────── */
+
+        .preview-container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 32px 20px 80px;
+            display: flex;
+            flex-direction: column;
+            gap: 32px;
+        }
+
+        .section {
+            background: #fff;
+            border: 1px solid #e0e0e0;
+        }
+
+        .section__label {
+            font-family: 'SF Mono', monospace;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #999;
+            padding: 8px 16px;
+            background: #fafafa;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .section__content { padding: 0; }
+
+        /* ─── 1. Navigation + Page Title ─────────────── */
+
+        .top-header {
+            width: 100%;
+            background: #fff;
+            border-bottom: 1px solid #e0e0e0;
+            padding: var(--spacing-md) var(--spacing-xl);
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-xl);
+        }
+
+        .nav-link {
+            font-family: var(--font-ui);
+            font-size: var(--font-size-sm);
+            font-weight: var(--font-weight-medium);
+            color: #666;
+            text-decoration: none;
+            letter-spacing: var(--tracking-xs);
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: color 0.15s ease;
+        }
+        .nav-link:hover { color: #000; }
+        .nav-link.active { color: #000; }
+
+        .nav-separator { color: #e0e0e0; font-size: var(--font-size-sm); }
+
+        .page-title-header {
+            width: 100%;
+            background: #fff;
+            padding: var(--spacing-lg) var(--spacing-xl);
+        }
+
+        .page-title {
+            font-family: var(--font-heading);
+            font-size: var(--font-size-lg);
+            font-weight: var(--font-weight-bold);
+            color: #000;
+            letter-spacing: var(--title-tracking);
+            text-transform: uppercase;
+        }
+
+        body.proposed .page-title {
+            text-transform: none;
+            line-height: var(--line-height-tight);
+        }
+
+        /* ─── 2. Summary Stats ───────────────────────── */
+
+        .summary-stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: var(--spacing-lg);
+            padding: var(--spacing-lg);
+        }
+
+        .summary-stats__card {
+            background: #fff;
+            border: 1px solid #e0e0e0;
+            padding: var(--spacing-lg);
+            text-align: center;
+        }
+
+        .summary-stats__card-value {
+            font-family: var(--font-data);
+            font-size: var(--font-size-lg);
+            font-weight: var(--font-weight-semibold);
+            color: #000;
+            margin-bottom: var(--spacing-xs);
+            font-feature-settings: 'tnum';
+        }
+
+        .summary-stats__card-label {
+            font-family: var(--font-ui);
+            font-size: var(--font-size-xs);
+            color: #999;
+            text-transform: uppercase;
+            letter-spacing: var(--tracking-xs);
+        }
+
+        /* ─── 3. Session Info Form ───────────────────── */
+
+        .session-form {
+            padding: var(--spacing-lg);
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-lg);
+        }
+
+        .session-form__header {
+            font-family: var(--font-heading);
+            font-size: var(--font-size-base);
+            font-weight: var(--font-weight-medium);
+            color: #000;
+            text-transform: uppercase;
+            padding-bottom: var(--spacing-sm);
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        body.proposed .session-form__header {
+            font-size: var(--font-size-md);
+            font-weight: var(--font-weight-semibold);
+            text-transform: none;
+            letter-spacing: 0;
+        }
+
+        .session-form__group-title {
+            font-family: var(--font-ui);
+            font-size: var(--font-size-xs);
+            font-weight: var(--font-weight-medium);
+            color: #999;
+            text-transform: uppercase;
+            letter-spacing: var(--tracking-xs);
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .session-form__row {
+            display: flex;
+            gap: var(--spacing-lg);
+            margin-bottom: var(--spacing-md);
+        }
+
+        .session-form__field {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .session-form__label {
+            font-family: var(--font-ui);
+            font-size: var(--font-size-sm);
+            font-weight: var(--font-weight-medium);
+            color: #333;
+        }
+
+        .session-form__input {
+            font-family: var(--font-data);
+            font-size: var(--font-size-sm);
+            padding: 6px 8px;
+            border: 1px solid #e0e0e0;
+            background: #fff;
+            color: #333;
+            transition: border-color 0.15s;
+            font-feature-settings: 'tnum';
+        }
+        .session-form__input:focus { outline: none; border-color: #000; }
+
+        .session-form__input--error {
+            border-color: #d32f2f;
+            background: #fff5f5;
+        }
+
+        .session-form__error {
+            font-family: var(--font-ui);
+            font-size: var(--font-size-xs);
+            color: #d32f2f;
+        }
+
+        .session-form__estimate {
+            display: flex;
+            gap: var(--spacing-xl);
+            padding: var(--spacing-md);
+            background: #fafafa;
+            border: 1px solid #e0e0e0;
+        }
+
+        .session-form__estimate-item { text-align: center; }
+
+        .session-form__estimate-value {
+            font-family: var(--font-data);
+            font-size: var(--font-size-sm);
+            color: #666;
+            font-feature-settings: 'tnum';
+        }
+
+        .session-form__estimate-label {
+            font-family: var(--font-ui);
+            font-size: var(--font-size-xs);
+            font-weight: var(--font-weight-medium);
+            color: #999;
+            text-transform: uppercase;
+            letter-spacing: var(--tracking-xs);
+            margin-top: 2px;
+        }
+
+        .session-form__actions { display: flex; gap: var(--spacing-sm); }
+
+        .btn {
+            font-family: var(--font-ui);
+            font-size: var(--font-size-sm);
+            font-weight: var(--font-weight-medium);
+            padding: 8px 16px;
+            border: 1px solid #e0e0e0;
+            background: #fff;
+            color: #333;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            transition: all 0.15s;
+        }
+        .btn:hover { border-color: #000; color: #000; }
+
+        .btn--primary {
+            font-size: var(--font-size-base);
+            font-weight: var(--font-weight-semibold);
+            background: #000;
+            color: #fff;
+            border-color: #000;
+            letter-spacing: 0.5px;
+            padding: 10px 24px;
+        }
+        .btn--primary:hover { background: #333; color: #fff; }
+
+        /* ─── 4. Pattern Queue ───────────────────────── */
+
+        .queue__header {
+            font-family: var(--font-heading);
+            font-size: var(--font-size-base);
+            font-weight: var(--font-weight-medium);
+            color: #000;
+            text-transform: uppercase;
+            padding: var(--spacing-md) var(--spacing-lg);
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        body.proposed .queue__header {
+            font-size: var(--font-size-md);
+            font-weight: var(--font-weight-semibold);
+            text-transform: none;
+            letter-spacing: 0;
+        }
+
+        .queue__header-count {
+            font-family: var(--font-ui);
+            font-size: var(--font-size-sm);
+            font-weight: var(--font-weight-normal);
+            color: #999;
+        }
+
+        body.proposed .queue__header-count { font-size: var(--font-size-xs); }
+
+        .queue__randomize {
+            font-family: var(--font-ui);
+            font-size: var(--font-size-sm);
+            font-weight: var(--font-weight-medium);
+            color: #666;
+            background: none;
+            border: none;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        .queue__randomize:hover { color: #333; }
+
+        .queue__item {
+            display: flex;
+            align-items: center;
+            padding: 10px var(--spacing-lg);
+            border-bottom: 1px solid #f0f0f0;
+            gap: var(--spacing-sm);
+            transition: background 0.1s;
+        }
+        .queue__item:hover { background: #fafafa; }
+
+        .queue__item-order {
+            font-family: var(--font-data);
+            font-size: var(--font-size-sm);
+            font-weight: var(--font-weight-medium);
+            color: #666;
+            width: 24px;
+            text-align: right;
+            flex-shrink: 0;
+            font-feature-settings: 'tnum';
+        }
+
+        .queue__item-name {
+            font-family: var(--font-data);
+            font-size: var(--font-size-sm);
+            color: #333;
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .queue__item-drag { font-size: 16px; color: #ccc; cursor: grab; }
+
+        /* ─── 5. Filter Controls ─────────────────────── */
+
+        .filters {
+            padding: var(--spacing-lg);
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-md);
+        }
+
+        .filters__header {
+            font-family: var(--font-heading);
+            font-size: var(--font-size-base);
+            font-weight: var(--font-weight-medium);
+            color: #000;
+            text-transform: uppercase;
+        }
+
+        body.proposed .filters__header {
+            font-size: var(--font-size-md);
+            font-weight: var(--font-weight-semibold);
+            text-transform: none;
+            letter-spacing: 0;
+        }
+
+        .filters__search {
+            font-family: var(--font-ui);
+            font-size: var(--font-size-base);
+            padding: 6px var(--spacing-sm);
+            border: 1px solid #e0e0e0;
+            background: #fff;
+            color: #333;
+            width: 100%;
+        }
+        .filters__search:focus { outline: none; border-color: #000; }
+
+        .filters__group {
+            border-top: 1px solid #f0f0f0;
+            padding-top: var(--spacing-md);
+        }
+
+        .filters__group-toggle {
+            font-family: var(--font-ui);
+            font-size: var(--font-size-xs);
+            font-weight: var(--font-weight-medium);
+            text-transform: uppercase;
+            letter-spacing: var(--tracking-xs);
+            color: #333;
+            background: none;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            width: 100%;
+            padding: 0;
+        }
+        .filters__group-toggle:hover { color: #000; }
+
+        .filters__group-icon { font-weight: 600; font-size: 12px; }
+
+        .filters__range {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            margin-top: var(--spacing-sm);
+        }
+
+        .filters__range-label {
+            font-family: var(--font-ui);
+            font-size: var(--font-size-sm);
+            font-weight: var(--font-weight-medium);
+            color: #333;
+        }
+
+        .filters__range-value {
+            font-family: var(--font-data);
+            font-size: var(--font-size-sm);
+            color: #555;
+            letter-spacing: 0.3px;
+            font-feature-settings: 'tnum';
+        }
+
+        .filters__slider-track {
+            flex: 1;
+            height: 4px;
+            background: #e0e0e0;
+            border-radius: 2px;
+            position: relative;
+        }
+
+        .filters__slider-fill {
+            position: absolute;
+            height: 100%;
+            background: #000;
+            border-radius: 2px;
+            left: 10%;
+            right: 20%;
+        }
+
+        .filters__reset {
+            font-family: var(--font-ui);
+            font-size: var(--font-size-sm);
+            font-weight: var(--font-weight-medium);
+            color: #666;
+            padding: 6px;
+            background: #f5f5f5;
+            border: 1px solid #e0e0e0;
+            cursor: pointer;
+            text-transform: uppercase;
+            width: 100%;
+            text-align: center;
+        }
+        .filters__reset:hover { background: #000; color: #fff; border-color: #000; }
+
+        /* ─── 6. Data Table ──────────────────────────── */
+
+        .data-table-wrap { padding: var(--spacing-lg); }
+
+        .data-table-wrap__title {
+            font-family: var(--font-heading);
+            font-size: var(--font-size-base);
+            font-weight: var(--font-weight-medium);
+            color: #000;
+            text-transform: uppercase;
+            margin-bottom: var(--spacing-md);
+        }
+
+        body.proposed .data-table-wrap__title {
+            font-size: var(--font-size-md);
+            font-weight: var(--font-weight-semibold);
+            text-transform: none;
+            letter-spacing: 0;
+        }
+
+        .data-table-wrap__subtitle {
+            font-family: var(--font-ui);
+            font-size: var(--font-size-xs);
+            color: #999;
+            text-transform: uppercase;
+            letter-spacing: var(--tracking-xs);
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .data-table { width: 100%; border-collapse: collapse; }
+
+        .data-table th {
+            font-family: var(--font-ui);
+            font-size: var(--font-size-xs);
+            font-weight: var(--font-weight-medium);
+            color: #999;
+            text-transform: uppercase;
+            letter-spacing: var(--tracking-xs);
+            text-align: left;
+            padding: 8px 12px;
+            border-bottom: 1px solid #e0e0e0;
+            background: #fafafa;
+        }
+
+        .data-table td {
+            font-family: var(--font-data);
+            font-size: var(--font-size-sm);
+            color: #333;
+            padding: 8px 12px;
+            border-bottom: 1px solid #f0f0f0;
+            font-feature-settings: 'tnum';
+        }
+
+        .data-table td.label-cell {
+            font-family: var(--font-ui);
+            font-weight: var(--font-weight-medium);
+            color: #333;
+        }
+
+        .data-table tr:hover td { background: #fafafa; }
+        .data-table .change-positive { color: #2e7d32; }
+        .data-table .change-negative { color: #d32f2f; }
+
+        /* ─── Transition ─────────────────────────────── */
+
+        .page-title,
+        .session-form__header,
+        .queue__header,
+        .filters__header,
+        .data-table-wrap__title,
+        .summary-stats__card-value,
+        .summary-stats__card-label,
+        .session-form__label,
+        .session-form__group-title,
+        .nav-link,
+        .btn,
+        .queue__item-name,
+        .queue__item-order,
+        .data-table th,
+        .data-table td {
+            transition: font-size 0.25s ease, font-weight 0.25s ease, letter-spacing 0.25s ease;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ─── Toolbar ─────────────────────────────────── -->
+    <div class="toolbar">
+        <span class="toolbar__title">SAIL Typography</span>
+        <div class="toolbar__sep"></div>
+        <div class="toggle-group">
+            <button class="toggle-btn active" data-mode="current">Current</button>
+            <button class="toggle-btn" data-mode="a">A: Functional</button>
+            <button class="toggle-btn" data-mode="b">B: Geometric</button>
+            <button class="toggle-btn" data-mode="c">C: Editorial</button>
+        </div>
+        <div class="toolbar__desc">
+            <span id="desc-text">SF Mono (monospace everywhere) &middot; px units</span>
+        </div>
+    </div>
+
+    <!-- ─── Changes Summary ──────────────────────────── -->
+    <div class="changes-bar" id="changes-bar" data-accent="a">
+        <div class="changes-grid">
+            <div class="change-item">
+                <div class="change-item__label">Typeface</div>
+                <div class="change-item__before">SF Mono (all)</div>
+                <div class="change-item__after" id="ch-font">Inter + SF Mono</div>
+            </div>
+            <div class="change-item">
+                <div class="change-item__label">Scale</div>
+                <div class="change-item__before">10 / 11 / 13 / 14 / 16 px</div>
+                <div class="change-item__after">0.69 / 0.81 / 0.94 / 1.13 / 1.5 rem</div>
+            </div>
+            <div class="change-item">
+                <div class="change-item__label">Weights</div>
+                <div class="change-item__before">400 / 500 / 600</div>
+                <div class="change-item__after">400 / 500 / 600 / 700</div>
+            </div>
+            <div class="change-item">
+                <div class="change-item__label">Titles & Headers</div>
+                <div class="change-item__before">ALL CAPS</div>
+                <div class="change-item__after">Sentence case</div>
+            </div>
+            <div class="change-item">
+                <div class="change-item__label" id="ch-note-label">Character</div>
+                <div class="change-item__before" id="ch-note-before">Generic</div>
+                <div class="change-item__after" id="ch-note-after">Neutral, high legibility</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="preview-container">
+
+        <!-- ─── Navigation + Page Title ──────────────── -->
+        <div class="section">
+            <div class="section__label">Navigation + Page Title</div>
+            <div class="section__content">
+                <div class="top-header">
+                    <a class="nav-link" href="#">Explore</a>
+                    <span class="nav-separator">|</span>
+                    <a class="nav-link" href="#">Test</a>
+                    <span class="nav-separator">|</span>
+                    <a class="nav-link active" href="#">Analyze</a>
+                </div>
+                <div class="page-title-header">
+                    <h1 class="page-title">Analyze Results</h1>
+                </div>
+            </div>
+        </div>
+
+        <!-- ─── Summary Stats ────────────────────────── -->
+        <div class="section">
+            <div class="section__label">Summary Stats</div>
+            <div class="section__content">
+                <div class="summary-stats">
+                    <div class="summary-stats__card">
+                        <div class="summary-stats__card-value">23.4 &mu;V</div>
+                        <div class="summary-stats__card-label">Avg Alpha Power</div>
+                    </div>
+                    <div class="summary-stats__card">
+                        <div class="summary-stats__card-value">1:45:30</div>
+                        <div class="summary-stats__card-label">Total Duration</div>
+                    </div>
+                    <div class="summary-stats__card">
+                        <div class="summary-stats__card-value">12</div>
+                        <div class="summary-stats__card-label">Trials Completed</div>
+                    </div>
+                    <div class="summary-stats__card">
+                        <div class="summary-stats__card-value">87%</div>
+                        <div class="summary-stats__card-label">Signal Quality</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ─── Session Info Form ────────────────────── -->
+        <div class="section">
+            <div class="section__label">Session Info Form</div>
+            <div class="section__content">
+                <div class="session-form">
+                    <div class="session-form__header">Session Configuration</div>
+                    <div>
+                        <div class="session-form__group-title">Participant Info</div>
+                        <div class="session-form__row">
+                            <div class="session-form__field">
+                                <label class="session-form__label">Participant ID</label>
+                                <input class="session-form__input" type="text" value="P-2024-0037" readonly>
+                            </div>
+                            <div class="session-form__field">
+                                <label class="session-form__label">Session Name</label>
+                                <input class="session-form__input" type="text" placeholder="e.g. Morning Session A">
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="session-form__group-title">Test Parameters</div>
+                        <div class="session-form__row">
+                            <div class="session-form__field">
+                                <label class="session-form__label">Baseline Duration (s)</label>
+                                <input class="session-form__input" type="number" value="30">
+                            </div>
+                            <div class="session-form__field">
+                                <label class="session-form__label">Stimulation Duration (s)</label>
+                                <input class="session-form__input" type="number" value="60">
+                            </div>
+                            <div class="session-form__field">
+                                <label class="session-form__label">Rest Period (s)</label>
+                                <input class="session-form__input session-form__input--error" type="number" value="-5">
+                                <span class="session-form__error">Must be a positive number</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="session-form__group-title">Time Estimate</div>
+                        <div class="session-form__estimate">
+                            <div class="session-form__estimate-item">
+                                <div class="session-form__estimate-value">12</div>
+                                <div class="session-form__estimate-label">Patterns</div>
+                            </div>
+                            <div class="session-form__estimate-item">
+                                <div class="session-form__estimate-value">30s + 60s</div>
+                                <div class="session-form__estimate-label">Per Trial</div>
+                            </div>
+                            <div class="session-form__estimate-item">
+                                <div class="session-form__estimate-value">~24 min</div>
+                                <div class="session-form__estimate-label">Total Time</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="session-form__actions">
+                        <button class="btn btn--primary">Start Session</button>
+                        <button class="btn">Reset</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ─── Pattern Queue ────────────────────────── -->
+        <div class="section">
+            <div class="section__label">Pattern Queue</div>
+            <div class="section__content">
+                <div class="queue">
+                    <div class="queue__header">
+                        <span>Pattern Queue <span class="queue__header-count">(6 patterns)</span></span>
+                        <button class="queue__randomize">Randomize</button>
+                    </div>
+                    <div class="queue__item"><span class="queue__item-order">1</span><span class="queue__item-name">ambient_drone_01.wav</span><span class="queue__item-drag">&#x2630;</span></div>
+                    <div class="queue__item"><span class="queue__item-order">2</span><span class="queue__item-name">binaural_theta_7hz.wav</span><span class="queue__item-drag">&#x2630;</span></div>
+                    <div class="queue__item"><span class="queue__item-order">3</span><span class="queue__item-name">isochronic_alpha_10hz.wav</span><span class="queue__item-drag">&#x2630;</span></div>
+                    <div class="queue__item"><span class="queue__item-order">4</span><span class="queue__item-name">pink_noise_filtered.wav</span><span class="queue__item-drag">&#x2630;</span></div>
+                    <div class="queue__item"><span class="queue__item-order">5</span><span class="queue__item-name">solfeggio_528hz_pure.wav</span><span class="queue__item-drag">&#x2630;</span></div>
+                    <div class="queue__item"><span class="queue__item-order">6</span><span class="queue__item-name">white_noise_burst_sequence.wav</span><span class="queue__item-drag">&#x2630;</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ─── Filter Controls ──────────────────────── -->
+        <div class="section">
+            <div class="section__label">Filter Controls</div>
+            <div class="section__content">
+                <div class="filters">
+                    <div class="filters__header">Filters</div>
+                    <input class="filters__search" type="text" placeholder="Search patterns...">
+                    <div class="filters__group">
+                        <button class="filters__group-toggle"><span class="filters__group-icon">&minus;</span> Frequency Range</button>
+                        <div class="filters__range">
+                            <span class="filters__range-label">Hz</span>
+                            <span class="filters__range-value">20</span>
+                            <div class="filters__slider-track"><div class="filters__slider-fill"></div></div>
+                            <span class="filters__range-value">800</span>
+                        </div>
+                    </div>
+                    <div class="filters__group">
+                        <button class="filters__group-toggle"><span class="filters__group-icon">&minus;</span> Duration</button>
+                        <div class="filters__range">
+                            <span class="filters__range-label">Sec</span>
+                            <span class="filters__range-value">0</span>
+                            <div class="filters__slider-track"><div class="filters__slider-fill" style="left: 0; right: 10%;"></div></div>
+                            <span class="filters__range-value">180</span>
+                        </div>
+                    </div>
+                    <div class="filters__group">
+                        <button class="filters__group-toggle"><span class="filters__group-icon">+</span> Category</button>
+                    </div>
+                    <button class="filters__reset">Reset Filters</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ─── EEG Data Table ───────────────────────── -->
+        <div class="section">
+            <div class="section__label">EEG Data Table</div>
+            <div class="section__content">
+                <div class="data-table-wrap">
+                    <div class="data-table-wrap__title">Band Power Analysis</div>
+                    <div class="data-table-wrap__subtitle">Trial 4 &mdash; binaural_theta_7hz.wav</div>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Band</th><th>Freq Range</th><th>Baseline (abs)</th><th>Stimulation (abs)</th><th>Change</th><th>Baseline (rel)</th><th>Stimulation (rel)</th><th>Change</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td class="label-cell">Delta</td><td>0.5 &ndash; 4 Hz</td><td>12.340</td><td>11.892</td><td class="change-negative">&minus;3.6%</td><td>0.2831</td><td>0.2614</td><td class="change-negative">&minus;7.7%</td></tr>
+                            <tr><td class="label-cell">Theta</td><td>4 &ndash; 8 Hz</td><td>8.721</td><td>14.553</td><td class="change-positive">+66.9%</td><td>0.2001</td><td>0.3199</td><td class="change-positive">+59.9%</td></tr>
+                            <tr><td class="label-cell">Alpha</td><td>8 &ndash; 13 Hz</td><td>10.482</td><td>9.871</td><td class="change-negative">&minus;5.8%</td><td>0.2404</td><td>0.2170</td><td class="change-negative">&minus;9.7%</td></tr>
+                            <tr><td class="label-cell">Beta</td><td>13 &ndash; 30 Hz</td><td>7.194</td><td>6.012</td><td class="change-negative">&minus;16.4%</td><td>0.1650</td><td>0.1321</td><td class="change-negative">&minus;19.9%</td></tr>
+                            <tr><td class="label-cell">Gamma</td><td>30 &ndash; 100 Hz</td><td>4.862</td><td>5.141</td><td class="change-positive">+5.7%</td><td>0.1115</td><td>0.1130</td><td class="change-positive">+1.3%</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const MONO = "'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Courier New', monospace";
+
+        // Shared proposed scale (rem) and hierarchy changes
+        const PROPOSED_SCALE = {
+            '--font-size-xs':  '0.6875rem',  // 11px
+            '--font-size-sm':  '0.8125rem',  // 13px
+            '--font-size-base': '0.9375rem', // 15px
+            '--font-size-md':  '1.125rem',   // 18px
+            '--font-size-lg':  '1.5rem',     // 24px
+            '--font-weight-bold': '700',
+            '--tracking-xs': '0.8px',
+        };
+
+        const MODES = {
+            current: {
+                proposed: false,
+                vars: {
+                    '--font-heading': MONO,
+                    '--font-ui':  MONO,
+                    '--font-data': MONO,
+                    '--font-size-xs':  '0.625rem',   // 10px
+                    '--font-size-sm':  '0.6875rem',  // 11px
+                    '--font-size-base': '0.8125rem', // 13px
+                    '--font-size-md':  '0.875rem',   // 14px
+                    '--font-size-lg':  '1rem',       // 16px
+                    '--font-weight-bold': '600',
+                    '--tracking-xs': '0.5px',
+                    '--title-tracking': '1px',
+                },
+                desc: 'SF Mono everywhere &middot; 10-16px &middot; all caps',
+                changes: {},
+            },
+
+            a: {
+                proposed: true,
+                vars: {
+                    ...PROPOSED_SCALE,
+                    '--font-heading': "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
+                    '--font-ui':     "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
+                    '--font-data':   MONO,
+                    '--title-tracking': '-0.2px',
+                },
+                desc: 'Inter + SF Mono &middot; 11-24px rem &middot; sentence case',
+                changes: {
+                    font: 'Inter (UI) + SF Mono (data)',
+                    note: 'Neutral, high legibility',
+                    noteBefore: 'Flat, monospace-only',
+                },
+            },
+
+            b: {
+                proposed: true,
+                vars: {
+                    ...PROPOSED_SCALE,
+                    '--font-heading': "'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif",
+                    '--font-ui':     "'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif",
+                    '--font-data':   "'JetBrains Mono', 'SF Mono', 'Monaco', monospace",
+                    '--title-tracking': '-0.3px',
+                },
+                desc: 'Space Grotesk + JetBrains Mono &middot; 11-24px rem &middot; sentence case',
+                changes: {
+                    font: 'Space Grotesk + JetBrains Mono',
+                    note: 'Geometric, distinctive letterforms',
+                    noteBefore: 'Flat, monospace-only',
+                },
+            },
+
+            c: {
+                proposed: true,
+                vars: {
+                    ...PROPOSED_SCALE,
+                    '--font-heading': "'Instrument Serif', Georgia, 'Times New Roman', serif",
+                    '--font-ui':     "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
+                    '--font-data':   MONO,
+                    '--title-tracking': '0px',
+                },
+                desc: 'Instrument Serif + Inter + SF Mono &middot; 11-24px rem &middot; sentence case',
+                changes: {
+                    font: 'Instrument Serif / Inter / SF Mono',
+                    note: 'Three-tier: serif titles, sans body, mono data',
+                    noteBefore: 'Flat, monospace-only',
+                },
+            },
+        };
+
+        const buttons = document.querySelectorAll('.toggle-btn');
+        const descText = document.getElementById('desc-text');
+        const changesBar = document.getElementById('changes-bar');
+        const chFont = document.getElementById('ch-font');
+        const chNoteAfter = document.getElementById('ch-note-after');
+        const chNoteBefore = document.getElementById('ch-note-before');
+
+        function applyMode(mode) {
+            const m = MODES[mode];
+            const root = document.documentElement;
+
+            Object.entries(m.vars).forEach(([prop, val]) => {
+                root.style.setProperty(prop, val);
+            });
+
+            document.body.classList.toggle('proposed', m.proposed);
+
+            descText.innerHTML = m.desc;
+
+            buttons.forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.mode === mode);
+            });
+
+            if (m.proposed) {
+                changesBar.classList.add('visible');
+                changesBar.dataset.accent = mode;
+                chFont.textContent = m.changes.font;
+                chNoteAfter.textContent = m.changes.note;
+                chNoteBefore.textContent = m.changes.noteBefore;
+            } else {
+                changesBar.classList.remove('visible');
+            }
+        }
+
+        buttons.forEach(btn => {
+            btn.addEventListener('click', () => applyMode(btn.dataset.mode));
+        });
+
+        // Keyboard: 1-4 keys to switch
+        document.addEventListener('keydown', (e) => {
+            if (e.target.tagName === 'INPUT') return;
+            const map = { '1': 'current', '2': 'a', '3': 'b', '4': 'c' };
+            if (map[e.key]) applyMode(map[e.key]);
+        });
+    </script>
+</body>
+</html>
