@@ -1,8 +1,9 @@
 /**
  * EEGDataCollector Module
- * 
+ *
  * Handles collection of brainwave readings during test sessions.
- * Currently uses dummy/simulated data. Can be swapped for real EEG integration later.
+ * Connects to eeg_server.py over WebSocket for streaming EEG readings.
+ * Use `python eeg_server.py --mock` to stream server-side mock data.
  */
 
 class EEGDataCollector {
@@ -10,33 +11,298 @@ class EEGDataCollector {
      * Create an EEGDataCollector instance
      * @param {Object} options - Configuration options
      * @param {Function} [options.onReading] - Callback when reading is collected: (reading) => void
-     * @param {number} [options.sampleRate=10] - Samples per second (Hz)
-     * @param {boolean} [options.useDummyData=true] - Use dummy data (true) or real EEG (false)
+     * @param {Function} [options.onConnectionChange] - Callback when connection state changes: (state) => void
+     * @param {Function} [options.onError] - Callback when error occurs: (error) => void
+     * @param {string} [options.wsUrl='ws://localhost:8765'] - WebSocket server URL for real EEG
+     * @param {number} [options.reconnectInterval=3000] - Reconnect interval in ms
+     * @param {number} [options.maxReconnectAttempts=5] - Max reconnection attempts
+     * @param {number} [options.connectTimeoutMs=5000] - WebSocket connection timeout in ms
      */
     constructor(options = {}) {
         this.onReading = options.onReading || null;
-        this.sampleRate = options.sampleRate || 10; // 10 Hz = 10 samples per second
-        this.useDummyData = options.useDummyData !== undefined ? options.useDummyData : true;
-        
+        this.onConnectionChange = options.onConnectionChange || null;
+        this.onError = options.onError || null;
+        this.wsUrl = options.wsUrl || 'ws://localhost:8765';
+        this.reconnectInterval = options.reconnectInterval || 3000;
+        this.maxReconnectAttempts = options.maxReconnectAttempts || 5;
+        this.connectTimeoutMs = options.connectTimeoutMs || 5000;
+
         // State
         this.isCollecting = false;
-        this.collectionInterval = null;
         this.readingCount = 0;
 
-        // Dummy data parameters (realistic ranges based on typical EEG)
-        this.dummyDataRanges = {
-            delta_abs: { min: 0.5, max: 5.0 },
-            theta_abs: { min: 1.0, max: 8.0 },
-            alpha_abs: { min: 2.0, max: 15.0 },
-            beta_abs: { min: 1.0, max: 12.0 },
-            gamma_abs: { min: 0.5, max: 6.0 }
-        };
+        // WebSocket state
+        this.ws = null;
+        this.connectionState = 'disconnected'; // disconnected, connecting, connected, error
+        this.reconnectAttempts = 0;
+        this.reconnectTimer = null;
+
+        // Context for server
+        this.sessionId = null;
+        this.trialId = null;
+        this.phase = null;
+    }
+
+    /**
+     * Set the context for EEG readings (session, trial, phase)
+     * @param {Object} context - Context object
+     * @param {string} [context.sessionId] - Session ID
+     * @param {string} [context.trialId] - Trial ID
+     * @param {string} [context.phase] - Current phase (calibration, baseline, stimulation, etc.)
+     */
+    setContext(context) {
+        this.sessionId = context.sessionId || null;
+        this.trialId = context.trialId || null;
+        this.phase = context.phase || null;
+
+        // Send context to server if connected
+        if (this.ws && this.connectionState === 'connected') {
+            this.sendCommand('set_context', {
+                session_id: this.sessionId,
+                trial_id: this.trialId,
+                phase: this.phase
+            });
+        }
+    }
+
+    /**
+     * Connect to the EEG WebSocket server
+     * @returns {Promise<boolean>} - Resolves when connected
+     */
+    connect() {
+        return new Promise((resolve, reject) => {
+            if (this.ws && this.connectionState === 'connected') {
+                resolve(true);
+                return;
+            }
+
+            this.setConnectionState('connecting');
+            let settled = false;
+            let opened = false;
+            let connectTimeout = null;
+
+            const finish = (handler, value, nextState = null) => {
+                if (settled) {
+                    return;
+                }
+                settled = true;
+                if (connectTimeout) {
+                    clearTimeout(connectTimeout);
+                }
+                if (nextState) {
+                    this.setConnectionState(nextState);
+                }
+                handler(value);
+            };
+
+            try {
+                this.ws = new WebSocket(this.wsUrl);
+                connectTimeout = setTimeout(() => {
+                    const timeoutError = new Error(
+                        `WebSocket connection timeout (${this.connectTimeoutMs}ms): ${this.wsUrl}`
+                    );
+                    try {
+                        this.ws.close();
+                    } catch (_) {
+                        // No-op: we only care about transitioning out of connecting state.
+                    }
+                    finish(reject, timeoutError, 'error');
+                }, this.connectTimeoutMs);
+
+                this.ws.onopen = () => {
+                    opened = true;
+                    console.log('EEGDataCollector: WebSocket connected');
+                    this.setConnectionState('connected');
+                    const wasReconnect = this.reconnectAttempts > 0;
+                    this.reconnectAttempts = 0;
+
+                    // Re-sync stream state when reconnecting while a session is active.
+                    if (this.isCollecting && wasReconnect) {
+                        this.syncServerState();
+                    }
+
+                    finish(resolve, true);
+                };
+
+                this.ws.onmessage = (event) => {
+                    this.handleMessage(event.data);
+                };
+
+                this.ws.onerror = (event) => {
+                    const connectionError = new Error(`WebSocket error while connecting to ${this.wsUrl}`);
+                    console.error('EEGDataCollector: WebSocket error', event);
+                    if (this.onError) {
+                        this.onError(connectionError);
+                    }
+                    if (!opened) {
+                        finish(reject, connectionError, 'error');
+                    }
+                };
+
+                this.ws.onclose = (event) => {
+                    console.log('EEGDataCollector: WebSocket closed', event.code, event.reason);
+                    this.setConnectionState('disconnected');
+
+                    if (!opened) {
+                        const reason = event.reason ? ` ${event.reason}` : '';
+                        const closeError = new Error(`WebSocket closed before open (${event.code})${reason}`);
+                        finish(reject, closeError);
+                    }
+
+                    // Attempt reconnection if we were collecting
+                    if (this.isCollecting && this.reconnectAttempts < this.maxReconnectAttempts) {
+                        this.scheduleReconnect();
+                    }
+                };
+
+            } catch (error) {
+                console.error('EEGDataCollector: Failed to create WebSocket', error);
+                this.setConnectionState('error');
+                reject(error);
+            }
+        });
+    }
+
+    /**
+     * Disconnect from the EEG WebSocket server
+     */
+    disconnect() {
+        if (this.reconnectTimer) {
+            clearTimeout(this.reconnectTimer);
+            this.reconnectTimer = null;
+        }
+
+        if (this.ws) {
+            this.ws.close();
+            this.ws = null;
+        }
+
+        this.setConnectionState('disconnected');
+    }
+
+    /**
+     * Schedule a reconnection attempt
+     */
+    scheduleReconnect() {
+        if (this.reconnectTimer) {
+            return;
+        }
+
+        this.reconnectAttempts++;
+        console.log(`EEGDataCollector: Reconnecting in ${this.reconnectInterval}ms (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
+
+        this.reconnectTimer = setTimeout(() => {
+            this.reconnectTimer = null;
+            this.connect().catch(err => {
+                console.error('EEGDataCollector: Reconnection failed', err);
+            });
+        }, this.reconnectInterval);
+    }
+
+    /**
+     * Set connection state and notify callback
+     * @param {string} state - New connection state
+     */
+    setConnectionState(state) {
+        const previousState = this.connectionState;
+        this.connectionState = state;
+
+        if (this.onConnectionChange && previousState !== state) {
+            this.onConnectionChange(state, previousState);
+        }
+    }
+
+    /**
+     * Handle incoming WebSocket message
+     * @param {string} data - Raw message data
+     */
+    handleMessage(data) {
+        try {
+            const message = JSON.parse(data);
+
+            switch (message.type) {
+                case 'reading':
+                    // Process EEG reading
+                    if (this.isCollecting && this.onReading) {
+                        this.onReading(message.data);
+                        this.readingCount++;
+                    }
+                    break;
+
+                case 'connected':
+                    console.log('EEGDataCollector: Server says:', message.message);
+                    console.log('EEGDataCollector: Mock mode:', message.mock_mode);
+                    break;
+
+                case 'response':
+                    console.log('EEGDataCollector: Command response:', message);
+                    break;
+
+                case 'error':
+                    console.error('EEGDataCollector: Server error:', message.message);
+                    if (this.onError) {
+                        this.onError(new Error(message.message));
+                    }
+                    break;
+
+                case 'pong':
+                    // Heartbeat response
+                    break;
+
+                default:
+                    console.log('EEGDataCollector: Unknown message type:', message.type);
+            }
+        } catch (error) {
+            console.error('EEGDataCollector: Error parsing message', error);
+        }
+    }
+
+    /**
+     * Send a command to the WebSocket server
+     * @param {string} command - Command name
+     * @param {Object} [params={}] - Additional parameters
+     */
+    sendCommand(command, params = {}) {
+        if (!this.ws || this.connectionState !== 'connected') {
+            console.warn('EEGDataCollector: Cannot send command, not connected');
+            return false;
+        }
+
+        try {
+            this.ws.send(JSON.stringify({
+                command,
+                ...params
+            }));
+            return true;
+        } catch (error) {
+            console.error('EEGDataCollector: Error sending command', error);
+            return false;
+        }
+    }
+
+    /**
+     * Sync active collection context with the WebSocket server.
+     */
+    syncServerState() {
+        if (!this.ws || this.connectionState !== 'connected') {
+            return;
+        }
+
+        this.sendCommand('start');
+
+        if (this.sessionId || this.trialId || this.phase) {
+            this.sendCommand('set_context', {
+                session_id: this.sessionId,
+                trial_id: this.trialId,
+                phase: this.phase
+            });
+        }
     }
 
     /**
      * Start collecting readings
      */
-    start() {
+    async start() {
         if (this.isCollecting) {
             console.warn('EEGDataCollector: Already collecting');
             return;
@@ -45,12 +311,16 @@ class EEGDataCollector {
         this.isCollecting = true;
         this.readingCount = 0;
 
-        if (this.useDummyData) {
-            this.startDummyCollection();
-        } else {
-            // TODO: Start real EEG collection
-            console.warn('EEGDataCollector: Real EEG integration not yet implemented');
-            this.startDummyCollection(); // Fallback to dummy data
+        // Connect to WebSocket server and start streaming
+        try {
+            await this.connect();
+            this.syncServerState();
+        } catch (error) {
+            this.isCollecting = false;
+            console.error('EEGDataCollector: Failed to start EEG collection', error);
+            if (this.onError) {
+                this.onError(error);
+            }
         }
     }
 
@@ -63,85 +333,14 @@ class EEGDataCollector {
         }
 
         this.isCollecting = false;
-
-        if (this.collectionInterval) {
-            clearInterval(this.collectionInterval);
-            this.collectionInterval = null;
+        if (this.reconnectTimer) {
+            clearTimeout(this.reconnectTimer);
+            this.reconnectTimer = null;
         }
 
-        if (!this.useDummyData) {
-            // TODO: Stop real EEG collection
+        if (this.ws && this.connectionState === 'connected') {
+            this.sendCommand('stop');
         }
-    }
-
-    /**
-     * Start dummy data collection
-     */
-    startDummyCollection() {
-        const intervalMs = 1000 / this.sampleRate; // Convert Hz to milliseconds
-
-        this.collectionInterval = setInterval(() => {
-            if (!this.isCollecting) {
-                return;
-            }
-
-            const reading = this.generateDummyReading();
-            
-            if (this.onReading) {
-                this.onReading(reading);
-            }
-
-            this.readingCount++;
-        }, intervalMs);
-    }
-
-    /**
-     * Generate a dummy brainwave reading
-     * @returns {Object} Brainwave reading object
-     */
-    generateDummyReading() {
-        const ranges = this.dummyDataRanges;
-        
-        // Generate absolute values with some variation
-        const delta_abs = this.randomInRange(ranges.delta_abs.min, ranges.delta_abs.max);
-        const theta_abs = this.randomInRange(ranges.theta_abs.min, ranges.theta_abs.max);
-        const alpha_abs = this.randomInRange(ranges.alpha_abs.min, ranges.alpha_abs.max);
-        const beta_abs = this.randomInRange(ranges.beta_abs.min, ranges.beta_abs.max);
-        const gamma_abs = this.randomInRange(ranges.gamma_abs.min, ranges.gamma_abs.max);
-
-        // Calculate total for relative values
-        const total = delta_abs + theta_abs + alpha_abs + beta_abs + gamma_abs;
-
-        // Calculate relative values (proportions)
-        const delta_rel = delta_abs / total;
-        const theta_rel = theta_abs / total;
-        const alpha_rel = alpha_abs / total;
-        const beta_rel = beta_abs / total;
-        const gamma_rel = gamma_abs / total;
-
-        return {
-            timestamp_ms: Date.now(),
-            delta_abs: parseFloat(delta_abs.toFixed(6)),
-            theta_abs: parseFloat(theta_abs.toFixed(6)),
-            alpha_abs: parseFloat(alpha_abs.toFixed(6)),
-            beta_abs: parseFloat(beta_abs.toFixed(6)),
-            gamma_abs: parseFloat(gamma_abs.toFixed(6)),
-            delta_rel: parseFloat(delta_rel.toFixed(5)),
-            theta_rel: parseFloat(theta_rel.toFixed(5)),
-            alpha_rel: parseFloat(alpha_rel.toFixed(5)),
-            beta_rel: parseFloat(beta_rel.toFixed(5)),
-            gamma_rel: parseFloat(gamma_rel.toFixed(5))
-        };
-    }
-
-    /**
-     * Generate random number in range
-     * @param {number} min - Minimum value
-     * @param {number} max - Maximum value
-     * @returns {number}
-     */
-    randomInRange(min, max) {
-        return Math.random() * (max - min) + min;
     }
 
     /**
@@ -161,24 +360,35 @@ class EEGDataCollector {
     }
 
     /**
-     * Set sample rate
-     * @param {number} rate - Samples per second (Hz)
+     * Get current connection state
+     * @returns {string}
      */
-    setSampleRate(rate) {
-        if (rate <= 0) {
-            console.warn('EEGDataCollector: Invalid sample rate');
-            return;
-        }
+    getConnectionState() {
+        return this.connectionState;
+    }
 
-        const wasCollecting = this.isCollecting;
-        if (wasCollecting) {
-            this.stop();
-        }
+    /**
+     * Check if WebSocket server is available
+     * @returns {Promise<boolean>}
+     */
+    async checkServerAvailable() {
+        return new Promise((resolve) => {
+            const testWs = new WebSocket(this.wsUrl);
+            const timeout = setTimeout(() => {
+                testWs.close();
+                resolve(false);
+            }, 2000);
 
-        this.sampleRate = rate;
+            testWs.onopen = () => {
+                clearTimeout(timeout);
+                testWs.close();
+                resolve(true);
+            };
 
-        if (wasCollecting) {
-            this.start();
-        }
+            testWs.onerror = () => {
+                clearTimeout(timeout);
+                resolve(false);
+            };
+        });
     }
 }

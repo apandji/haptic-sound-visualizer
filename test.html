@@ -542,7 +542,7 @@
         <span class="nav-separator">|</span>
         <a href="test.html" class="nav-link active">Test</a>
         <span class="nav-separator">|</span>
-        <a href="#" class="nav-link">Analyze</a>
+        <a href="analyze.html" class="nav-link">Analyze</a>
     </div>
     
     <!-- Page Title Header -->
@@ -627,6 +627,7 @@
         let sessionInfo = null;
         let timeEstimator = null;
         let signalQualityVisualizer = null;
+        let availableParticipants = null;
         
         // Simple audio preview
         let audioPlayerInstance = null;
@@ -650,6 +651,40 @@
                 console.warn('Could not load pattern metadata:', error);
             }
         }
+
+        // Load participants from database API (with local fallback)
+        async function loadParticipants() {
+            try {
+                const response = await fetch('/api/participants');
+                if (response.ok) {
+                    const data = await response.json();
+                    if (Array.isArray(data)) {
+                        availableParticipants = data
+                            .map(participant => ({
+                                participant_id: participant.participant_id ?? participant.id,
+                                participant_code: participant.participant_code || participant.code,
+                                age: participant.age ?? null,
+                                gender: participant.gender ?? null,
+                                handedness: participant.handedness ?? null,
+                                notes: participant.notes ?? null
+                            }))
+                            .filter(participant =>
+                                participant.participant_id !== undefined &&
+                                participant.participant_id !== null &&
+                                participant.participant_code
+                            );
+
+                        console.log('Loaded', availableParticipants.length, 'participants from API');
+                        return;
+                    }
+                }
+            } catch (error) {
+                console.warn('Could not load participants from API:', error);
+            }
+
+            // Fallback to SessionInfo localStorage source on failure
+            availableParticipants = null;
+        }
         
         // Load file list from server or static JSON file
         async function loadFileList() {
@@ -669,7 +704,7 @@
                                 };
                             });
                             console.log('Loaded', allFilesList.length, 'files from API');
-                            initializeComponents();
+                            await initializeComponents();
                             return;
                         }
                     }
@@ -728,7 +763,7 @@
                             };
                         });
                         console.log('Successfully loaded', allFilesList.length, 'files from:', path);
-                        initializeComponents();
+                        await initializeComponents();
                         return;
                     }
                 } catch (fetchError) {
@@ -746,11 +781,13 @@
         }
         
         // Initialize all components
-        function initializeComponents() {
+        async function initializeComponents() {
             // Initialize time estimator
             timeEstimator = new SessionTimeEstimator({
                 // Values can be overridden here, or edit js/modules/sessionTimingConfig.json
             });
+
+            await loadParticipants();
             
             // Initialize Queue
             queue = new PatternQueue({
@@ -841,7 +878,7 @@
             // Initialize SessionInfo
             sessionInfo = new SessionInfo({
                 containerId: 'sessionInfo',
-                participants: [], // Will load from localStorage
+                participants: availableParticipants,
                 locations: [
                     { location_id: 1, name: 'MDes Lab' },
                     { location_id: 2, name: 'Steinberg 204' },
@@ -978,6 +1015,105 @@
         let calibrationTimer = null;
         let baselineTimer = null;
         let stimulationTimer = null;
+        const calibrationGateConfig = {
+            minReadings: 30,
+            maxReadingAgeMs: 3000,
+            minSignalQuality: 70,
+            maxPoorChannelRatio: 0.25,
+            minPassingRatio: 0.8
+        };
+
+        function isCalibrationReadingPassing(reading) {
+            if (!reading || typeof reading !== 'object') {
+                return false;
+            }
+
+            const channelMetrics = Array.isArray(reading.channel_metrics) ? reading.channel_metrics : [];
+            if (channelMetrics.length > 0) {
+                const poorCount = channelMetrics.filter((ch) => ch && ch.quality === 'poor').length;
+                const poorRatio = poorCount / channelMetrics.length;
+                if (poorRatio > calibrationGateConfig.maxPoorChannelRatio) {
+                    return false;
+                }
+            }
+
+            const signalQuality = Number(reading.signal_quality);
+            if (Number.isFinite(signalQuality)) {
+                return signalQuality >= calibrationGateConfig.minSignalQuality;
+            }
+
+            return channelMetrics.length > 0;
+        }
+
+        function evaluateCalibrationQuality() {
+            const result = {
+                pass: false,
+                reason: '',
+                metrics: {}
+            };
+
+            if (!testSession || !Array.isArray(testSession.calibrationReadings)) {
+                result.reason = 'No calibration EEG data was captured.';
+                return result;
+            }
+
+            const allReadings = testSession.calibrationReadings;
+            result.metrics.totalReadings = allReadings.length;
+
+            if (allReadings.length < calibrationGateConfig.minReadings) {
+                result.reason = `Insufficient calibration samples (${allReadings.length}/${calibrationGateConfig.minReadings}).`;
+                return result;
+            }
+
+            const usableReadings = allReadings.filter((reading) => reading && typeof reading === 'object');
+            result.metrics.usableReadings = usableReadings.length;
+
+            if (usableReadings.length < calibrationGateConfig.minReadings) {
+                result.reason = `Insufficient valid calibration readings (${usableReadings.length}/${calibrationGateConfig.minReadings}).`;
+                return result;
+            }
+
+            const lastReading = usableReadings[usableReadings.length - 1];
+            const lastTimestamp = Number(lastReading?.timestamp_ms);
+            const readingAgeMs = Number.isFinite(lastTimestamp) ? Date.now() - lastTimestamp : Number.POSITIVE_INFINITY;
+            result.metrics.latestReadingAgeMs = readingAgeMs;
+
+            if (!Number.isFinite(readingAgeMs) || readingAgeMs > calibrationGateConfig.maxReadingAgeMs) {
+                result.reason = `Live EEG data became stale (last update ${Math.round(readingAgeMs)} ms ago).`;
+                return result;
+            }
+
+            const windowSize = Math.max(calibrationGateConfig.minReadings, Math.min(usableReadings.length, 50));
+            const evaluationWindow = usableReadings.slice(-windowSize);
+            const passingReadings = evaluationWindow.filter(isCalibrationReadingPassing);
+            const requiredPassing = Math.ceil(evaluationWindow.length * calibrationGateConfig.minPassingRatio);
+
+            result.metrics.windowSize = evaluationWindow.length;
+            result.metrics.passingReadings = passingReadings.length;
+            result.metrics.requiredPassingReadings = requiredPassing;
+
+            if (passingReadings.length < requiredPassing) {
+                result.reason = `Signal quality below threshold (${passingReadings.length}/${evaluationWindow.length} passing readings).`;
+                return result;
+            }
+
+            result.pass = true;
+            result.reason = 'Calibration signal quality check passed.';
+            return result;
+        }
+
+        function recordCalibrationFailure(failureResult) {
+            if (!testSession || !testSession.sessionData) {
+                return;
+            }
+
+            const failureNote = `[Calibration failed] ${failureResult.reason}`;
+            const existingNotes = (testSession.sessionData.notes || '').trim();
+            testSession.sessionData.notes = existingNotes ? `${existingNotes} | ${failureNote}` : failureNote;
+            testSession.sessionData.calibration_status = 'failed';
+            testSession.sessionData.calibration_failure_reason = failureResult.reason;
+            testSession.sessionData.calibration_failure_metrics = failureResult.metrics;
+        }
 
         // Handle session start - now starts test execution flow
         function handleSessionStart(sessionData) {
@@ -1003,17 +1139,37 @@
          * Initialize test execution flow
          */
         function initializeTestExecution(sessionData, queueItems) {
+            // Get participant and location details from sessionInfo
+            const participant = sessionInfo.participants.find(p => p.participant_id === sessionData.data.participant_id);
+            const location = sessionInfo.locations.find(l => l.location_id === sessionData.data.location_id);
+
             // Prepare full session data structure
             const fullSessionData = {
                 sessionId: sessionData.sessionId,
-                ...sessionData.data, // participant_id, location_id, etc.
+                // Session fields
+                participant_id: sessionData.data.participant_id,
+                location_id: sessionData.data.location_id,
+                equipment_info: sessionData.data.equipment_info || '',
+                experimenter: sessionData.data.experimenter || '',
+                notes: sessionData.data.notes || '',
+                // Participant details (for database)
+                participant_code: participant?.participant_code || `P${sessionData.data.participant_id}`,
+                participant_age: participant?.age || null,
+                participant_gender: participant?.gender || null,
+                participant_handedness: participant?.handedness || null,
+                participant_notes: participant?.notes || null,
+                // Location details
+                location_name: location?.name || `Location ${sessionData.data.location_id}`,
+                // Timestamps
                 startedAt: new Date().toISOString(),
+                // Queue info
                 queueItems: queueItems.map((item, index) => ({
                     name: item.name,
                     path: item.path,
                     order: index + 1
                 })),
                 queueItemCount: queueItems.length,
+                // Browser/screen info (metadata, not for equipment_info)
                 browserInfo: {
                     userAgent: navigator.userAgent,
                     platform: navigator.platform,
@@ -1046,11 +1202,27 @@
 
             // Create EEGDataCollector
             eegDataCollector = new EEGDataCollector({
-                sampleRate: 10, // 10 Hz
-                useDummyData: true,
+                wsUrl: 'ws://localhost:8765',
                 onReading: (reading) => {
                     if (testSession) {
                         testSession.addReading(reading);
+                    }
+                    if (signalQualityVisualizer) {
+                        signalQualityVisualizer.ingestReading(reading);
+                    }
+                },
+                onConnectionChange: (state, previousState) => {
+                    console.log('EEG connection:', previousState, '→', state);
+                    if (!signalQualityVisualizer) {
+                        return;
+                    }
+                    if (state === 'connected') {
+                        if (signalQualityVisualizer.getConnectionState() !== 'streaming') {
+                            signalQualityVisualizer.start();
+                        }
+                    } else {
+                        signalQualityVisualizer.clearLiveReading();
+                        signalQualityVisualizer.stop();
                     }
                 }
             });
@@ -1102,6 +1274,13 @@
                     eegDataCollector.start();
                     // Start calibration timer
                     calibrationTimer = setTimeout(() => {
+                        const calibrationResult = evaluateCalibrationQuality();
+                        if (!calibrationResult.pass) {
+                            console.error('Calibration quality gate failed:', calibrationResult.reason, calibrationResult.metrics);
+                            recordCalibrationFailure(calibrationResult);
+                            testSession.abort(`Calibration check failed: ${calibrationResult.reason}`);
+                            return;
+                        }
                         testSession.completeCalibration();
                     }, data.duration * 1000);
                     break;
@@ -1204,7 +1383,7 @@
                     break;
 
                 case 'aborted':
-                    testExecutionOverlay.showAborted();
+                    testExecutionOverlay.showAborted(data?.reason);
                     saveSessionData();
                     break;
             }
@@ -1270,6 +1449,10 @@
         function handleSessionComplete(sessionData) {
             console.log('Session complete:', sessionData);
             saveSessionData();
+            // Show the "Session Complete" screen
+            if (testExecutionOverlay) {
+                testExecutionOverlay.showComplete();
+            }
         }
 
         /**
@@ -1348,7 +1531,7 @@
             
             if (confirmed) {
                 if (testSession) {
-                    testSession.abort();
+                    testSession.abort('Manual abort by researcher.');
                 }
                 clearTimers();
                 if (testAudioPlayer) {
@@ -1379,25 +1562,26 @@
         }
 
         /**
-         * Save session data to localStorage
+         * Save session data to localStorage and database
          */
-        function saveSessionData() {
+        async function saveSessionData() {
             if (!testSession) return;
 
             const sessionData = testSession.getSessionData();
-            
-            // Prepare full session data for localStorage
+
+            // Prepare full session data
             const fullSessionData = {
                 ...sessionData.sessionData,
                 sessionId: sessionData.sessionId,
                 trials: sessionData.trials,
                 calibrationReadings: sessionData.calibrationReadings,
                 isAborted: sessionData.isAborted,
+                abortReason: sessionData.abortReason,
                 completedAt: sessionData.completedAt,
                 startedAt: sessionData.sessionData.startedAt || new Date().toISOString()
             };
 
-            // Save to localStorage
+            // Save to localStorage (backup)
             try {
                 const sessions = JSON.parse(localStorage.getItem('sessions') || '[]');
                 sessions.push(fullSessionData);
@@ -1407,9 +1591,75 @@
                 console.error('Error saving session to localStorage:', error);
             }
 
+            // Save to database via API
+            try {
+                const response = await fetch('/api/session', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(fullSessionData)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    console.log('Session saved to database:', result);
+                    showDatabaseSaveMessage(
+                        `Session saved to database (ID: ${result.session_id})`,
+                        'success',
+                        result
+                    );
+                } else {
+                    console.error('Database save failed:', result);
+                    showDatabaseSaveMessage(
+                        'Failed to save to database. Data saved locally.',
+                        'error',
+                        result
+                    );
+                }
+            } catch (error) {
+                console.error('Error saving to database:', error);
+                showDatabaseSaveMessage(
+                    'Could not connect to server. Data saved locally.',
+                    'warning'
+                );
+            }
+
             // Enable export button
             if (sessionInfo && sessionInfo.exportButton) {
                 sessionInfo.exportButton.disabled = false;
+            }
+        }
+
+        /**
+         * Show database save status message
+         */
+        function showDatabaseSaveMessage(message, type, details = null) {
+            const existingMsg = document.getElementById('dbSaveMessage');
+            if (existingMsg) {
+                existingMsg.remove();
+            }
+
+            const msg = document.createElement('div');
+            msg.id = 'dbSaveMessage';
+            msg.className = `export-message export-message--${type === 'warning' ? 'error' : type}`;
+
+            let detailsText = '';
+            if (details && type === 'success') {
+                detailsText = ` | Trials: ${details.trials_saved}, Readings: ${details.readings_saved}, Tags: ${details.tags_saved}`;
+            }
+
+            msg.textContent = message + detailsText;
+
+            const sessionSidebar = document.querySelector('.session-sidebar');
+            if (sessionSidebar) {
+                sessionSidebar.insertBefore(msg, sessionSidebar.firstChild);
+                setTimeout(() => {
+                    if (msg.parentElement) {
+                        msg.remove();
+                    }
+                }, 5000);
             }
         }
         
@@ -1924,13 +2174,13 @@
             });
         }
         
-        // Initialize Signal Quality Visualizer (proof of concept)
+        // Initialize Signal Quality Visualizer
         function initializeSignalQualityVisualizer() {
             signalQualityVisualizer = new SignalQualityVisualizer({
                 containerId: 'signalQualityVisualizer',
                 updateInterval: 1000, // 1 second
-                useMockData: true,
-                mockDataPath: 'data/ganglion_sample_data.csv',
+                useMockData: false,
+                liveDataTimeoutMs: 3000,
                 // deviceType defaults to 'ganglionDevice' if not provided
                 onQualityChange: (qualities) => {
                     console.log('Signal quality updated:', qualities);
@@ -1942,13 +2192,7 @@
                     console.error('Signal quality error:', error);
                 }
             });
-            
-            // Auto-connect after 2 seconds for proof of concept demo
-            setTimeout(() => {
-                if (signalQualityVisualizer) {
-                    signalQualityVisualizer.start();
-                }
-            }, 2000);
+
         }
         
         // Initialize on page load

@@ -43,6 +43,7 @@ class TestSession {
         this.isActive = false;
         this.isPaused = false;
         this.isAborted = false;
+        this.abortReason = null;
 
         // Timing configuration
         this.timingConfigPath = options.timingConfigPath || 'js/modules/sessionTimingConfig.json';
@@ -125,6 +126,7 @@ class TestSession {
         this.isActive = true;
         this.isPaused = false;
         this.isAborted = false;
+        this.abortReason = null;
         this.currentTrialIndex = -1; // Start with calibration
 
         // Initialize trials array
@@ -347,10 +349,11 @@ class TestSession {
     /**
      * Abort the session
      */
-    abort() {
+    abort(reason = null) {
         this.isAborted = true;
         this.isActive = false;
         this.isPaused = false;
+        this.abortReason = reason || this.abortReason || 'Session aborted';
 
         // Mark current trial as aborted if in progress
         if (this.currentTrial && this.currentTrial.status === 'in_progress') {
@@ -368,7 +371,8 @@ class TestSession {
         if (this.onPhaseChange) {
             this.onPhaseChange('aborted', {
                 abortedAt: new Date().toISOString(),
-                currentTrialIndex: this.currentTrialIndex
+                currentTrialIndex: this.currentTrialIndex,
+                reason: this.abortReason
             });
         }
     }
@@ -474,6 +478,7 @@ class TestSession {
                 stimulationReadings: [...trial.stimulationReadings]
             })),
             isAborted: this.isAborted,
+            abortReason: this.abortReason,
             completedAt: this.isAborted ? null : new Date().toISOString()
         };
     }

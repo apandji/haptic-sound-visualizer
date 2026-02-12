@@ -1,226 +1,95 @@
 {
-  "_comment": "Trial tags configuration. These tags are used in the post-trial survey. Update this file to change available tag options. Currently contains placeholder tags (A-Z, AA-AR) - replace with actual tag names and descriptions.",
+  "_comment": "Trial tags configuration with two categories. Users can select from both categories.",
   "question": "What did this pattern feel like?",
-  "tags": [
+  "categories": [
     {
-      "id": "A",
-      "label": "A",
-      "description": "Tag A"
+      "id": "feeling",
+      "name": "Feeling & Quality",
+      "description": "How does the pattern feel?",
+      "tags": [
+        { "id": "angry", "label": "Angry" },
+        { "id": "anxious", "label": "Anxious" },
+        { "id": "calm", "label": "Calm" },
+        { "id": "cold", "label": "Cold" },
+        { "id": "comforting", "label": "Comforting" },
+        { "id": "dense", "label": "Dense" },
+        { "id": "dry", "label": "Dry" },
+        { "id": "elastic", "label": "Elastic" },
+        { "id": "excited", "label": "Excited" },
+        { "id": "fearful", "label": "Fearful" },
+        { "id": "fuzzy", "label": "Fuzzy" },
+        { "id": "happy", "label": "Happy" },
+        { "id": "heavy", "label": "Heavy" },
+        { "id": "hollow", "label": "Hollow" },
+        { "id": "light", "label": "Light" },
+        { "id": "loving", "label": "Loving" },
+        { "id": "playful", "label": "Playful" },
+        { "id": "prickly", "label": "Prickly" },
+        { "id": "relaxed", "label": "Relaxed" },
+        { "id": "rigid", "label": "Rigid" },
+        { "id": "rough", "label": "Rough" },
+        { "id": "sad", "label": "Sad" },
+        { "id": "scratchy", "label": "Scratchy" },
+        { "id": "serious", "label": "Serious" },
+        { "id": "sharp", "label": "Sharp" },
+        { "id": "silky", "label": "Silky" },
+        { "id": "slippery", "label": "Slippery" },
+        { "id": "smooth", "label": "Smooth" },
+        { "id": "soft", "label": "Soft" },
+        { "id": "sticky", "label": "Sticky" },
+        { "id": "tense", "label": "Tense" },
+        { "id": "threatening", "label": "Threatening" },
+        { "id": "warm", "label": "Warm" },
+        { "id": "wet", "label": "Wet" }
+      ]
     },
     {
-      "id": "B",
-      "label": "B",
-      "description": "Tag B"
-    },
-    {
-      "id": "C",
-      "label": "C",
-      "description": "Tag C"
-    },
-    {
-      "id": "D",
-      "label": "D",
-      "description": "Tag D"
-    },
-    {
-      "id": "E",
-      "label": "E",
-      "description": "Tag E"
-    },
-    {
-      "id": "F",
-      "label": "F",
-      "description": "Tag F"
-    },
-    {
-      "id": "G",
-      "label": "G",
-      "description": "Tag G"
-    },
-    {
-      "id": "H",
-      "label": "H",
-      "description": "Tag H"
-    },
-    {
-      "id": "I",
-      "label": "I",
-      "description": "Tag I"
-    },
-    {
-      "id": "J",
-      "label": "J",
-      "description": "Tag J"
-    },
-    {
-      "id": "K",
-      "label": "K",
-      "description": "Tag K"
-    },
-    {
-      "id": "L",
-      "label": "L",
-      "description": "Tag L"
-    },
-    {
-      "id": "M",
-      "label": "M",
-      "description": "Tag M"
-    },
-    {
-      "id": "N",
-      "label": "N",
-      "description": "Tag N"
-    },
-    {
-      "id": "O",
-      "label": "O",
-      "description": "Tag O"
-    },
-    {
-      "id": "P",
-      "label": "P",
-      "description": "Tag P"
-    },
-    {
-      "id": "Q",
-      "label": "Q",
-      "description": "Tag Q"
-    },
-    {
-      "id": "R",
-      "label": "R",
-      "description": "Tag R"
-    },
-    {
-      "id": "S",
-      "label": "S",
-      "description": "Tag S"
-    },
-    {
-      "id": "T",
-      "label": "T",
-      "description": "Tag T"
-    },
-    {
-      "id": "U",
-      "label": "U",
-      "description": "Tag U"
-    },
-    {
-      "id": "V",
-      "label": "V",
-      "description": "Tag V"
-    },
-    {
-      "id": "W",
-      "label": "W",
-      "description": "Tag W"
-    },
-    {
-      "id": "X",
-      "label": "X",
-      "description": "Tag X"
-    },
-    {
-      "id": "Y",
-      "label": "Y",
-      "description": "Tag Y"
-    },
-    {
-      "id": "Z",
-      "label": "Z",
-      "description": "Tag Z"
-    },
-    {
-      "id": "AA",
-      "label": "AA",
-      "description": "Tag AA"
-    },
-    {
-      "id": "AB",
-      "label": "AB",
-      "description": "Tag AB"
-    },
-    {
-      "id": "AC",
-      "label": "AC",
-      "description": "Tag AC"
-    },
-    {
-      "id": "AD",
-      "label": "AD",
-      "description": "Tag AD"
-    },
-    {
-      "id": "AE",
-      "label": "AE",
-      "description": "Tag AE"
-    },
-    {
-      "id": "AF",
-      "label": "AF",
-      "description": "Tag AF"
-    },
-    {
-      "id": "AG",
-      "label": "AG",
-      "description": "Tag AG"
-    },
-    {
-      "id": "AH",
-      "label": "AH",
-      "description": "Tag AH"
-    },
-    {
-      "id": "AI",
-      "label": "AI",
-      "description": "Tag AI"
-    },
-    {
-      "id": "AJ",
-      "label": "AJ",
-      "description": "Tag AJ"
-    },
-    {
-      "id": "AK",
-      "label": "AK",
-      "description": "Tag AK"
-    },
-    {
-      "id": "AL",
-      "label": "AL",
-      "description": "Tag AL"
-    },
-    {
-      "id": "AM",
-      "label": "AM",
-      "description": "Tag AM"
-    },
-    {
-      "id": "AN",
-      "label": "AN",
-      "description": "Tag AN"
-    },
-    {
-      "id": "AO",
-      "label": "AO",
-      "description": "Tag AO"
-    },
-    {
-      "id": "AP",
-      "label": "AP",
-      "description": "Tag AP"
-    },
-    {
-      "id": "AQ",
-      "label": "AQ",
-      "description": "Tag AQ"
-    },
-    {
-      "id": "AR",
-      "label": "AR",
-      "description": "Tag AR"
+      "id": "action",
+      "name": "Action & Movement",
+      "description": "What action or movement does it suggest?",
+      "tags": [
+        { "id": "accelerate", "label": "Accelerate" },
+        { "id": "agree", "label": "Agree" },
+        { "id": "approach", "label": "Approach" },
+        { "id": "backward", "label": "Backward" },
+        { "id": "build_up", "label": "Build Up" },
+        { "id": "center", "label": "Center" },
+        { "id": "change", "label": "Change" },
+        { "id": "confirm", "label": "Confirm" },
+        { "id": "connect", "label": "Connect" },
+        { "id": "continue", "label": "Continue" },
+        { "id": "contract", "label": "Contract" },
+        { "id": "continuous", "label": "Continuous" },
+        { "id": "decelerate", "label": "Decelerate" },
+        { "id": "disconnect", "label": "Disconnect" },
+        { "id": "down", "label": "Down" },
+        { "id": "embrace", "label": "Embrace" },
+        { "id": "error", "label": "Error" },
+        { "id": "expand", "label": "Expand" },
+        { "id": "fade_away", "label": "Fade Away" },
+        { "id": "forward", "label": "Forward" },
+        { "id": "goodbye", "label": "Goodbye" },
+        { "id": "greet", "label": "Greet" },
+        { "id": "ignore", "label": "Ignore" },
+        { "id": "laugh", "label": "Laugh" },
+        { "id": "left", "label": "Left" },
+        { "id": "leisurely", "label": "Leisurely" },
+        { "id": "maintain", "label": "Maintain" },
+        { "id": "nudge", "label": "Nudge" },
+        { "id": "pass_by", "label": "Pass By" },
+        { "id": "pat", "label": "Pat" },
+        { "id": "pause", "label": "Pause" },
+        { "id": "pay_attention", "label": "Pay Attention" },
+        { "id": "proceed", "label": "Proceed" },
+        { "id": "pulse", "label": "Pulse" },
+        { "id": "push", "label": "Push" },
+        { "id": "question", "label": "Question" },
+        { "id": "recede", "label": "Recede" },
+        { "id": "reject", "label": "Reject" },
+        { "id": "rhythmic", "label": "Rhythmic" },
+        { "id": "right", "label": "Right" },
+        { "id": "rotating", "label": "Rotating" }
+      ]
     }
   ]
 }

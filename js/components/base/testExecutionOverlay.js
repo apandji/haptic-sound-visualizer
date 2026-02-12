@@ -214,10 +214,13 @@ class TestExecutionOverlay {
     /**
      * Show/hide NEXT button
      * @param {boolean} show - Whether to show the button
+     * @param {boolean} isLastPattern - Whether this is the last pattern (shows "FINISH" instead)
      */
-    showNextButton(show) {
+    showNextButton(show, isLastPattern = false) {
         if (this.nextButton) {
             this.nextButton.style.display = show ? 'block' : 'none';
+            this.nextButton.textContent = isLastPattern ? 'FINISH' : 'NEXT';
+            this.isLastPattern = isLastPattern;
         }
     }
 
@@ -227,11 +230,13 @@ class TestExecutionOverlay {
     handleNext() {
         if (this.currentPhase === 'survey') {
             // Trigger survey submission
+            // This will call testSession.completeSurvey() which handles the flow:
+            // - If more patterns: starts next trial
+            // - If last pattern: calls completeSession() -> shows "Session Complete" screen
             if (window.currentTrialTagsSurvey) {
                 window.currentTrialTagsSurvey.submit();
             }
         }
-        // Pattern-complete phase removed - survey goes directly to next pattern
     }
 
     /**
@@ -245,7 +250,11 @@ class TestExecutionOverlay {
         this.currentPhase = 'survey';
         this.show();
         this.stopCountdown();
-        this.showNextButton(true); // Show NEXT button for survey
+
+        // Check if this is the last pattern
+        const isLastPattern = data.patternNumber >= data.totalPatterns;
+        this.showNextButton(true, isLastPattern); // Show NEXT or FINISH button
+
         // Show ABORT button during active phases
         if (this.abortButton) {
             this.abortButton.style.display = 'block';
@@ -311,7 +320,7 @@ class TestExecutionOverlay {
     /**
      * Show aborted state
      */
-    showAborted() {
+    showAborted(reason = null) {
         this.currentPhase = 'aborted';
         this.show();
         this.stopCountdown();
@@ -321,12 +330,16 @@ class TestExecutionOverlay {
             this.abortButton.style.display = 'none';
         }
 
+        const abortMessage = reason
+            ? `The session has been aborted. ${reason}`
+            : 'The session has been aborted. Partial data may have been saved.';
+
         this.contentContainer.innerHTML = `
             <div class="test-execution-overlay__phase test-execution-overlay__phase--aborted">
                 <div class="test-execution-overlay__aborted-content">
                     <div class="test-execution-overlay__aborted-title">Session Aborted</div>
                     <div class="test-execution-overlay__aborted-message">
-                        The session has been aborted. Partial data may have been saved.
+                        ${abortMessage}
                     </div>
                     <button class="test-execution-overlay__close-btn" id="abortedCloseBtn">
                         Return to Setup
