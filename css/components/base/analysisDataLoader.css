@@ -39,6 +39,11 @@
     border-color: #ccc;
 }
 
+.analysis-data-loader__button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
 .analysis-data-loader__button--secondary {
     background: #fafafa;
     color: #666;

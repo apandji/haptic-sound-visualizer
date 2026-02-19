@@ -6,6 +6,7 @@ Handles saving session data, trials, brainwave readings, and tags to SQLite data
 
 import sqlite3
 import json
+import re
 from datetime import datetime
 from typing import Optional, List, Dict, Any
 from pathlib import Path
@@ -384,6 +385,284 @@ def save_session_data(session_data: Dict[str, Any]) -> Dict[str, Any]:
         conn.close()
 
     return result
+
+
+def _parse_iso_to_epoch_ms(timestamp: Optional[str]) -> Optional[int]:
+    """Parse ISO timestamp to epoch milliseconds."""
+    if not timestamp:
+        return None
+
+    value = timestamp.strip()
+    if not value:
+        return None
+
+    if value.endswith('Z'):
+        value = value[:-1] + '+00:00'
+
+    try:
+        return int(datetime.fromisoformat(value).timestamp() * 1000)
+    except ValueError:
+        return None
+
+
+def _extract_frontend_session_id(notes: Optional[str], db_session_id: int) -> str:
+    """Extract frontend session ID from notes; fallback to database ID."""
+    if notes:
+        match = re.search(r'Frontend session ID:\s*([^|]+)', notes)
+        if match:
+            frontend_id = match.group(1).strip()
+            if frontend_id:
+                return frontend_id
+
+    return f"db_session_{db_session_id}"
+
+
+def _extract_trial_status(notes: Optional[str], end_time: Optional[str]) -> str:
+    """Extract trial status from notes (e.g., 'Status: completed')."""
+    if notes:
+        match = re.search(r'Status:\s*([a-zA-Z_]+)', notes)
+        if match:
+            return match.group(1).lower()
+
+    return 'completed' if end_time else 'unknown'
+
+
+def get_analysis_sessions(limit: Optional[int] = None) -> List[Dict[str, Any]]:
+    """
+    Get sessions from the database in the same shape expected by Analyze UI.
+
+    Returns:
+        [
+            {
+                "sessionId": "...",
+                "participant_id": ...,
+                "location_id": ...,
+                "startedAt": "...",
+                "trials": [...],
+                "calibrationReadings": [...]
+            }
+        ]
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    try:
+        session_query = """
+            SELECT
+                s.session_id,
+                s.participant_id,
+                s.location_id,
+                s.session_date,
+                s.equipment_info,
+                s.experimenter,
+                s.notes,
+                p.participant_code,
+                p.age,
+                p.gender,
+                p.handedness,
+                p.notes AS participant_notes,
+                l.name AS location_name
+            FROM sessions s
+            LEFT JOIN participants p ON s.participant_id = p.participant_id
+            LEFT JOIN locations l ON s.location_id = l.location_id
+            ORDER BY s.session_date DESC, s.session_id DESC
+        """
+
+        session_params: List[Any] = []
+        if limit is not None and limit > 0:
+            session_query += " LIMIT ?"
+            session_params.append(limit)
+
+        cursor.execute(session_query, session_params)
+        session_rows = cursor.fetchall()
+
+        if not session_rows:
+            return []
+
+        session_ids = [row['session_id'] for row in session_rows]
+        session_placeholders = ','.join('?' for _ in session_ids)
+
+        cursor.execute(
+            f"""
+            SELECT
+                t.trial_id,
+                t.session_id,
+                t.trial_order,
+                t.start_time,
+                t.end_time,
+                t.notes AS trial_notes,
+                p.name AS pattern_name,
+                p.file_path AS pattern_path
+            FROM trials t
+            LEFT JOIN patterns p ON t.pattern_id = p.pattern_id
+            WHERE t.session_id IN ({session_placeholders})
+            ORDER BY t.session_id, t.trial_order, t.trial_id
+            """,
+            session_ids
+        )
+        trial_rows = cursor.fetchall()
+
+        trials_by_session: Dict[int, List[sqlite3.Row]] = {}
+        trial_ids: List[int] = []
+        for row in trial_rows:
+            trials_by_session.setdefault(row['session_id'], []).append(row)
+            trial_ids.append(row['trial_id'])
+
+        readings_by_trial: Dict[int, Dict[str, List[Dict[str, Any]]]] = {}
+        tags_by_trial: Dict[int, List[Dict[str, Any]]] = {}
+
+        if trial_ids:
+            trial_placeholders = ','.join('?' for _ in trial_ids)
+
+            cursor.execute(
+                f"""
+                SELECT
+                    trial_id,
+                    timestamp_ms,
+                    phase,
+                    signal_quality,
+                    delta_abs, theta_abs, alpha_abs, beta_abs, gamma_abs,
+                    delta_rel, theta_rel, alpha_rel, beta_rel, gamma_rel
+                FROM brainwave_readings
+                WHERE trial_id IN ({trial_placeholders})
+                ORDER BY trial_id, timestamp_ms
+                """,
+                trial_ids
+            )
+
+            for row in cursor.fetchall():
+                trial_id = row['trial_id']
+                phase = row['phase'] or 'relaxation'
+
+                reading = {
+                    'timestamp_ms': row['timestamp_ms'],
+                    'signal_quality': row['signal_quality'],
+                    'delta_abs': row['delta_abs'],
+                    'theta_abs': row['theta_abs'],
+                    'alpha_abs': row['alpha_abs'],
+                    'beta_abs': row['beta_abs'],
+                    'gamma_abs': row['gamma_abs'],
+                    'delta_rel': row['delta_rel'],
+                    'theta_rel': row['theta_rel'],
+                    'alpha_rel': row['alpha_rel'],
+                    'beta_rel': row['beta_rel'],
+                    'gamma_rel': row['gamma_rel']
+                }
+
+                trial_bucket = readings_by_trial.setdefault(trial_id, {})
+                trial_bucket.setdefault(phase, []).append(reading)
+
+            cursor.execute(
+                f"""
+                SELECT
+                    tt.trial_id,
+                    tags.tag_id,
+                    tags.tag_name,
+                    tags.category
+                FROM trial_tags tt
+                INNER JOIN tags ON tt.tag_id = tags.tag_id
+                WHERE tt.trial_id IN ({trial_placeholders})
+                ORDER BY tt.trial_id, tt.selected_at, tags.tag_name
+                """,
+                trial_ids
+            )
+
+            for row in cursor.fetchall():
+                trial_id = row['trial_id']
+                tag_id = row['tag_id']
+                tag_name = row['tag_name']
+                tag_category = row['category']
+
+                tags_by_trial.setdefault(trial_id, []).append({
+                    'id': f"tag_{tag_id}",
+                    'label': tag_name,
+                    'category': tag_category,
+                    'isCustom': tag_category == 'custom'
+                })
+
+        sessions: List[Dict[str, Any]] = []
+        for session_row in session_rows:
+            db_session_id = session_row['session_id']
+            raw_notes = session_row['notes'] or ''
+            session_id = _extract_frontend_session_id(raw_notes, db_session_id)
+
+            session_payload = {
+                'sessionId': session_id,
+                'participant_id': session_row['participant_id'],
+                'location_id': session_row['location_id'],
+                'equipment_info': session_row['equipment_info'] or '',
+                'experimenter': session_row['experimenter'] or '',
+                'notes': raw_notes,
+                'participant_code': session_row['participant_code'],
+                'participant_age': session_row['age'],
+                'participant_gender': session_row['gender'],
+                'participant_handedness': session_row['handedness'],
+                'participant_notes': session_row['participant_notes'],
+                'location_name': session_row['location_name'] or f"Location {session_row['location_id']}",
+                'startedAt': session_row['session_date'],
+                'completedAt': None,
+                'isAborted': '[ABORTED]' in raw_notes,
+                'calibrationReadings': [],
+                'trials': []
+            }
+
+            session_trials = trials_by_session.get(db_session_id, [])
+            first_trial = session_trials[0] if session_trials else None
+            first_trial_id = first_trial['trial_id'] if first_trial else None
+            first_trial_start_ms = _parse_iso_to_epoch_ms(first_trial['start_time']) if first_trial else None
+
+            for trial_row in session_trials:
+                trial_id = trial_row['trial_id']
+                relaxation_readings = readings_by_trial.get(trial_id, {}).get('relaxation', [])
+                stimulus_readings = readings_by_trial.get(trial_id, {}).get('stimulus', [])
+
+                baseline_readings: List[Dict[str, Any]] = []
+
+                if (
+                    first_trial_id is not None and
+                    trial_id == first_trial_id and
+                    first_trial_start_ms is not None
+                ):
+                    for reading in relaxation_readings:
+                        reading_ts = reading.get('timestamp_ms')
+                        if isinstance(reading_ts, int) and reading_ts < first_trial_start_ms:
+                            session_payload['calibrationReadings'].append(reading)
+                        else:
+                            baseline_readings.append(reading)
+                else:
+                    baseline_readings = list(relaxation_readings)
+
+                trial_payload = {
+                    'trialId': f"{session_id}_trial_{trial_row['trial_order']}",
+                    'pattern': {
+                        'name': trial_row['pattern_name'],
+                        'path': trial_row['pattern_path']
+                    },
+                    'trialOrder': trial_row['trial_order'],
+                    'startTime': trial_row['start_time'],
+                    'endTime': trial_row['end_time'],
+                    'baselineReadings': baseline_readings,
+                    'stimulationReadings': stimulus_readings,
+                    'selectedTags': tags_by_trial.get(trial_id, []),
+                    'status': _extract_trial_status(trial_row['trial_notes'], trial_row['end_time'])
+                }
+
+                session_payload['trials'].append(trial_payload)
+
+            completed_trial_end_times = [
+                trial['endTime']
+                for trial in session_payload['trials']
+                if trial.get('status') == 'completed' and trial.get('endTime')
+            ]
+            if completed_trial_end_times:
+                session_payload['completedAt'] = max(completed_trial_end_times)
+
+            sessions.append(session_payload)
+
+        return sessions
+
+    finally:
+        conn.close()
 
 
 def get_all_tags() -> List[Dict[str, Any]]:

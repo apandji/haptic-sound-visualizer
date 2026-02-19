@@ -263,7 +263,7 @@
 
     <!-- Components -->
     <script src="js/components/base/patternExplorer.js?v=2"></script>
-    <script src="js/components/base/analysisDataLoader.js?v=1"></script>
+    <script src="js/components/base/analysisDataLoader.js?v=2"></script>
     <script src="js/components/variants/patternExplorerForAnalysis.js?v=1"></script>
     <script src="js/components/base/summaryStats.js?v=1"></script>
     <script src="js/components/base/radarChart.js?v=3"></script>
@@ -454,6 +454,9 @@
             analyzePlaceholder = document.getElementById('analyzePlaceholder');
             analyzeContent = document.getElementById('analyzeContent');
             initializeComponents();
+            if (dataLoader && typeof dataLoader.loadFromDatabase === 'function') {
+                dataLoader.loadFromDatabase();
+            }
         });
 
         window.addEventListener('resize', handleResize);

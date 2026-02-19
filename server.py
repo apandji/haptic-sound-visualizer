@@ -21,6 +21,7 @@ AUDIO_DIR = 'audio_files'
 try:
     from db_handler import (
         save_session_data,
+        get_analysis_sessions,
         get_all_tags,
         get_all_locations,
         get_all_participants
@@ -87,6 +88,20 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             if DB_AVAILABLE:
                 participants = get_all_participants()
                 self.send_json_response(participants)
+            else:
+                self.send_json_response({'error': 'Database not available'}, 500)
+
+        elif path == '/api/analysis/sessions':
+            if DB_AVAILABLE:
+                query_params = parse_qs(parsed_path.query)
+                limit_param = query_params.get('limit', [None])[0]
+                try:
+                    limit = int(limit_param) if limit_param else None
+                except (TypeError, ValueError):
+                    self.send_json_response({'error': 'Invalid limit parameter'}, 400)
+                    return
+                sessions = get_analysis_sessions(limit=limit)
+                self.send_json_response(sessions)
             else:
                 self.send_json_response({'error': 'Database not available'}, 500)
 
@@ -185,6 +200,7 @@ if __name__ == '__main__':
         print(f"  GET  /api/tags              - Get all tags")
         print(f"  GET  /api/locations         - Get all locations")
         print(f"  GET  /api/participants      - Get all participants")
+        print(f"  GET  /api/analysis/sessions - Get sessions for Analyze page")
         print(f"  GET  /api/status            - Server status")
         print(f"  POST /api/session           - Save session data")
         print(f"  POST /api/sessions/bulk     - Save multiple sessions")
