@@ -15,6 +15,7 @@ class SignalQualityVisualizer {
         this.windowLength = options.windowLength || 2.0; // seconds for PSD window
         this.useMockData = options.useMockData !== undefined ? options.useMockData : true;
         this.mockDataPath = options.mockDataPath || 'data/ganglion_sample_data.csv';
+        this.liveDataTimeoutMs = options.liveDataTimeoutMs || 3000; // max age for last live reading
         
         // Channel configuration (from Python: --quality_channels parameter)
         // null or undefined = use all channels, array = specific channel indices
@@ -42,6 +43,8 @@ class SignalQualityVisualizer {
         this.channelQualities = []; // Array of {channel, rms_uV, p60_rel, quality}
         this.mockData = null; // Loaded CSV data
         this.mockDataIndex = 0; // Current position in mock data
+        this.latestReading = null; // Most recent reading pushed from EEGDataCollector
+        this.latestReadingTimestamp = null; // Local receive time (Date.now)
         this.lastUpdateTime = null; // Timestamp of last successful update
         this.errorCount = 0; // Track consecutive errors
         
@@ -379,6 +382,83 @@ class SignalQualityVisualizer {
         
         return data;
     }
+
+    /**
+     * Push one live EEG reading into the visualizer.
+     * @param {Object} reading - Reading from EEGDataCollector/eeg_server.py
+     */
+    ingestReading(reading) {
+        if (!reading || typeof reading !== 'object') {
+            return;
+        }
+        this.latestReading = reading;
+        this.latestReadingTimestamp = Date.now();
+    }
+
+    /**
+     * Clear the current live reading and force "waiting for data" state.
+     */
+    clearLiveReading() {
+        this.latestReading = null;
+        this.latestReadingTimestamp = null;
+    }
+
+    /**
+     * Build a fallback total-power estimate when per-channel metrics are unavailable.
+     */
+    getFallbackTotalPower(reading) {
+        const explicitTotal = Number(reading.total_1_45_uV2);
+        if (Number.isFinite(explicitTotal) && explicitTotal > 0) {
+            return explicitTotal;
+        }
+
+        const bands = ['delta_abs', 'theta_abs', 'alpha_abs', 'beta_abs', 'gamma_abs'];
+        const summed = bands.reduce((acc, key) => {
+            const value = Number(reading[key]);
+            return Number.isFinite(value) && value > 0 ? acc + value : acc;
+        }, 0);
+        return summed > 0 ? summed : 1.0;
+    }
+
+    /**
+     * Convert a live EEG reading to per-channel quality rows.
+     */
+    calculateQualityFromLiveReading(reading) {
+        if (!reading || typeof reading !== 'object') {
+            return [];
+        }
+
+        const readingTimestamp = Number(reading.timestamp_ms);
+        const timestamp = Number.isFinite(readingTimestamp) ? readingTimestamp : Date.now();
+        const rawMetrics = Array.isArray(reading.channel_metrics) ? reading.channel_metrics : [];
+
+        const totalPower = this.getFallbackTotalPower(reading);
+        const fallbackRms = Math.max(0.1, Math.sqrt(totalPower));
+
+        const signalQuality = Number(reading.signal_quality);
+        const normalizedQuality = Number.isFinite(signalQuality)
+            ? Math.max(0, Math.min(100, signalQuality))
+            : 60;
+        const fallbackP60 = Math.max(0.05, Math.min(0.95, (100 - normalizedQuality) / 100));
+
+        return this.activeChannels.map((activeChannel, idx) => {
+            const metric = rawMetrics.find((item) => Number(item.channel_index) === activeChannel) || rawMetrics[idx] || null;
+            const metricRms = Number(metric?.rms_uV);
+            const metricP60 = Number(metric?.p60_rel);
+
+            const rms_uV = Number.isFinite(metricRms) ? Math.max(0.1, metricRms) : fallbackRms;
+            const p60_rel = Number.isFinite(metricP60) ? Math.max(0, Math.min(1, metricP60)) : fallbackP60;
+
+            return {
+                channel: this.channelLabels[idx],
+                channelIndex: idx,
+                rms_uV,
+                p60_rel,
+                quality: this.classifyQuality(rms_uV, p60_rel),
+                timestamp
+            };
+        });
+    }
     
     /**
      * Calculate signal quality from mock data
@@ -661,36 +741,53 @@ class SignalQualityVisualizer {
         if (!this.isMonitoring || this.connectionState !== 'streaming') return;
         
         try {
-            // Simulate data structure for validation (mock mode)
-            // In real mode, this would come from device
-            const mockDataShape = {
-                shape: [this.channelCount, this.windowSize],
-                data: null // Not used for validation
-            };
-            
-            // Validate data (from Python validation)
-            const validation = this.validateData(mockDataShape, this.windowSize);
-            
-            if (!validation.valid) {
-                // Skip this update, show warning
-                console.warn('SignalQualityVisualizer: Data validation failed:', validation.reason);
-                this.errorCount++;
-                
-                // Show error state if too many consecutive errors
-                if (this.errorCount >= 3) {
-                    this.setConnectionState('error', validation.reason);
+            let qualities = [];
+
+            if (this.useMockData) {
+                // Simulate data structure for validation (mock mode)
+                const mockDataShape = {
+                    shape: [this.channelCount, this.windowSize],
+                    data: null // Not used for validation
+                };
+
+                // Validate data (from Python validation)
+                const validation = this.validateData(mockDataShape, this.windowSize);
+
+                if (!validation.valid) {
+                    console.warn('SignalQualityVisualizer: Data validation failed:', validation.reason);
+                    this.errorCount++;
+                    if (this.errorCount >= 3) {
+                        this.setConnectionState('error', validation.reason);
+                    }
+                    this.updateLastUpdateTime(false);
+                    return;
                 }
-                
-                // Update last update time to show staleness
-                this.updateLastUpdateTime(false);
-                return;
+
+                qualities = this.calculateQualityFromMockData();
+            } else {
+                const now = Date.now();
+                const readingIsFresh = (
+                    !!this.latestReading &&
+                    !!this.latestReadingTimestamp &&
+                    (now - this.latestReadingTimestamp) <= this.liveDataTimeoutMs
+                );
+
+                if (!readingIsFresh) {
+                    this.errorCount++;
+                    this.updateLastUpdateTime(false);
+                    return;
+                }
+
+                qualities = this.calculateQualityFromLiveReading(this.latestReading);
+                if (!qualities.length) {
+                    this.errorCount++;
+                    this.updateLastUpdateTime(false);
+                    return;
+                }
             }
-            
-            // Reset error count on successful validation
+
+            // Reset error count on successful update
             this.errorCount = 0;
-            
-            // Calculate qualities
-            const qualities = this.calculateQualityFromMockData();
             this.channelQualities = qualities;
             
             // Update display
@@ -979,6 +1076,7 @@ class SignalQualityVisualizer {
         }
         
         this.isMonitoring = false;
+        this.clearLiveReading();
         this.setConnectionState('released');
         
         // Hide widget

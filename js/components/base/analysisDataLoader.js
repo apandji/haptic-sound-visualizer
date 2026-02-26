@@ -1,6 +1,6 @@
 /**
  * AnalysisDataLoader Component
- * Provides UI to import session data from JSON files or localStorage.
+ * Provides UI to load session data from database (primary) or localStorage (fallback).
  */
 class AnalysisDataLoader {
     constructor(options = {}) {
@@ -8,6 +8,7 @@ class AnalysisDataLoader {
         this.container = document.getElementById(this.containerId);
         this.onSessionsLoaded = options.onSessionsLoaded || null;
         this.sessions = [];
+        this.isLoading = false;
 
         if (!this.container) {
             console.error(`AnalysisDataLoader: Container #${this.containerId} not found`);
@@ -28,22 +29,14 @@ class AnalysisDataLoader {
         const actions = document.createElement('div');
         actions.className = 'analysis-data-loader__actions';
 
-        // Import JSON button
-        const importBtn = document.createElement('button');
-        importBtn.className = 'analysis-data-loader__button';
-        importBtn.textContent = 'IMPORT JSON';
+        // Load from database button (primary)
+        const dbBtn = document.createElement('button');
+        dbBtn.className = 'analysis-data-loader__button';
+        dbBtn.textContent = 'LOAD DATABASE';
+        this.boundHandlers.dbClick = () => this.loadFromDatabase();
+        dbBtn.addEventListener('click', this.boundHandlers.dbClick);
 
-        const fileInput = document.createElement('input');
-        fileInput.type = 'file';
-        fileInput.accept = '.json';
-        fileInput.style.display = 'none';
-
-        this.boundHandlers.importClick = () => fileInput.click();
-        this.boundHandlers.fileChange = (e) => this.handleFileImport(e);
-        importBtn.addEventListener('click', this.boundHandlers.importClick);
-        fileInput.addEventListener('change', this.boundHandlers.fileChange);
-
-        // Load from localStorage button
+        // Load from localStorage button (fallback)
         const localBtn = document.createElement('button');
         localBtn.className = 'analysis-data-loader__button analysis-data-loader__button--secondary';
         localBtn.textContent = 'LOAD FROM BROWSER';
@@ -51,8 +44,7 @@ class AnalysisDataLoader {
         this.boundHandlers.localClick = () => this.loadFromLocalStorage();
         localBtn.addEventListener('click', this.boundHandlers.localClick);
 
-        actions.appendChild(importBtn);
-        actions.appendChild(fileInput);
+        actions.appendChild(dbBtn);
         actions.appendChild(localBtn);
 
         // Status display
@@ -65,30 +57,41 @@ class AnalysisDataLoader {
         this.container.appendChild(actions);
         this.container.appendChild(status);
 
-        this.fileInput = fileInput;
+        this.dbButton = dbBtn;
+        this.localButton = localBtn;
         this.updateStatus();
     }
 
-    handleFileImport(event) {
-        const file = event.target.files[0];
-        if (!file) return;
+    async loadFromDatabase() {
+        this.setLoading(true, 'Loading sessions from database...');
 
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            try {
-                const data = JSON.parse(e.target.result);
-                const sessions = Array.isArray(data) ? data : [data];
-                this.mergeSessions(sessions);
-            } catch (err) {
-                console.error('AnalysisDataLoader: Invalid JSON file', err);
-                this.statusElement.textContent = 'Error: Invalid JSON file';
-                this.statusElement.classList.add('analysis-data-loader__status--error');
+        try {
+            const response = await fetch('/api/analysis/sessions');
+            if (!response.ok) {
+                throw new Error(`Request failed (${response.status})`);
             }
-        };
-        reader.readAsText(file);
 
-        // Reset input so same file can be re-imported
-        this.fileInput.value = '';
+            const sessions = await response.json();
+            if (!Array.isArray(sessions)) {
+                throw new Error('Invalid response payload');
+            }
+
+            if (sessions.length === 0) {
+                this.sessions = [];
+                this.statusElement.textContent = 'No sessions found in database.';
+                this.statusElement.classList.remove('analysis-data-loader__status--error');
+                this.notifySessionsLoaded();
+                return;
+            }
+
+            this.setSessions(sessions);
+        } catch (err) {
+            console.error('AnalysisDataLoader: Error loading database sessions', err);
+            this.statusElement.textContent = 'Error loading from database.';
+            this.statusElement.classList.add('analysis-data-loader__status--error');
+        } finally {
+            this.setLoading(false);
+        }
     }
 
     loadFromLocalStorage() {
@@ -101,7 +104,7 @@ class AnalysisDataLoader {
             }
             const sessions = JSON.parse(stored);
             if (Array.isArray(sessions) && sessions.length > 0) {
-                this.mergeSessions(sessions);
+                this.setSessions(sessions);
             } else {
                 this.statusElement.textContent = 'No sessions found in browser storage.';
             }
@@ -112,27 +115,33 @@ class AnalysisDataLoader {
         }
     }
 
-    mergeSessions(newSessions) {
-        // Merge by sessionId to avoid duplicates
-        const idSet = new Set(this.sessions.map(s => s.sessionId));
-        let added = 0;
-        for (const session of newSessions) {
-            if (!idSet.has(session.sessionId)) {
-                this.sessions.push(session);
-                idSet.add(session.sessionId);
-                added++;
-            }
-        }
-
+    setSessions(newSessions) {
+        this.sessions = Array.isArray(newSessions) ? [...newSessions] : [];
         this.statusElement.classList.remove('analysis-data-loader__status--error');
         this.updateStatus();
+        this.notifySessionsLoaded();
+    }
 
+    notifySessionsLoaded() {
         if (this.onSessionsLoaded) {
             this.onSessionsLoaded(this.sessions);
         }
     }
 
+    setLoading(isLoading, statusMessage = '') {
+        this.isLoading = isLoading;
+        if (this.dbButton) this.dbButton.disabled = isLoading;
+        if (this.localButton) this.localButton.disabled = isLoading;
+
+        if (isLoading && this.statusElement) {
+            this.statusElement.classList.remove('analysis-data-loader__status--error');
+            this.statusElement.textContent = statusMessage;
+        }
+    }
+
     updateStatus() {
+        if (this.isLoading) return;
+
         if (this.sessions.length === 0) {
             this.statusElement.textContent = '';
             return;
