@@ -63,9 +63,9 @@ state = EEGServerState()
 
 def classify_quality(rms_uV: float, p60_rel: float) -> str:
     """Classify channel quality using the same thresholds as the frontend widget."""
-    if (3.0 <= rms_uV <= 100.0) and (p60_rel < 0.3):
+    if (0.0 <= rms_uV <= 100.0) and (p60_rel < 0.3):
         return "good"
-    if (0.5 <= rms_uV <= 300.0) and (p60_rel < 0.6):
+    if (100 <= rms_uV <= 150.0) and (p60_rel < 0.6):
         return "ok"
     return "poor"
 
