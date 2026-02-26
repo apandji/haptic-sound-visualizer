@@ -1,0 +1,83 @@
+/**
+ * SAIL Pattern Library - Color System
+ * Extracted from: https://apandji.github.io/haptic-sound-visualizer/
+ *
+ * Use these tokens instead of hardcoded hex values.
+ */
+
+:root {
+  /* ─── Grayscale (Light Theme) ─── */
+  --color-gray-0: #000000;
+  --color-gray-100: #333333;
+  --color-gray-200: #666666;
+  --color-gray-300: #999999;
+  --color-gray-400: #bbbbbb;
+  --color-gray-500: #cccccc;
+  --color-gray-600: #d0d0d0;
+  --color-gray-700: #e0e0e0;
+  --color-gray-800: #eeeeee;
+  --color-gray-900: #f0f0f0;
+  --color-gray-950: #f5f5f5;
+  --color-gray-975: #fafafa;
+  --color-white: #ffffff;
+
+  /* ─── Semantic Surface Colors ─── */
+  --color-bg-page: var(--color-gray-975);
+  --color-bg-surface: var(--color-white);
+  --color-bg-surface-alt: var(--color-gray-950);
+  --color-bg-surface-elevated: var(--color-white);
+  --color-bg-hover: var(--color-gray-950);
+  --color-bg-active: var(--color-gray-900);
+
+  /* ─── Semantic Text Colors ─── */
+  --color-text-primary: var(--color-gray-100);
+  --color-text-secondary: var(--color-gray-200);
+  --color-text-tertiary: var(--color-gray-300);
+  --color-text-inverse: var(--color-white);
+  --color-text-heading: var(--color-gray-0);
+  --color-text-muted: var(--color-gray-300);
+
+  /* ─── Border Colors ─── */
+  --color-border: var(--color-gray-700);
+  --color-border-strong: var(--color-gray-500);
+  --color-border-subtle: var(--color-gray-900);
+  --color-border-focus: var(--color-gray-0);
+
+  /* ─── Semantic / Status Colors ─── */
+  --color-success: #4caf50;
+  --color-success-bg: #e8f5e9;
+  --color-success-text: #2e7d32;
+
+  --color-warning: #ff9800;
+  --color-warning-bg: #fff3e0;
+  --color-warning-text: #e65100;
+
+  --color-error: #d32f2f;
+  --color-error-alt: #f44336;
+  --color-error-bg: #fff5f5;
+  --color-error-border: #ffcdd2;
+  --color-error-text: var(--color-error);
+
+  --color-info: #1976d2;
+
+  /* ─── Interactive / Accent (for future) ─── */
+  --color-accent: var(--color-gray-0);
+  --color-accent-hover: var(--color-gray-100);
+  --color-accent-muted: var(--color-gray-200);
+
+  /* ─── Scrollbar ─── */
+  --color-scrollbar-track: transparent;
+  --color-scrollbar-thumb: var(--color-gray-500);
+  --color-scrollbar-thumb-hover: var(--color-gray-300);
+}
+
+/* Optional: Dark theme for future use */
+[data-theme='dark'] {
+  --color-bg-page: #1a1a1a;
+  --color-bg-surface: #2d2d2d;
+  --color-bg-surface-alt: #3a3a3a;
+  --color-text-primary: #ffffff;
+  --color-text-secondary: #b0b0b0;
+  --color-text-tertiary: #808080;
+  --color-border: #404040;
+}
