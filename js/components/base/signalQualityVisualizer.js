@@ -1099,6 +1099,31 @@ class SignalQualityVisualizer {
             this.container.classList.add('signal-quality-visualizer--visible');
         }
     }
+
+    /**
+     * Mount widget container to a specific host element.
+     * @param {HTMLElement} hostEl
+     */
+    mountTo(hostEl) {
+        if (!this.container || !hostEl || typeof hostEl.appendChild !== 'function') {
+            return;
+        }
+
+        if (this.container.parentElement !== hostEl) {
+            hostEl.appendChild(this.container);
+        }
+    }
+
+    /**
+     * Toggle embedded mode (used during calibration phase inside overlay).
+     * @param {boolean} enabled
+     */
+    setEmbeddedMode(enabled) {
+        if (!this.container) {
+            return;
+        }
+        this.container.classList.toggle('signal-quality-visualizer--embedded', Boolean(enabled));
+    }
     
     /**
      * Hide widget

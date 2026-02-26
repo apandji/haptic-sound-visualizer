@@ -18,6 +18,27 @@
     display: block;
 }
 
+.signal-quality-visualizer--embedded {
+    position: static;
+    bottom: auto;
+    right: auto;
+    z-index: auto;
+}
+
+.signal-quality-visualizer--embedded .signal-quality-visualizer__minimized-btn {
+    min-width: 320px;
+    max-width: 380px;
+}
+
+.signal-quality-visualizer--embedded .signal-quality-visualizer__panel {
+    position: static;
+    width: min(420px, 95vw);
+    max-width: 420px;
+    margin-top: var(--spacing-sm, 8px);
+    bottom: auto;
+    right: auto;
+}
+
 /* Minimized button (Information-dense for researchers) */
 .signal-quality-visualizer__minimized-btn {
     min-width: 110px;
