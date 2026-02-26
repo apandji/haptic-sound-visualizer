@@ -4,107 +4,123 @@
         let eegDataCollector = null;
         let trialTagsSurvey = null;
         let testAudioPlayer = null;
-        let calibrationTimer = null;
         let baselineTimer = null;
         let stimulationTimer = null;
+        let calibrationPhaseCompleted = false;
         const calibrationGateConfig = {
-            minReadings: 30,
-            maxReadingAgeMs: 3000,
-            minSignalQuality: 70,
-            maxPoorChannelRatio: 0.25,
-            minPassingRatio: 0.8
+            requiredChannels: 4,
+            requiredGoodChannels: 3
         };
 
-        function isCalibrationReadingPassing(reading) {
+        function getChannelQuality(metric) {
+            if (!metric || typeof metric !== 'object') {
+                return null;
+            }
+
+            if (typeof metric.quality === 'string') {
+                return metric.quality.toLowerCase();
+            }
+
+            const rms_uV = Number(metric.rms_uV);
+            const p60_rel = Number(metric.p60_rel);
+            if (!Number.isFinite(rms_uV) || !Number.isFinite(p60_rel)) {
+                return null;
+            }
+
+            if ((rms_uV >= 3.0 && rms_uV <= 100.0) && (p60_rel < 0.3)) {
+                return 'good';
+            }
+            if ((rms_uV >= 0.5 && rms_uV <= 300.0) && (p60_rel < 0.6)) {
+                return 'ok';
+            }
+            return 'poor';
+        }
+
+        function evaluateCalibrationReading(reading) {
+            const evaluation = {
+                pass: false,
+                goodChannels: 0,
+                totalChannels: 0,
+                requiredGoodChannels: calibrationGateConfig.requiredGoodChannels,
+                requiredChannels: calibrationGateConfig.requiredChannels
+            };
+
             if (!reading || typeof reading !== 'object') {
-                return false;
+                return evaluation;
             }
 
             const channelMetrics = Array.isArray(reading.channel_metrics) ? reading.channel_metrics : [];
-            if (channelMetrics.length > 0) {
-                const poorCount = channelMetrics.filter((ch) => ch && ch.quality === 'poor').length;
-                const poorRatio = poorCount / channelMetrics.length;
-                if (poorRatio > calibrationGateConfig.maxPoorChannelRatio) {
-                    return false;
-                }
-            }
+            const normalizedChannels = channelMetrics
+                .filter((metric) => metric && typeof metric === 'object')
+                .sort((a, b) => Number(a.channel_index) - Number(b.channel_index))
+                .slice(0, calibrationGateConfig.requiredChannels);
 
-            const signalQuality = Number(reading.signal_quality);
-            if (Number.isFinite(signalQuality)) {
-                return signalQuality >= calibrationGateConfig.minSignalQuality;
-            }
+            evaluation.totalChannels = normalizedChannels.length;
+            evaluation.goodChannels = normalizedChannels.reduce((count, metric) => {
+                return getChannelQuality(metric) === 'good' ? count + 1 : count;
+            }, 0);
 
-            return channelMetrics.length > 0;
+            evaluation.pass = (
+                evaluation.totalChannels >= calibrationGateConfig.requiredChannels &&
+                evaluation.goodChannels >= calibrationGateConfig.requiredGoodChannels
+            );
+
+            return evaluation;
         }
 
-        function evaluateCalibrationQuality() {
-            const result = {
-                pass: false,
-                reason: '',
-                metrics: {}
-            };
-
-            if (!testSession || !Array.isArray(testSession.calibrationReadings)) {
-                result.reason = 'No calibration EEG data was captured.';
-                return result;
+        function undockSignalQualityWidget() {
+            if (!signalQualityVisualizer) {
+                return;
             }
-
-            const allReadings = testSession.calibrationReadings;
-            result.metrics.totalReadings = allReadings.length;
-
-            if (allReadings.length < calibrationGateConfig.minReadings) {
-                result.reason = `Insufficient calibration samples (${allReadings.length}/${calibrationGateConfig.minReadings}).`;
-                return result;
-            }
-
-            const usableReadings = allReadings.filter((reading) => reading && typeof reading === 'object');
-            result.metrics.usableReadings = usableReadings.length;
-
-            if (usableReadings.length < calibrationGateConfig.minReadings) {
-                result.reason = `Insufficient valid calibration readings (${usableReadings.length}/${calibrationGateConfig.minReadings}).`;
-                return result;
-            }
-
-            const lastReading = usableReadings[usableReadings.length - 1];
-            const lastTimestamp = Number(lastReading?.timestamp_ms);
-            const readingAgeMs = Number.isFinite(lastTimestamp) ? Date.now() - lastTimestamp : Number.POSITIVE_INFINITY;
-            result.metrics.latestReadingAgeMs = readingAgeMs;
-
-            if (!Number.isFinite(readingAgeMs) || readingAgeMs > calibrationGateConfig.maxReadingAgeMs) {
-                result.reason = `Live EEG data became stale (last update ${Math.round(readingAgeMs)} ms ago).`;
-                return result;
-            }
-
-            const windowSize = Math.max(calibrationGateConfig.minReadings, Math.min(usableReadings.length, 50));
-            const evaluationWindow = usableReadings.slice(-windowSize);
-            const passingReadings = evaluationWindow.filter(isCalibrationReadingPassing);
-            const requiredPassing = Math.ceil(evaluationWindow.length * calibrationGateConfig.minPassingRatio);
-
-            result.metrics.windowSize = evaluationWindow.length;
-            result.metrics.passingReadings = passingReadings.length;
-            result.metrics.requiredPassingReadings = requiredPassing;
-
-            if (passingReadings.length < requiredPassing) {
-                result.reason = `Signal quality below threshold (${passingReadings.length}/${evaluationWindow.length} passing readings).`;
-                return result;
-            }
-
-            result.pass = true;
-            result.reason = 'Calibration signal quality check passed.';
-            return result;
+            signalQualityVisualizer.setEmbeddedMode(false);
+            signalQualityVisualizer.mountTo(document.body);
+            signalQualityVisualizer.collapse();
         }
 
-        function recordCalibrationFailure(failureResult) {
-            if (!testSession || !testSession.sessionData) {
+        function dockSignalQualityWidgetInCalibration() {
+            if (!signalQualityVisualizer || !testExecutionOverlay) {
                 return;
             }
 
-            const failureNote = `[Calibration failed] ${failureResult.reason}`;
-            const existingNotes = (testSession.sessionData.notes || '').trim();
-            testSession.sessionData.notes = existingNotes ? `${existingNotes} | ${failureNote}` : failureNote;
-            testSession.sessionData.calibration_status = 'failed';
-            testSession.sessionData.calibration_failure_reason = failureResult.reason;
-            testSession.sessionData.calibration_failure_metrics = failureResult.metrics;
+            const widgetHost = testExecutionOverlay.getCalibrationWidgetContainer();
+            if (!widgetHost) {
+                return;
+            }
+
+            signalQualityVisualizer.mountTo(widgetHost);
+            signalQualityVisualizer.setEmbeddedMode(true);
+            signalQualityVisualizer.show();
+            signalQualityVisualizer.expand();
+        }
+
+        function tryCompleteCalibrationFromReading(reading) {
+            if (!testSession || testSession.currentPhase !== 'calibration' || calibrationPhaseCompleted) {
+                return;
+            }
+
+            const gate = evaluateCalibrationReading(reading);
+            if (testExecutionOverlay) {
+                testExecutionOverlay.updateCalibrationGateStatus(gate);
+            }
+
+            if (!gate.pass) {
+                return;
+            }
+
+            calibrationPhaseCompleted = true;
+            testSession.completeCalibration();
+        }
+
+        function handleManualCalibrationStart() {
+            if (!testSession || testSession.currentPhase !== 'calibration' || calibrationPhaseCompleted) {
+                return;
+            }
+
+            calibrationPhaseCompleted = true;
+            if (testExecutionOverlay) {
+                testExecutionOverlay.setCalibrationGateReadyManually();
+            }
+            testSession.completeCalibration();
         }
 
         // Handle session start - now starts test execution flow
@@ -189,7 +205,8 @@
             // Create TestExecutionOverlay
             testExecutionOverlay = new TestExecutionOverlay({
                 containerId: 'testExecutionOverlay',
-                onAbort: handleTestAbort
+                onAbort: handleTestAbort,
+                onManualStartCalibration: handleManualCalibrationStart
             });
 
             // Create EEGDataCollector
@@ -202,6 +219,7 @@
                     if (signalQualityVisualizer) {
                         signalQualityVisualizer.ingestReading(reading);
                     }
+                    tryCompleteCalibrationFromReading(reading);
                 },
                 onConnectionChange: (state, previousState) => {
                     console.log('EEG connection:', previousState, '→', state);
@@ -260,21 +278,20 @@
                 eegDataCollector.stop();
             }
 
+            if (phase !== 'calibration') {
+                undockSignalQualityWidget();
+            }
+
             switch (phase) {
                 case 'calibration':
-                    testExecutionOverlay.showCalibration(data);
+                    calibrationPhaseCompleted = false;
+                    testExecutionOverlay.showCalibration({
+                        ...data,
+                        requiredChannels: calibrationGateConfig.requiredChannels,
+                        requiredGoodChannels: calibrationGateConfig.requiredGoodChannels
+                    });
+                    dockSignalQualityWidgetInCalibration();
                     eegDataCollector.start();
-                    // Start calibration timer
-                    calibrationTimer = setTimeout(() => {
-                        const calibrationResult = evaluateCalibrationQuality();
-                        if (!calibrationResult.pass) {
-                            console.error('Calibration quality gate failed:', calibrationResult.reason, calibrationResult.metrics);
-                            recordCalibrationFailure(calibrationResult);
-                            testSession.abort(`Calibration check failed: ${calibrationResult.reason}`);
-                            return;
-                        }
-                        testSession.completeCalibration();
-                    }, data.duration * 1000);
                     break;
 
                 case 'baseline':
@@ -539,10 +556,6 @@
          * Clear all timers
          */
         function clearTimers() {
-            if (calibrationTimer) {
-                clearTimeout(calibrationTimer);
-                calibrationTimer = null;
-            }
             if (baselineTimer) {
                 clearTimeout(baselineTimer);
                 baselineTimer = null;

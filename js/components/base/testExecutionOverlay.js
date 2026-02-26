@@ -11,11 +11,13 @@ class TestExecutionOverlay {
      * @param {Object} options - Configuration options
      * @param {string} [options.containerId='testExecutionOverlay'] - Container ID
      * @param {Function} [options.onAbort] - Callback when session is aborted: () => void
+     * @param {Function} [options.onManualStartCalibration] - Callback to start test manually during calibration: () => void
      */
     constructor(options = {}) {
         this.containerId = options.containerId || 'testExecutionOverlay';
         this.container = document.getElementById(this.containerId);
         this.onAbort = options.onAbort || null;
+        this.onManualStartCalibration = options.onManualStartCalibration || null;
 
         // State
         this.isVisible = false;
@@ -114,26 +116,68 @@ class TestExecutionOverlay {
     /**
      * Show calibration phase
      * @param {Object} data - Phase data
-     * @param {number} data.duration - Duration in seconds
+     * @param {number} data.requiredChannels - Total channels required for gate (typically 4)
+     * @param {number} data.requiredGoodChannels - Good channels required to auto-advance (typically 3)
      */
     showCalibration(data) {
         this.currentPhase = 'calibration';
+        this.calibrationRequiredChannels = Number(data.requiredChannels) || 4;
+        this.calibrationRequiredGoodChannels = Number(data.requiredGoodChannels) || 3;
         this.show();
-        this.showNextButton(false); // Hide NEXT during countdown phases
-        // Show ABORT button during active phases
+        this.stopCountdown();
+        this.showNextButton(false);
+        // Hide top ABORT button in calibration (dedicated calibration controls are shown in content)
         if (this.abortButton) {
-            this.abortButton.style.display = 'block';
+            this.abortButton.style.display = 'none';
         }
-        this.startCountdown(data.duration, () => {
-            // Countdown complete - calibration done
-        });
 
         this.contentContainer.innerHTML = `
             <div class="test-execution-overlay__phase test-execution-overlay__phase--calibration">
-                <div class="test-execution-overlay__phase-label">CALIBRATING</div>
-                <div class="test-execution-overlay__countdown" id="calibrationCountdown">${data.duration}</div>
+                <div class="test-execution-overlay__phase-label">CALIBRATION CHECK</div>
+                <div class="test-execution-overlay__calibration-instructions">
+                    Continue when at least ${this.calibrationRequiredGoodChannels} of ${this.calibrationRequiredChannels} channels are <strong>good</strong>,
+                    or use manual start.
+                </div>
+                <div class="test-execution-overlay__calibration-gate" id="calibrationGateStatus">
+                    Waiting for channel readings...
+                </div>
+                <div class="test-execution-overlay__calibration-widget-slot" id="calibrationWidgetContainer"></div>
+                <div class="test-execution-overlay__calibration-actions">
+                    <button class="test-execution-overlay__calibration-btn test-execution-overlay__calibration-btn--abort" id="calibrationAbortBtn">
+                        Abort Test
+                    </button>
+                    <button class="test-execution-overlay__calibration-btn test-execution-overlay__calibration-btn--start" id="calibrationManualStartBtn">
+                        Start Test
+                    </button>
+                </div>
             </div>
         `;
+
+        const abortBtn = this.contentContainer.querySelector('#calibrationAbortBtn');
+        if (abortBtn) {
+            abortBtn.addEventListener('click', () => {
+                if (this.onAbort) {
+                    this.onAbort();
+                }
+            });
+        }
+
+        const manualStartBtn = this.contentContainer.querySelector('#calibrationManualStartBtn');
+        if (manualStartBtn) {
+            manualStartBtn.addEventListener('click', () => {
+                if (this.onManualStartCalibration) {
+                    this.onManualStartCalibration();
+                }
+            });
+        }
+
+        this.updateCalibrationGateStatus({
+            pass: false,
+            goodChannels: 0,
+            totalChannels: 0,
+            requiredGoodChannels: this.calibrationRequiredGoodChannels,
+            requiredChannels: this.calibrationRequiredChannels
+        });
     }
 
     /**
@@ -419,6 +463,84 @@ class TestExecutionOverlay {
         if (countdownEl) {
             countdownEl.textContent = seconds;
         }
+    }
+
+    /**
+     * Update calibration gate status text (e.g. "2/4 good, need 3")
+     * @param {Object} gate
+     * @param {boolean} gate.pass
+     * @param {number} gate.goodChannels
+     * @param {number} gate.totalChannels
+     * @param {number} gate.requiredGoodChannels
+     * @param {number} gate.requiredChannels
+     */
+    updateCalibrationGateStatus(gate = {}) {
+        if (this.currentPhase !== 'calibration') {
+            return;
+        }
+
+        const gateStatusEl = this.contentContainer.querySelector('#calibrationGateStatus');
+        if (!gateStatusEl) {
+            return;
+        }
+
+        const requiredChannels = Number(gate.requiredChannels) || this.calibrationRequiredChannels || 4;
+        const requiredGoodChannels = Number(gate.requiredGoodChannels) || this.calibrationRequiredGoodChannels || 3;
+        const totalChannels = Number(gate.totalChannels) || 0;
+        const goodChannels = Number(gate.goodChannels) || 0;
+        const hasFullReading = totalChannels >= requiredChannels;
+        const isReady = Boolean(gate.pass);
+
+        gateStatusEl.classList.remove('test-execution-overlay__calibration-gate--ready');
+        gateStatusEl.classList.remove('test-execution-overlay__calibration-gate--waiting');
+
+        if (!hasFullReading) {
+            gateStatusEl.textContent = `Reading channels... (${totalChannels}/${requiredChannels} available)`;
+            gateStatusEl.classList.add('test-execution-overlay__calibration-gate--waiting');
+            return;
+        }
+
+        if (isReady) {
+            gateStatusEl.textContent = `Ready: ${goodChannels}/${requiredChannels} channels are good. Starting test...`;
+            gateStatusEl.classList.add('test-execution-overlay__calibration-gate--ready');
+            const manualStartBtn = this.contentContainer.querySelector('#calibrationManualStartBtn');
+            if (manualStartBtn) {
+                manualStartBtn.disabled = true;
+            }
+            return;
+        }
+
+        gateStatusEl.textContent = `${goodChannels}/${requiredChannels} channels are good (need ${requiredGoodChannels}/${requiredChannels})`;
+        gateStatusEl.classList.add('test-execution-overlay__calibration-gate--waiting');
+    }
+
+    /**
+     * Mark calibration as manually started.
+     */
+    setCalibrationGateReadyManually() {
+        if (this.currentPhase !== 'calibration') {
+            return;
+        }
+
+        const gateStatusEl = this.contentContainer.querySelector('#calibrationGateStatus');
+        if (gateStatusEl) {
+            gateStatusEl.textContent = 'Manual start selected. Starting test...';
+            gateStatusEl.classList.remove('test-execution-overlay__calibration-gate--waiting');
+            gateStatusEl.classList.add('test-execution-overlay__calibration-gate--ready');
+        }
+
+        const manualStartBtn = this.contentContainer.querySelector('#calibrationManualStartBtn');
+        if (manualStartBtn) {
+            manualStartBtn.disabled = true;
+        }
+    }
+
+    /**
+     * Get calibration widget slot for mounting SignalQualityVisualizer.
+     * @returns {HTMLElement|null}
+     */
+    getCalibrationWidgetContainer() {
+        return document.getElementById('calibrationWidgetContainer');
     }
 
     /**
