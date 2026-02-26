@@ -117,7 +117,7 @@ class TestExecutionOverlay {
      * Show calibration phase
      * @param {Object} data - Phase data
      * @param {number} data.requiredChannels - Total channels required for gate (typically 4)
-     * @param {number} data.requiredGoodChannels - Good channels required to auto-advance (typically 3)
+     * @param {number} data.requiredGoodChannels - Good channels required to mark ready (typically 3)
      */
     showCalibration(data) {
         this.currentPhase = 'calibration';
@@ -501,11 +501,11 @@ class TestExecutionOverlay {
         }
 
         if (isReady) {
-            gateStatusEl.textContent = `Ready: ${goodChannels}/${requiredChannels} channels are good. Starting test...`;
+            gateStatusEl.textContent = `Ready: ${goodChannels}/${requiredChannels} channels are good. Press Start Test to continue.`;
             gateStatusEl.classList.add('test-execution-overlay__calibration-gate--ready');
             const manualStartBtn = this.contentContainer.querySelector('#calibrationManualStartBtn');
             if (manualStartBtn) {
-                manualStartBtn.disabled = true;
+                manualStartBtn.disabled = false;
             }
             return;
         }

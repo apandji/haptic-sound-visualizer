@@ -93,7 +93,7 @@
             signalQualityVisualizer.expand();
         }
 
-        function tryCompleteCalibrationFromReading(reading) {
+        function updateCalibrationGateFromReading(reading) {
             if (!testSession || testSession.currentPhase !== 'calibration' || calibrationPhaseCompleted) {
                 return;
             }
@@ -102,13 +102,6 @@
             if (testExecutionOverlay) {
                 testExecutionOverlay.updateCalibrationGateStatus(gate);
             }
-
-            if (!gate.pass) {
-                return;
-            }
-
-            calibrationPhaseCompleted = true;
-            testSession.completeCalibration();
         }
 
         function handleManualCalibrationStart() {
@@ -219,7 +212,7 @@
                     if (signalQualityVisualizer) {
                         signalQualityVisualizer.ingestReading(reading);
                     }
-                    tryCompleteCalibrationFromReading(reading);
+                    updateCalibrationGateFromReading(reading);
                 },
                 onConnectionChange: (state, previousState) => {
                     console.log('EEG connection:', previousState, '→', state);
