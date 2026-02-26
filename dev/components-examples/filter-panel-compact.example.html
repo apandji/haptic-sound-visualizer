@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FilterPanel Compact Mode Example</title>
+    <link rel="stylesheet" href="../../css/components/base/dualSlider.css">
+    <link rel="stylesheet" href="../../css/components/base/filterPanel.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Courier New', monospace;
+            background: #fafafa;
+            color: #333;
+            padding: 40px;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+        
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 40px;
+        }
+        
+        .comparison {
+            display: flex;
+            gap: 24px;
+            margin-bottom: 40px;
+        }
+        
+        .example-box {
+            flex: 1;
+            background: #fff;
+            padding: 20px;
+            border-radius: 4px;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .example-box h2 {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: #333;
+        }
+        
+        .sidebar-mock {
+            width: 250px;
+            background: #fff;
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+        }
+        
+        .sidebar-mock h3 {
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: #666;
+            letter-spacing: 0.5px;
+        }
+        
+        .sidebar-mock h4 {
+            font-size: 11px;
+            font-weight: 400;
+            margin-bottom: 24px;
+            color: #999;
+            letter-spacing: 0.3px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>FilterPanel Compact Mode</h1>
+        <p class="subtitle">Comparison: Regular vs Compact (for PatternExplorer)</p>
+        
+        <div class="comparison">
+            <!-- Regular Mode -->
+            <div class="example-box">
+                <h2>Regular Mode</h2>
+                <div id="regularFilterPanel"></div>
+            </div>
+            
+            <!-- Compact Mode -->
+            <div class="example-box">
+                <h2>Compact Mode</h2>
+                <div id="compactFilterPanel"></div>
+            </div>
+        </div>
+        
+        <!-- Sidebar Mockup -->
+        <div class="sidebar-mock">
+            <h3>SAIL Pattern Library</h3>
+            <h4>v1.0</h4>
+            <div id="sidebarFilterPanel"></div>
+            <div style="margin-top: 20px; padding: 8px; background: #f5f5f5; border-radius: 2px; font-size: 11px; color: #666;">
+                File list would go here...
+            </div>
+        </div>
+    </div>
+    
+    <script src="../../js/components/base/dualSlider.js"></script>
+    <script src="../../js/components/base/filterPanel.js"></script>
+    <script>
+        // Sample metadata
+        const sampleMetadata = {
+            'A_100_1.mp3': {
+                rms_mean: 0.123,
+                duration: 5.5,
+                stereo_balance: 0.0,
+                stereo_movement: 0.10
+            },
+            'A_100_2.mp3': {
+                rms_mean: 0.234,
+                duration: 6.2,
+                stereo_balance: -0.3,
+                stereo_movement: 0.15
+            },
+            'A_110_1.mp3': {
+                rms_mean: 0.345,
+                duration: 4.8,
+                stereo_balance: 0.5,
+                stereo_movement: 0.25
+            }
+        };
+        
+        // Regular FilterPanel
+        const regularPanel = new FilterPanel({
+            containerId: 'regularFilterPanel',
+            metadata: sampleMetadata,
+            searchPlaceholder: 'Search patterns...',
+            onFilterChange: (filters) => {
+                console.log('Regular filters:', filters);
+            }
+        });
+        
+        // Compact FilterPanel
+        const compactPanel = new FilterPanel({
+            containerId: 'compactFilterPanel',
+            metadata: sampleMetadata,
+            compact: true, // Enable compact mode
+            searchPlaceholder: 'Search patterns...',
+            onFilterChange: (filters) => {
+                console.log('Compact filters:', filters);
+            }
+        });
+        
+        // Sidebar FilterPanel (compact + collapsible mode)
+        const sidebarPanel = new FilterPanel({
+            containerId: 'sidebarFilterPanel',
+            metadata: sampleMetadata,
+            compact: true, // Enable compact mode
+            collapsible: true, // Enable collapsible
+            defaultCollapsed: true, // Start collapsed
+            searchPlaceholder: 'Search patterns...',
+            onFilterChange: (filters) => {
+                console.log('Sidebar filters:', filters);
+            },
+            onToggle: (isCollapsed) => {
+                console.log('Filters', isCollapsed ? 'collapsed' : 'expanded');
+            }
+        });
+        
+        console.log('✅ FilterPanel compact mode examples initialized');
+    </script>
+</body>
+</html>

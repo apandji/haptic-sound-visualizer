@@ -1,0 +1,80 @@
+.pattern-explorer-analysis {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    overflow: hidden;
+}
+
+.pattern-explorer-analysis__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--spacing-md) var(--spacing-lg);
+    border-bottom: 1px solid #e0e0e0;
+    flex-shrink: 0;
+}
+
+.pattern-explorer-analysis__header-label {
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
+    color: #999;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+.pattern-explorer-analysis__compare-btn {
+    font-family: inherit;
+    font-size: 9px;
+    font-weight: var(--font-weight-medium);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    padding: 2px 8px;
+    border: 1px solid #e0e0e0;
+    background: #fff;
+    color: #999;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.pattern-explorer-analysis__compare-btn:hover {
+    color: #333;
+    border-color: #ccc;
+}
+
+.pattern-explorer-analysis__compare-btn--active {
+    background: #333;
+    color: #fff;
+    border-color: #333;
+}
+
+.pattern-explorer-analysis__compare-btn--active:hover {
+    background: #000;
+}
+
+.pattern-explorer-analysis__list {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+/* Trial count badge on each file item */
+.pattern-explorer-analysis__trial-count {
+    font-size: 9px;
+    font-weight: var(--font-weight-medium);
+    color: #999;
+    background: #f5f5f5;
+    padding: 1px 6px;
+    margin-left: auto;
+    flex-shrink: 0;
+    border: 1px solid #e0e0e0;
+}
+
+/* Comparison mode item styling */
+.pattern-explorer-analysis__item--comparison {
+    border-left: 3px solid #333;
+    background: #fafafa;
+}
+
+.pattern-explorer-analysis__item--comparison .file-item-text {
+    font-weight: var(--font-weight-medium);
+}

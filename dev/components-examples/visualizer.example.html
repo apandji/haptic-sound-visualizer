@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Visualizer Component Example</title>
+    <style>
+        body {
+            font-family: 'SF Mono', 'Monaco', monospace;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+            align-items: center;
+        }
+        button {
+            padding: 8px 16px;
+            background: #000;
+            color: #fff;
+            border: none;
+            border-radius: 2px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 12px;
+        }
+        button:hover {
+            background: #333;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        select {
+            padding: 8px 12px;
+            border: 1px solid #ccc;
+            border-radius: 2px;
+            font-family: inherit;
+            font-size: 12px;
+            background: #fff;
+        }
+        .status {
+            margin: 20px 0;
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 2px;
+            font-size: 11px;
+        }
+        .status-row {
+            margin: 4px 0;
+        }
+        #p5-container {
+            width: 100%;
+            height: 500px;
+            background: #fafafa;
+            border: 1px solid #e0e0e0;
+            border-radius: 2px;
+        }
+    </style>
+    <link rel="stylesheet" href="../../css/components/base/visualizer.css">
+</head>
+<body>
+    <h1>Visualizer Component Example</h1>
+    <p>This example demonstrates the Visualizer component with all 8 visualization modes. It requires p5.js and AudioPlayer module.</p>
+    
+    <div class="controls">
+        <button id="loadBtn">Load Audio</button>
+        <button id="playBtn" disabled>Play</button>
+        <button id="pauseBtn" disabled>Pause</button>
+        <button id="stopBtn" disabled>Stop</button>
+        <label for="modeSelect">Mode:</label>
+        <select id="modeSelect">
+            <option value="waveform">Waveform</option>
+            <option value="intensity">Intensity Bars</option>
+            <option value="stereo">Stereo Field</option>
+            <option value="spectrum">Frequency Spectrum</option>
+            <option value="pulses">Directional Pulses</option>
+            <option value="blob">Liquid Blob</option>
+            <option value="particles">Particle Swarm</option>
+            <option value="landscape">Frequency Terrain</option>
+        </select>
+    </div>
+    
+    <div class="status" id="status">
+        <div class="status-row">Status: <span id="statusText">Not loaded</span></div>
+        <div class="status-row">Mode: <span id="modeText">waveform</span></div>
+        <div class="status-row">Duration: <span id="durationText">0s</span></div>
+        <div class="status-row">Current Time: <span id="currentTimeText">0s</span></div>
+    </div>
+    
+    <div id="p5-container"></div>
+    
+    <!-- p5.js dependencies -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/p5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/addons/p5.sound.min.js"></script>
+    
+    <!-- Modules -->
+    <script src="../../js/modules/audioPlayer.js"></script>
+    
+    <!-- Components -->
+    <script src="../../js/components/base/visualizer.js"></script>
+    
+    <script>
+        let audioPlayer = null;
+        let visualizer = null;
+        
+        // Initialize Visualizer first (it will provide loadSound function)
+        // Then initialize AudioPlayer with Visualizer's loadSound function
+        function initializeComponents() {
+            // Initialize Visualizer first (creates its own p5 instance)
+            visualizer = new Visualizer({
+                containerId: 'p5-container',
+                defaultMode: 'waveform',
+                onModeChange: (mode) => {
+                    console.log('Mode changed to:', mode);
+                    document.getElementById('modeSelect').value = mode;
+                    document.getElementById('modeText').textContent = mode;
+                },
+                onReady: (loadSoundFn) => {
+                    // This callback is called when Visualizer's p5.js sketch is ready
+                    console.log('Visualizer ready, loadSoundFn available, initializing AudioPlayer');
+                    
+                    // Initialize AudioPlayer with Visualizer's loadSound function
+                    // This ensures audio loads in Visualizer's p5 instance where FFT can analyze it
+                    audioPlayer = new AudioPlayer({
+                        loadSoundFn: loadSoundFn,
+                        defaultLoop: true,
+                        onPlay: () => {
+                            console.log('Playing');
+                            updateStatus();
+                        },
+                        onPause: () => {
+                            console.log('Paused');
+                            updateStatus();
+                        },
+                        onStop: () => {
+                            console.log('Stopped');
+                            updateStatus();
+                        },
+                        onEnd: () => {
+                            console.log('Playback ended');
+                            updateStatus();
+                        }
+                    });
+                    
+                    // Set AudioPlayer reference in Visualizer (so it can get sound file)
+                    visualizer.setAudioPlayer(audioPlayer);
+                    
+                    // Add our own onLoad callback (wrap Visualizer's callback)
+                    const visualizerOnLoad = audioPlayer.onLoad;
+                    audioPlayer.onLoad = (soundFile) => {
+                        // Visualizer's callback (sets up stereo analyzers and FFT input)
+                        if (visualizerOnLoad) {
+                            visualizerOnLoad(soundFile);
+                        }
+                        // Our callback (updates UI)
+                        console.log('Audio loaded:', soundFile);
+                        updateStatus();
+                        document.getElementById('playBtn').disabled = false;
+                        document.getElementById('pauseBtn').disabled = false;
+                        document.getElementById('stopBtn').disabled = false;
+                    };
+                    
+                    // Make accessible globally for debugging
+                    window.audioPlayer = audioPlayer;
+                    window.visualizer = visualizer;
+                    
+                    setupControls();
+                }
+            });
+        }
+        
+        function setupControls() {
+            document.getElementById('loadBtn').addEventListener('click', () => {
+                if (!audioPlayer) {
+                    console.error('AudioPlayer not initialized');
+                    alert('AudioPlayer not ready. Please wait for initialization.');
+                    return;
+                }
+                
+                // Try multiple paths (using A_80_1.mp3 which exists in the audio_files directory)
+                const testPaths = [
+                    '/audio_files/A_80_1.mp3',
+                    '../../audio_files/A_80_1.mp3',
+                    '../audio_files/A_80_1.mp3',
+                    'audio_files/A_80_1.mp3'
+                ];
+                
+                let pathIndex = 0;
+                const tryLoadPath = () => {
+                    if (pathIndex >= testPaths.length) {
+                        alert('Could not find audio file. Please ensure audio_files/A_80_1.mp3 exists relative to the server root.');
+                        return;
+                    }
+                    
+                    const testPath = testPaths[pathIndex];
+                    console.log('Attempting to load:', testPath);
+                    
+                    audioPlayer.loadFile(testPath)
+                        .then(() => {
+                            console.log('Successfully loaded:', testPath);
+                        })
+                        .catch(error => {
+                            console.warn('Failed to load from', testPath, ':', error.message);
+                            pathIndex++;
+                            tryLoadPath();
+                        });
+                };
+                
+                tryLoadPath();
+            });
+            
+            document.getElementById('playBtn').addEventListener('click', () => {
+                // Ensure p5 audio context is started (required for FFT analysis)
+                if (visualizer && typeof visualizer.ensureAudioContextStarted === 'function') {
+                    visualizer.ensureAudioContextStarted();
+                }
+                audioPlayer.play();
+            });
+            
+            document.getElementById('pauseBtn').addEventListener('click', () => {
+                audioPlayer.pause();
+            });
+            
+            document.getElementById('stopBtn').addEventListener('click', () => {
+                audioPlayer.stop();
+            });
+            
+            document.getElementById('modeSelect').addEventListener('change', (e) => {
+                const mode = e.target.value;
+                visualizer.setMode(mode);
+                document.getElementById('modeText').textContent = mode;
+            });
+        }
+        
+        function updateStatus() {
+            if (!audioPlayer) return;
+            
+            const statusText = audioPlayer.isLoaded() 
+                ? (audioPlayer.isPlaying() ? 'Playing' : 'Loaded')
+                : 'Not loaded';
+            
+            document.getElementById('statusText').textContent = statusText;
+            document.getElementById('durationText').textContent = 
+                audioPlayer.getDuration().toFixed(2) + 's';
+            document.getElementById('currentTimeText').textContent = 
+                audioPlayer.getCurrentTime().toFixed(2) + 's';
+            
+            // Update time periodically when playing
+            if (audioPlayer.isPlaying()) {
+                setTimeout(updateStatus, 100);
+            }
+        }
+        
+        // Initialize when page loads
+        window.addEventListener('DOMContentLoaded', () => {
+            initializeComponents();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,113 @@
+/* DualSlider Component Styles */
+
+.dual-slider {
+    position: relative;
+    width: 100%;
+    height: 20px;
+    margin: var(--spacing-sm) 0;
+    padding: 0 var(--spacing-sm); /* More padding to ensure handles are fully visible */
+    box-sizing: border-box;
+    cursor: pointer;
+    user-select: none;
+    overflow: visible; /* Ensure handles aren't clipped */
+    border: none !important; /* No borders */
+    border-top: none !important;
+    border-bottom: none !important;
+}
+
+.dual-slider__track {
+    position: absolute;
+    top: 50%;
+    left: var(--spacing-sm); /* Account for container padding */
+    right: var(--spacing-sm); /* Account for container padding */
+    height: 4px;
+    background: #e0e0e0;
+    border-radius: 2px;
+    transform: translateY(-50%);
+}
+
+.dual-slider__range {
+    position: absolute;
+    top: 50%;
+    /* left and width are set dynamically by JavaScript */
+    height: 4px;
+    background: #000;
+    border-radius: 2px;
+    transform: translateY(-50%);
+    pointer-events: none;
+}
+
+.dual-slider__handle {
+    position: absolute;
+    top: 50%;
+    width: 14px;
+    height: 14px;
+    background: #000;
+    border: 2px solid #fff;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    cursor: grab;
+    z-index: 2;
+    transition: transform 0.1s ease;
+    box-sizing: border-box !important; /* Border included in width/height - force with !important */
+    /* Handles are positioned relative to container, so padding accounts for handle overflow */
+    /* Note: Handles at 0% and 100% will extend beyond track edges due to translate(-50%) */
+    /* Container padding of 8px provides clearance for 6px handle overflow */
+}
+
+.dual-slider__handle:active {
+    cursor: grabbing;
+    transform: translate(-50%, -50%) scale(1.2);
+}
+
+.dual-slider__handle:hover {
+    transform: translate(-50%, -50%) scale(1.1);
+}
+
+.dual-slider__handle.active {
+    transform: translate(-50%, -50%) scale(1.2);
+}
+
+.dual-slider__display {
+    display: inline-block;
+    color: #999;
+    font-weight: normal;
+    font-size: var(--font-size-sm);
+    margin-left: var(--spacing-xs);
+}
+
+/* Compact variant */
+.dual-slider--compact {
+    height: 16px; /* More compact, matching index.html */
+    margin: 2px 0; /* More condensed */
+    padding: 0 var(--spacing-sm); /* More padding to ensure handles are fully visible */
+    overflow: visible; /* Ensure handles aren't clipped */
+    border: none !important; /* No borders */
+    border-top: none !important;
+    border-bottom: none !important;
+}
+
+.dual-slider--compact .dual-slider__handle {
+    width: 12px;
+    height: 12px;
+    border-width: 2px;
+    box-sizing: border-box !important; /* Border included in width/height - force with !important */
+}
+
+.dual-slider--compact .dual-slider__track,
+.dual-slider--compact .dual-slider__range {
+    height: 3px;
+}
+
+/* Dark theme variant */
+.dual-slider--dark .dual-slider__track {
+    background: #404040;
+}
+
+.dual-slider--dark .dual-slider__range {
+    background: #fff;
+}
+
+.dual-slider--dark .dual-slider__handle {
+    background: #fff;
+}

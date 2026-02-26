@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AudioPlayer Module Example</title>
+    <style>
+        body {
+            font-family: 'SF Mono', 'Monaco', monospace;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        button {
+            padding: 8px 16px;
+            background: #000;
+            color: #fff;
+            border: none;
+            border-radius: 2px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 12px;
+        }
+        button:hover {
+            background: #333;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .toggle-btn {
+            background: #e0e0e0;
+            color: #666;
+        }
+        .toggle-btn.active {
+            background: #000;
+            color: #fff;
+        }
+        .status {
+            margin: 20px 0;
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 2px;
+            font-size: 11px;
+        }
+        .status-row {
+            margin: 4px 0;
+        }
+        #p5-container {
+            width: 100%;
+            height: 300px;
+            background: #fafafa;
+            border: 1px solid #e0e0e0;
+            border-radius: 2px;
+        }
+    </style>
+</head>
+<body>
+    <h1>AudioPlayer Module Example</h1>
+    <p>This example demonstrates the AudioPlayer module. It requires p5.js to be loaded.</p>
+    
+    <div class="controls">
+        <button id="loadBtn">Load Audio</button>
+        <button id="playBtn" disabled>Play</button>
+        <button id="pauseBtn" disabled>Pause</button>
+        <button id="stopBtn" disabled>Stop</button>
+        <button id="loopBtn" class="toggle-btn active">LOOP</button>
+        <button id="loop30sBtn" class="toggle-btn">LOOP 30s</button>
+    </div>
+    
+    <div class="status" id="status">
+        <div class="status-row">Status: <span id="statusText">Not loaded</span></div>
+        <div class="status-row">Duration: <span id="durationText">0s</span></div>
+        <div class="status-row">Current Time: <span id="currentTimeText">0s</span></div>
+        <div class="status-row">Loop: <span id="loopText">true</span></div>
+        <div class="status-row">Loop Duration: <span id="loopDurationText">Off</span></div>
+        <div class="status-row">Remaining Time: <span id="remainingTimeText">-</span></div>
+    </div>
+    
+    <div id="p5-container"></div>
+    
+    <!-- p5.js dependencies -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/p5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/addons/p5.sound.min.js"></script>
+    
+    <!-- AudioPlayer module -->
+    <script src="../../js/modules/audioPlayer.js"></script>
+    
+    <script>
+        let audioPlayer = null;
+        let p5Instance = null;
+        let loadSoundFn = null;
+        
+        // Setup p5.js sketch to provide loadSound function
+        function setupP5Sketch() {
+            const sketch = function(p) {
+                p.setup = function() {
+                    const container = document.getElementById('p5-container');
+                    const canvas = p.createCanvas(container.clientWidth, container.clientHeight);
+                    canvas.parent('p5-container');
+                    p.background(250, 250, 250);
+                    p.textAlign(p.CENTER, p.CENTER);
+                    p.textSize(12);
+                    p.fill(180);
+                    p.text('Load an audio file to start', p.width / 2, p.height / 2);
+                    
+                    // Create loadSound function that has access to p5 instance
+                    loadSoundFn = function(path, onSuccess, onError) {
+                        return p.loadSound(path, onSuccess, onError);
+                    };
+                    
+                    // Initialize AudioPlayer once we have loadSoundFn
+                    initializeAudioPlayer();
+                };
+                
+                p.draw = function() {
+                    p.background(250, 250, 250);
+                    
+                    // Check loop duration (stops playback after 30s if enabled)
+                    if (audioPlayer) {
+                        audioPlayer.checkLoopDuration();
+                    }
+                    
+                    if (audioPlayer && audioPlayer.isLoaded()) {
+                        const isPlaying = audioPlayer.isPlaying();
+                        
+                        if (isPlaying) {
+                            // Simple visualization - just show that audio is playing
+                            p.fill(0);
+                            p.textAlign(p.CENTER, p.CENTER);
+                            p.textSize(14);
+                            p.text('Playing...', p.width / 2, p.height / 2);
+                            
+                            // Draw progress bar
+                            const progress = audioPlayer.getCurrentTime() / audioPlayer.getDuration();
+                            p.fill(255, 0, 0);
+                            p.rect(0, p.height - 4, p.width * progress, 4);
+                            
+                            // Draw loop duration progress if enabled
+                            const loopDuration = audioPlayer.getLoopDuration();
+                            if (loopDuration !== null) {
+                                const remaining = audioPlayer.getRemainingLoopTime();
+                                if (remaining !== null) {
+                                    const loopProgress = 1 - (remaining / loopDuration);
+                                    p.fill(0, 150, 255);
+                                    p.rect(0, p.height - 8, p.width * loopProgress, 4);
+                                }
+                            }
+                        } else {
+                            // Paused state
+                            p.fill(150);
+                            p.textAlign(p.CENTER, p.CENTER);
+                            p.textSize(14);
+                            p.text('Paused', p.width / 2, p.height / 2);
+                            
+                            // Draw progress bar showing current position (frozen)
+                            const progress = audioPlayer.getCurrentTime() / audioPlayer.getDuration();
+                            p.fill(150, 150, 150);
+                            p.rect(0, p.height - 4, p.width * progress, 4);
+                            
+                            // Draw loop duration progress if enabled (frozen)
+                            const loopDuration = audioPlayer.getLoopDuration();
+                            if (loopDuration !== null) {
+                                const remaining = audioPlayer.getRemainingLoopTime();
+                                if (remaining !== null) {
+                                    const loopProgress = 1 - (remaining / loopDuration);
+                                    p.fill(200, 200, 200);
+                                    p.rect(0, p.height - 8, p.width * loopProgress, 4);
+                                }
+                            }
+                        }
+                    } else {
+                        // Not loaded state
+                        p.fill(180);
+                        p.textAlign(p.CENTER, p.CENTER);
+                        p.textSize(12);
+                        p.text('Load an audio file to start', p.width / 2, p.height / 2);
+                    }
+                };
+            };
+            
+            p5Instance = new p5(sketch);
+        }
+        
+        // Initialize AudioPlayer once p5 sketch is ready
+        function initializeAudioPlayer() {
+            if (!loadSoundFn) {
+                console.error('loadSoundFn not available yet');
+                return;
+            }
+            
+            audioPlayer = new AudioPlayer({
+                loadSoundFn: loadSoundFn,
+                defaultLoop: true,
+                onLoad: (soundFile) => {
+                    console.log('Audio loaded:', soundFile);
+                    updateStatus();
+                    document.getElementById('playBtn').disabled = false;
+                    document.getElementById('pauseBtn').disabled = false;
+                    document.getElementById('stopBtn').disabled = false;
+                },
+                onPlay: () => {
+                    console.log('Playing');
+                    updateStatus();
+                },
+                onPause: () => {
+                    console.log('Paused');
+                    updateStatus();
+                },
+                onStop: () => {
+                    console.log('Stopped');
+                    updateStatus();
+                },
+                onEnd: () => {
+                    console.log('Playback ended');
+                    updateStatus();
+                }
+            });
+            
+            // Make accessible globally for debugging
+            window.audioPlayer = audioPlayer;
+            
+            setupControls();
+        }
+        
+        function setupControls() {
+            document.getElementById('loadBtn').addEventListener('click', () => {
+                if (!audioPlayer) {
+                    console.error('AudioPlayer not initialized');
+                    alert('AudioPlayer not ready. Please wait for initialization.');
+                    return;
+                }
+                
+                // For demo, use a test file path - in real usage, this would come from file selection
+                // Try absolute path first (works from any location), then relative paths
+                const testPaths = [
+                    '/audio_files/A_100_1.mp3',  // Absolute path from server root (should work)
+                    '../../audio_files/A_100_1.mp3',  // Relative path from dev/modules-examples/
+                    '../audio_files/A_100_1.mp3',  // Fallback relative path
+                    'audio_files/A_100_1.mp3'  // Last resort
+                ];
+                
+                let pathIndex = 0;
+                const tryLoadPath = () => {
+                    if (pathIndex >= testPaths.length) {
+                        alert('Could not find audio file. Please ensure audio_files/A_100_1.mp3 exists relative to the server root.');
+                        return;
+                    }
+                    
+                    const testPath = testPaths[pathIndex];
+                    console.log('Attempting to load:', testPath);
+                    
+                    audioPlayer.loadFile(testPath)
+                        .then(() => {
+                            console.log('Successfully loaded:', testPath);
+                        })
+                        .catch(error => {
+                            console.warn('Failed to load from', testPath, ':', error.message);
+                            pathIndex++;
+                            tryLoadPath(); // Try next path
+                        });
+                };
+                
+                tryLoadPath();
+            });
+            
+            document.getElementById('playBtn').addEventListener('click', () => {
+                audioPlayer.play();
+            });
+            
+            document.getElementById('pauseBtn').addEventListener('click', () => {
+                audioPlayer.pause();
+            });
+            
+            document.getElementById('stopBtn').addEventListener('click', () => {
+                audioPlayer.stop();
+            });
+            
+            document.getElementById('loopBtn').addEventListener('click', () => {
+                const isActive = document.getElementById('loopBtn').classList.contains('active');
+                if (isActive) {
+                    // Disable regular loop
+                    audioPlayer.setLoop(false);
+                    document.getElementById('loopBtn').classList.remove('active');
+                } else {
+                    // Enable regular loop (infinite)
+                    // First disable LOOP 30s if it's active
+                    if (document.getElementById('loop30sBtn').classList.contains('active')) {
+                        audioPlayer.setLoopDuration(null);
+                        document.getElementById('loop30sBtn').classList.remove('active');
+                    }
+                    // Enable regular loop
+                    audioPlayer.setLoop(true);
+                    document.getElementById('loopBtn').classList.add('active');
+                }
+                updateStatus();
+            });
+            
+            document.getElementById('loop30sBtn').addEventListener('click', () => {
+                const isActive = document.getElementById('loop30sBtn').classList.contains('active');
+                if (isActive) {
+                    // Disable 30s loop
+                    audioPlayer.setLoopDuration(null);
+                    document.getElementById('loop30sBtn').classList.remove('active');
+                    // Also disable regular loop since they're exclusive
+                    audioPlayer.setLoop(false);
+                    document.getElementById('loopBtn').classList.remove('active');
+                } else {
+                    // Enable 30s loop
+                    // First disable regular LOOP if it's active
+                    if (document.getElementById('loopBtn').classList.contains('active')) {
+                        audioPlayer.setLoop(false);
+                        document.getElementById('loopBtn').classList.remove('active');
+                    }
+                    // Enable 30s loop
+                    audioPlayer.setLoopDuration(30);
+                    document.getElementById('loop30sBtn').classList.add('active');
+                    // Enable regular loop internally so audio repeats until 30s limit
+                    // But keep LOOP button visually inactive (they're exclusive)
+                    audioPlayer.setLoop(true);
+                }
+                updateStatus();
+            });
+        }
+        
+        function updateStatus() {
+            if (!audioPlayer) return;
+            
+            const statusText = audioPlayer.isLoaded() 
+                ? (audioPlayer.isPlaying() ? 'Playing' : 'Loaded')
+                : 'Not loaded';
+            
+            document.getElementById('statusText').textContent = statusText;
+            document.getElementById('durationText').textContent = 
+                audioPlayer.getDuration().toFixed(2) + 's';
+            document.getElementById('currentTimeText').textContent = 
+                audioPlayer.getCurrentTime().toFixed(2) + 's';
+            
+            // Update loop button states to reflect exclusivity
+            const loopDuration = audioPlayer.getLoopDuration();
+            const hasLoopDuration = loopDuration !== null;
+            
+            // If LOOP 30s is active, LOOP button should be inactive (even though loop=true internally)
+            if (hasLoopDuration) {
+                document.getElementById('loopBtn').classList.remove('active');
+                document.getElementById('loopText').textContent = '30s mode';
+            } else {
+                // Regular loop state
+                const isLooping = audioPlayer.getLoop();
+                document.getElementById('loopBtn').classList.toggle('active', isLooping);
+                document.getElementById('loopText').textContent = isLooping.toString();
+            }
+            
+            // Update loop duration status
+            if (hasLoopDuration) {
+                document.getElementById('loopDurationText').textContent = loopDuration + 's';
+                const remaining = audioPlayer.getRemainingLoopTime();
+                if (remaining !== null && remaining >= 0) {
+                    document.getElementById('remainingTimeText').textContent = remaining.toFixed(1) + 's';
+                } else {
+                    // playStartTime is null - either not started yet or stopped
+                    if (audioPlayer.isLoaded() && audioPlayer.getCurrentTime() === 0 && !audioPlayer.isPlaying()) {
+                        // Not started yet - show full duration
+                        document.getElementById('remainingTimeText').textContent = loopDuration.toFixed(1) + 's';
+                    } else {
+                        // Stopped or completed - show 0
+                        document.getElementById('remainingTimeText').textContent = '0.0s';
+                    }
+                }
+            } else {
+                // Regular playback (no LOOP 30s) - show remaining time until end of file
+                document.getElementById('loopDurationText').textContent = 'Off';
+                if (audioPlayer.isLoaded()) {
+                    const duration = audioPlayer.getDuration();
+                    const currentTime = audioPlayer.getCurrentTime();
+                    const remainingTime = Math.max(0, duration - currentTime);
+                    document.getElementById('remainingTimeText').textContent = remainingTime.toFixed(1) + 's';
+                } else {
+                    document.getElementById('remainingTimeText').textContent = '-';
+                }
+            }
+            
+            // Update time periodically when playing OR when paused (so remaining time stays visible)
+            const isPlaying = audioPlayer.isPlaying();
+            const shouldUpdate = isPlaying || (audioPlayer.isLoaded() && !isPlaying);
+            if (shouldUpdate) {
+                setTimeout(updateStatus, 100);
+            }
+        }
+        
+        // Initialize when page loads
+        window.addEventListener('DOMContentLoaded', () => {
+            setupP5Sketch();
+        });
+        
+        // Make audioPlayer accessible globally for debugging (updated in initializeAudioPlayer)
+    </script>
+</body>
+</html>

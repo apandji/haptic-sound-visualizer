@@ -1,0 +1,467 @@
+/**
+ * SignalQualityVisualizer Component Styles
+ * Intercom-style floating widget for displaying EEG signal quality
+ */
+
+/* Main container - floating widget */
+.signal-quality-visualizer {
+    position: fixed;
+    bottom: var(--spacing-lg, 20px);
+    right: var(--spacing-lg, 20px);
+    z-index: 10000; /* High z-index to appear above everything */
+    font-family: var(--font-family, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
+    font-size: var(--font-size-sm, 12px);
+    display: none; /* Hidden by default, shown when device connects */
+}
+
+.signal-quality-visualizer--visible {
+    display: block;
+}
+
+/* Minimized button (Information-dense for researchers) */
+.signal-quality-visualizer__minimized-btn {
+    min-width: 110px;
+    max-width: 130px;
+    padding: 6px 8px;
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 0; /* Brutalistic */
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.05);
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+    position: relative;
+    text-align: left;
+}
+
+.signal-quality-visualizer__minimized-btn:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15), 0 2px 4px rgba(0, 0, 0, 0.1);
+    border-color: #000;
+}
+
+.signal-quality-visualizer__minimized-btn:active {
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
+.signal-quality-visualizer__minimized-btn--hidden {
+    display: none;
+}
+
+/* Minimized content container */
+.signal-quality-visualizer__minimized-content {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+/* Minimized header (title + status dot) */
+.signal-quality-visualizer__minimized-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-xs, 4px);
+}
+
+.signal-quality-visualizer__minimized-title {
+    font-size: 10px;
+    font-weight: var(--font-weight-medium, 500);
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Status dot (color-coded indicator) */
+.signal-quality-visualizer__status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #999; /* Default/disconnected */
+    transition: background 0.3s ease;
+    flex-shrink: 0;
+}
+
+.signal-quality-visualizer__status-dot[data-status="good"] {
+    background: #4caf50; /* Green */
+}
+
+.signal-quality-visualizer__status-dot[data-status="ok"] {
+    background: #ff9800; /* Orange */
+}
+
+.signal-quality-visualizer__status-dot[data-status="poor"] {
+    background: #f44336; /* Red */
+}
+
+.signal-quality-visualizer__status-dot[data-status="disconnected"] {
+    background: #999; /* Gray */
+}
+
+/* Channel indicators grid - vertical stack */
+.signal-quality-visualizer__minimized-channels {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-top: 3px;
+}
+
+/* Individual channel indicator - horizontal layout */
+.signal-quality-visualizer__channel-indicator {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 4px;
+    padding: 2px 3px;
+    border-radius: 0; /* Brutalistic */
+    transition: background 0.15s ease;
+}
+
+.signal-quality-visualizer__channel-indicator[data-status="good"] {
+    background: rgba(76, 175, 80, 0.1);
+}
+
+.signal-quality-visualizer__channel-indicator[data-status="ok"] {
+    background: rgba(255, 152, 0, 0.1);
+}
+
+.signal-quality-visualizer__channel-indicator[data-status="poor"] {
+    background: rgba(244, 67, 54, 0.1);
+}
+
+.signal-quality-visualizer__channel-indicator[data-status="disconnected"],
+.signal-quality-visualizer__channel-indicator[data-status="waiting"],
+.signal-quality-visualizer__channel-indicator[data-status="error"] {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+.signal-quality-visualizer__channel-label {
+    font-size: 8px;
+    font-weight: var(--font-weight-medium, 500);
+    color: #666;
+    font-family: 'Courier New', monospace;
+    line-height: 1;
+}
+
+.signal-quality-visualizer__channel-status {
+    display: flex;
+    flex-direction: row;
+    align-items: baseline;
+    justify-content: flex-end;
+    line-height: 1;
+    min-width: 35px; /* Narrower to accommodate value + unit */
+    transition: color 0.2s ease;
+    margin-left: auto;
+}
+
+.signal-quality-visualizer__channel-status-container {
+    display: flex;
+    align-items: baseline;
+    gap: 1px;
+    justify-content: center;
+}
+
+.signal-quality-visualizer__channel-status-value {
+    font-size: 9px;
+    font-weight: var(--font-weight-bold, 700);
+    font-family: 'Courier New', monospace; /* Monospace for numeric values */
+    line-height: 1;
+}
+
+.signal-quality-visualizer__channel-status-unit {
+    font-size: 6px;
+    font-weight: var(--font-weight-normal, 400);
+    opacity: 0.7;
+    line-height: 1;
+    margin-left: 1px;
+}
+
+.signal-quality-visualizer__channel-status[data-status="good"] .signal-quality-visualizer__channel-status-value {
+    color: #4caf50;
+}
+
+.signal-quality-visualizer__channel-status[data-status="ok"] .signal-quality-visualizer__channel-status-value {
+    color: #ff9800;
+}
+
+.signal-quality-visualizer__channel-status[data-status="poor"] .signal-quality-visualizer__channel-status-value {
+    color: #f44336;
+}
+
+.signal-quality-visualizer__channel-status[data-status="disconnected"] .signal-quality-visualizer__channel-status-value,
+.signal-quality-visualizer__channel-status[data-status="waiting"] .signal-quality-visualizer__channel-status-value {
+    color: #999;
+}
+
+.signal-quality-visualizer__channel-status[data-status="error"] .signal-quality-visualizer__channel-status-value {
+    color: #f44336;
+}
+
+/* Unit color inherits from parent status */
+.signal-quality-visualizer__channel-status[data-status="good"] .signal-quality-visualizer__channel-status-unit {
+    color: #4caf50;
+}
+
+.signal-quality-visualizer__channel-status[data-status="ok"] .signal-quality-visualizer__channel-status-unit {
+    color: #ff9800;
+}
+
+.signal-quality-visualizer__channel-status[data-status="poor"] .signal-quality-visualizer__channel-status-unit {
+    color: #f44336;
+}
+
+.signal-quality-visualizer__channel-status[data-status="disconnected"] .signal-quality-visualizer__channel-status-unit,
+.signal-quality-visualizer__channel-status[data-status="waiting"] .signal-quality-visualizer__channel-status-unit {
+    color: #999;
+}
+
+/* Summary text */
+.signal-quality-visualizer__minimized-summary {
+    font-size: 9px;
+    color: #666;
+    text-align: center;
+    margin-top: 3px;
+    padding-top: 3px;
+    border-top: 1px solid #e0e0e0;
+    font-weight: var(--font-weight-medium, 500);
+    line-height: 1.2;
+}
+
+/* Expanded panel */
+.signal-quality-visualizer__panel {
+    position: absolute;
+    bottom: calc(100% + var(--spacing-sm, 8px)); /* Above minimized button */
+    right: 0;
+    width: 400px;
+    max-width: calc(100vw - 40px); /* Responsive */
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15), 0 4px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 0; /* Brutalistic design */
+    overflow: hidden;
+    animation: slideUp 0.2s ease;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Panel header */
+.signal-quality-visualizer__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--spacing-md, 16px);
+    border-bottom: 1px solid #e0e0e0;
+    background: #fafafa;
+}
+
+.signal-quality-visualizer__title {
+    font-size: var(--font-size-base, 14px);
+    font-weight: var(--font-weight-medium, 500);
+    color: #333;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.signal-quality-visualizer__close-btn {
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    background: transparent;
+    border: none;
+    font-size: 20px;
+    color: #666;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    transition: color 0.15s ease;
+    border-radius: 0;
+}
+
+.signal-quality-visualizer__close-btn:hover {
+    color: #000;
+}
+
+/* Connection status */
+.signal-quality-visualizer__status {
+    padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
+    font-size: var(--font-size-sm, 12px);
+    color: #666;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.signal-quality-visualizer__status--connected {
+    color: #4caf50;
+    font-weight: var(--font-weight-medium, 500);
+}
+
+.signal-quality-visualizer__status--disconnected {
+    color: #999;
+}
+
+.signal-quality-visualizer__status--preparing {
+    color: #ff9800;
+}
+
+.signal-quality-visualizer__status--stopped {
+    color: #666;
+}
+
+.signal-quality-visualizer__status--released {
+    color: #999;
+}
+
+.signal-quality-visualizer__status--error {
+    color: #f44336;
+    font-weight: var(--font-weight-medium, 500);
+}
+
+/* Last update time */
+.signal-quality-visualizer__last-update {
+    padding: var(--spacing-xs, 4px) var(--spacing-md, 16px);
+    font-size: 11px;
+    color: #999;
+    border-bottom: 1px solid #e0e0e0;
+    font-family: 'Courier New', monospace;
+}
+
+.signal-quality-visualizer__last-update--active {
+    color: #666;
+}
+
+.signal-quality-visualizer__last-update--stale {
+    color: #ff9800;
+    font-weight: var(--font-weight-medium, 500);
+}
+
+/* Quality table */
+.signal-quality-visualizer__table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--font-size-sm, 12px);
+}
+
+.signal-quality-visualizer__table thead {
+    background: #fafafa;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.signal-quality-visualizer__table th {
+    padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
+    text-align: left;
+    font-weight: var(--font-weight-medium, 500);
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-size: 11px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.signal-quality-visualizer__table th:first-child {
+    padding-left: var(--spacing-md, 16px);
+}
+
+.signal-quality-visualizer__table th:last-child {
+    padding-right: var(--spacing-md, 16px);
+}
+
+.signal-quality-visualizer__table tbody tr {
+    border-bottom: 1px solid #f0f0f0;
+    transition: background 0.15s ease;
+}
+
+.signal-quality-visualizer__table tbody tr:hover {
+    background: #fafafa;
+}
+
+.signal-quality-visualizer__table tbody tr:last-child {
+    border-bottom: none;
+}
+
+/* Row quality states */
+.signal-quality-visualizer__row--good {
+    background: rgba(76, 175, 80, 0.05);
+}
+
+.signal-quality-visualizer__row--ok {
+    background: rgba(255, 152, 0, 0.05);
+}
+
+.signal-quality-visualizer__row--poor {
+    background: rgba(244, 67, 54, 0.05);
+}
+
+.signal-quality-visualizer__table td {
+    padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
+    color: #333;
+}
+
+.signal-quality-visualizer__table td:first-child {
+    padding-left: var(--spacing-md, 16px);
+}
+
+.signal-quality-visualizer__table td:last-child {
+    padding-right: var(--spacing-md, 16px);
+}
+
+.signal-quality-visualizer__channel {
+    font-weight: var(--font-weight-medium, 500);
+    font-family: 'Courier New', monospace;
+}
+
+.signal-quality-visualizer__rms {
+    font-family: 'Courier New', monospace;
+    text-align: right;
+}
+
+.signal-quality-visualizer__p60 {
+    font-family: 'Courier New', monospace;
+    text-align: right;
+}
+
+/* Quality badge */
+.signal-quality-visualizer__quality-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 0; /* Brutalistic */
+    font-size: 11px;
+    font-weight: var(--font-weight-medium, 500);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.signal-quality-visualizer__quality-badge--good {
+    background: #4caf50;
+    color: #fff;
+}
+
+.signal-quality-visualizer__quality-badge--ok {
+    background: #ff9800;
+    color: #fff;
+}
+
+.signal-quality-visualizer__quality-badge--poor {
+    background: #f44336;
+    color: #fff;
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+    .signal-quality-visualizer__panel {
+        width: calc(100vw - 20px);
+        right: -10px;
+    }
+    
+    .signal-quality-visualizer {
+        right: 10px;
+        bottom: 10px;
+    }
+}

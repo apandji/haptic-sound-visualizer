@@ -1,0 +1,633 @@
+/* SessionInfo Component Styles */
+
+.session-info {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    position: relative;
+}
+
+/* When SessionInfo is in a sidebar container, keep border/shadow like PatternQueue */
+.sidebar .session-info,
+.session-sidebar .session-info,
+[id*="sidebar"] .session-info {
+    /* Keep border, shadow, background - matches PatternQueue styling */
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    height: 100%;
+}
+
+/* SessionInfo Header - matches PATTERN LIBRARY style */
+.session-info__header {
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-medium);
+    margin-bottom: var(--spacing-lg);
+    margin-top: 0;
+    padding: var(--spacing-lg) var(--spacing-xl) 0 var(--spacing-xl);
+    color: #000;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    flex-shrink: 0;
+}
+
+/* Validation Error Message */
+.session-info__validation-error {
+    margin: 0 var(--spacing-xl) var(--spacing-md) var(--spacing-xl);
+    padding: var(--spacing-md);
+    background: #fff5f5;
+    border: 1px solid #ffcdd2;
+    border-left: 3px solid #d32f2f;
+    border-radius: 4px;
+    color: #d32f2f;
+    font-size: var(--font-size-sm);
+    line-height: var(--line-height-normal);
+    animation: slideDown 0.3s ease;
+    transition: opacity 0.3s ease;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* When SessionInfo is in a sidebar, match PatternQueue header styling */
+.sidebar .session-info .session-info__header,
+.session-sidebar .session-info .session-info__header,
+[id*="sidebar"] .session-info .session-info__header {
+    /* No sticky positioning - just regular header like PatternQueue */
+    padding: var(--spacing-lg) var(--spacing-xl) 0 var(--spacing-xl); /* Match PatternQueue header padding */
+    margin-top: 0;
+    margin-bottom: var(--spacing-lg); /* Match PatternQueue header margin-bottom */
+}
+
+/* Form should scroll when in sidebar - like PatternQueue list */
+.sidebar .session-info .session-info__form,
+.session-sidebar .session-info .session-info__form,
+[id*="sidebar"] .session-info .session-info__form {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    min-height: 0; /* Important for flex children to scroll */
+}
+
+.session-info__header-left {
+    display: flex;
+    align-items: baseline;
+    gap: var(--spacing-sm);
+}
+
+.session-info__header-text {
+    /* Main header text */
+}
+
+.session-info__header-id {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-normal);
+    color: #999;
+    text-transform: none;
+    letter-spacing: 0;
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Courier New', monospace;
+}
+
+/* Session Estimate Info Panel - Well Style */
+.session-info__estimate {
+    padding: var(--spacing-md) var(--spacing-lg);
+    margin: 0 var(--spacing-xl) var(--spacing-lg) var(--spacing-xl);
+    background: #f9f9f9;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    flex-shrink: 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-md);
+    opacity: 1;
+    transform: translateY(0);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.session-info__estimate[style*="display: none"] {
+    opacity: 0;
+    transform: translateY(-8px);
+}
+
+.session-info__estimate-section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+}
+
+.session-info__estimate-label {
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-medium);
+    color: #999;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    line-height: 1.2;
+}
+
+.session-info__estimate-value {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-normal);
+    color: #666;
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Courier New', monospace;
+    line-height: 1.3;
+}
+
+.session-info__estimate-value--patterns {
+    color: #666;
+}
+
+.session-info__estimate-value--duration {
+    color: #666;
+}
+
+/* SessionInfo Form */
+.session-info__form {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0 var(--spacing-xl) var(--spacing-lg) var(--spacing-xl);
+    /* Smooth scrolling similar to explorer */
+    scrollbar-width: thin;
+    scrollbar-color: #ccc transparent;
+}
+
+/* Webkit scrollbar styling */
+.session-info__form::-webkit-scrollbar {
+    width: 8px;
+}
+
+.session-info__form::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.session-info__form::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 4px;
+}
+
+.session-info__form::-webkit-scrollbar-thumb:hover {
+    background: #999;
+}
+
+/* Form Field Groups */
+.session-info__field-group {
+    margin-bottom: var(--spacing-xl);
+    padding-bottom: var(--spacing-lg);
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.session-info__field-group:last-of-type {
+    border-bottom: none;
+    padding-bottom: 0;
+    margin-bottom: 0;
+}
+
+.session-info__field-group-title {
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-medium);
+    color: #999;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: var(--spacing-md);
+}
+
+.session-info__field-group-fields {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+}
+
+/* Form Field */
+.session-info__field {
+    margin-bottom: var(--spacing-md);
+}
+
+.session-info__field-group .session-info__field {
+    margin-bottom: 0;
+}
+
+.session-info__field:last-child {
+    margin-bottom: 0;
+}
+
+/* Ensure consistent spacing for nested fields */
+.session-info__participant-form .session-info__field {
+    margin-bottom: var(--spacing-md);
+}
+
+/* Select + Button Row */
+.session-info__select-button-row {
+    display: flex;
+    gap: var(--spacing-xs);
+    align-items: stretch;
+}
+
+.session-info__select-button-row .session-info__select {
+    flex: 1;
+}
+
+.session-info__add-button,
+.session-info__action-button {
+    padding: 6px var(--spacing-sm);
+    border-radius: 2px;
+    cursor: pointer;
+    font-size: var(--font-size-sm);
+    font-family: inherit;
+    font-weight: var(--font-weight-medium);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    transition: background 0.15s ease, border-color 0.15s ease;
+    white-space: nowrap;
+    flex-shrink: 0;
+    min-width: 60px;
+}
+
+.session-info__add-button {
+    background: #000;
+    border: 1px solid #000;
+    color: #fff;
+}
+
+.session-info__add-button:hover {
+    background: #333;
+    border-color: #333;
+}
+
+.session-info__add-button:active {
+    background: #000;
+}
+
+.session-info__add-button:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
+}
+
+.session-info__action-button--cancel {
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    color: #666;
+}
+
+.session-info__action-button--cancel:hover {
+    background: #f5f5f5;
+    border-color: #d0d0d0;
+    color: #333;
+}
+
+.session-info__action-button--save {
+    background: #000;
+    border: 1px solid #000;
+    color: #fff;
+}
+
+.session-info__action-button--save:hover {
+    background: #333;
+    border-color: #333;
+}
+
+.session-info__action-button:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
+}
+
+/* Participant Creation Form */
+.session-info__participant-form {
+    margin-top: var(--spacing-md);
+    padding: var(--spacing-md);
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+}
+
+.session-info__participant-form .session-info__field {
+    margin-bottom: var(--spacing-md);
+}
+
+.session-info__participant-form .session-info__field:last-child {
+    margin-bottom: 0;
+}
+
+.session-info__participant-form-actions {
+    display: flex;
+    gap: var(--spacing-sm);
+    justify-content: flex-end;
+    margin-top: var(--spacing-md);
+    padding-top: var(--spacing-md);
+    border-top: 1px solid #e0e0e0;
+}
+
+.session-info__form-button {
+    padding: 6px var(--spacing-md);
+    border: 1px solid #e0e0e0;
+    border-radius: 2px;
+    cursor: pointer;
+    font-size: var(--font-size-sm);
+    font-family: inherit;
+    font-weight: var(--font-weight-medium);
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.session-info__form-button--cancel {
+    background: #fff;
+    color: #666;
+}
+
+.session-info__form-button--cancel:hover {
+    background: #f5f5f5;
+    border-color: #d0d0d0;
+    color: #333;
+}
+
+.session-info__form-button--save {
+    background: #000;
+    border-color: #000;
+    color: #fff;
+}
+
+.session-info__form-button--save:hover {
+    background: #333;
+    border-color: #333;
+}
+
+.session-info__form-button:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
+}
+
+/* Label */
+.session-info__label {
+    display: block;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    color: #333;
+    margin-bottom: var(--spacing-xs);
+    cursor: pointer;
+}
+
+/* Input Styles - match FilterPanel search input */
+.session-info__input {
+    width: 100%;
+    padding: 6px var(--spacing-sm);
+    border: 1px solid #e0e0e0;
+    border-radius: 2px;
+    font-size: var(--font-size-base);
+    font-family: inherit;
+    color: #333;
+    background: #fff;
+    box-sizing: border-box;
+    transition: border-color 0.15s ease;
+}
+
+.session-info__input:focus {
+    outline: none;
+    border-color: #000;
+    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.05);
+    background: #fff;
+}
+
+.session-info__input:hover:not(:disabled):not(:focus) {
+    border-color: #ccc;
+}
+
+.session-info__input::placeholder {
+    color: #999;
+}
+
+/* Select placeholder option styling - make it subtle (matches placeholder color) */
+.session-info__select option[value=""][disabled] {
+    color: #999;
+    font-weight: var(--font-weight-normal);
+    font-style: normal;
+}
+
+/* Select Input */
+.session-info__select {
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23333' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right var(--spacing-sm) center;
+    padding-right: calc(var(--spacing-sm) + 12px + var(--spacing-xs));
+    color: #333; /* Default text color */
+}
+
+.session-info__select:hover {
+    border-color: #ccc;
+}
+
+/* Style select when placeholder is selected - make text lighter */
+.session-info__select:focus {
+    outline: none;
+    border-color: #000;
+    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.05);
+    background: #fff;
+}
+
+.session-info__select:invalid,
+.session-info__select option[value=""][disabled]:checked + * {
+    color: #999;
+}
+
+/* Placeholder option styling */
+.session-info__select option[value=""][disabled] {
+    color: #999;
+    font-weight: var(--font-weight-normal);
+}
+
+/* When placeholder is selected, style the select text */
+.session-info__select:has(option[value=""][disabled]:checked) {
+    color: #999;
+}
+
+/* Textarea */
+.session-info__textarea {
+    resize: vertical;
+    min-height: 60px;
+    font-family: inherit;
+    line-height: 1.5;
+}
+
+/* Invalid State */
+.session-info__input--invalid {
+    border-color: #d32f2f;
+    background-color: #fff5f5;
+}
+
+.session-info__input--invalid:focus {
+    border-color: #d32f2f;
+    box-shadow: 0 0 0 2px rgba(211, 47, 47, 0.1);
+}
+
+/* Error Message */
+.session-info__error-message {
+    display: none;
+    font-size: var(--font-size-xs);
+    color: #d32f2f;
+    margin-top: var(--spacing-xs);
+    line-height: 1.4;
+    animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Error message visibility - show when input is invalid */
+.session-info__field:has(.session-info__input--invalid) .session-info__error-message {
+    display: block;
+}
+
+/* Fallback for browsers that don't support :has() */
+.session-info__input--invalid + .session-info__error-message,
+.session-info__input--invalid ~ .session-info__error-message {
+    display: block;
+}
+
+/* Disabled State */
+.session-info__input:disabled {
+    background: #f5f5f5;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+/* SessionInfo Footer - for auxiliary functions */
+.session-info__footer {
+    padding: var(--spacing-md) var(--spacing-xl);
+    border-top: 1px solid #e0e0e0;
+    flex-shrink: 0;
+    background: #fff;
+    transition: background 0.2s ease;
+    display: flex;
+    justify-content: flex-end;
+}
+
+/* START SESSION Button Container - placed after Notes field */
+.session-info__start-button-container {
+    margin-top: var(--spacing-lg);
+    padding-top: var(--spacing-lg);
+    border-top: 1px solid #e0e0e0;
+}
+
+/* START SESSION Button - larger and more prominent */
+.session-info__start-button {
+    width: 100%;
+    padding: 10px var(--spacing-md);
+    background: #000;
+    border: 1px solid #000;
+    border-radius: 0;
+    cursor: pointer;
+    font-size: var(--font-size-base);
+    font-family: inherit;
+    color: #fff;
+    font-weight: var(--font-weight-semibold);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease, opacity 0.2s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.session-info__start-button:hover:not(:disabled) {
+    background: #333;
+    border-color: #333;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.25);
+}
+
+.session-info__start-button:active:not(:disabled) {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.session-info__start-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: #f5f5f5;
+    border-color: #e0e0e0;
+    color: #999;
+    transform: none;
+    box-shadow: none;
+}
+
+.session-info__start-button:disabled:hover {
+    background: #f5f5f5;
+    border-color: #e0e0e0;
+    color: #999;
+    transform: none;
+    box-shadow: none;
+}
+
+.session-info__start-button:focus {
+    outline: none;
+    border-color: #000;
+    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
+}
+
+/* EXPORT SESSIONS Button - secondary style */
+.session-info__export-button {
+    padding: 6px var(--spacing-md);
+    background: #f5f5f5;
+    border: 1px solid #e0e0e0;
+    border-radius: 2px;
+    cursor: pointer;
+    font-size: var(--font-size-sm);
+    font-family: inherit;
+    color: #666;
+    font-weight: var(--font-weight-medium);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
+    min-width: 120px;
+}
+
+.session-info__export-button:hover:not(:disabled) {
+    background: #e8e8e8;
+    border-color: #d0d0d0;
+    color: #333;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.session-info__export-button:active:not(:disabled) {
+    transform: translateY(0);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.session-info__export-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.session-info__export-button:disabled:hover {
+    background: #f5f5f5;
+    border-color: #e0e0e0;
+    color: #666;
+    transform: none;
+    box-shadow: none;
+}
+
+.session-info__export-button:focus {
+    outline: none;
+    border-color: #999;
+    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.05);
+}

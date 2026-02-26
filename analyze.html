@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SAIL Pattern Library - Analyze</title>
+    <!-- Page CSS -->
+    <link rel="stylesheet" href="css/pages/analyze.css?v=2026-02-26.1">
+
+    <!-- Component CSS -->
+    <link rel="stylesheet" href="css/components/base/patternExplorer.css?v=2026-02-26.1">
+    <link rel="stylesheet" href="css/components/base/analysisDataLoader.css?v=2026-02-26.1">
+    <link rel="stylesheet" href="css/components/variants/patternExplorerForAnalysis.css?v=2026-02-26.1">
+    <link rel="stylesheet" href="css/components/base/summaryStats.css?v=2026-02-26.1">
+    <link rel="stylesheet" href="css/components/base/radarChart.css?v=2026-02-26.1">
+    <link rel="stylesheet" href="css/components/base/boxPlotChart.css?v=2026-02-26.1">
+    <link rel="stylesheet" href="css/components/base/timeSeriesChart.css?v=2026-02-26.1">
+    <link rel="stylesheet" href="css/components/base/tagFrequencyChart.css?v=2026-02-26.1">
+    <link rel="stylesheet" href="css/components/base/tagWordCloud.css?v=2026-02-26.1">
+</head>
+<body>
+    <!-- Top Navigation Header -->
+    <div class="top-header">
+        <a href="index.html" class="nav-link">Explore</a>
+        <span class="nav-separator">|</span>
+        <a href="test.html" class="nav-link">Test</a>
+        <span class="nav-separator">|</span>
+        <a href="analyze.html" class="nav-link active">Analyze</a>
+    </div>
+
+    <!-- Page Title Header -->
+    <div class="page-title-header">
+        <h1 class="page-title">Analyze Results</h1>
+    </div>
+
+    <!-- Main Layout -->
+    <div class="layout">
+        <!-- Left Sidebar -->
+        <div class="analyze-sidebar">
+            <div id="dataLoader"></div>
+            <div id="patternList"></div>
+        </div>
+
+        <!-- Main Content Area -->
+        <div class="analyze-main">
+            <div class="analyze-main__placeholder" id="analyzePlaceholder">
+                Load session data to begin analysis.
+            </div>
+            <div class="analyze-main__content" id="analyzeContent">
+                <div id="summaryStats"></div>
+                <div class="analyze-main__charts-grid">
+                    <div class="analyze-main__chart-row">
+                        <div class="analyze-main__chart-card analyze-main__chart-full">
+                            <div id="timeSeriesChart"></div>
+                        </div>
+                    </div>
+                    <div class="analyze-main__chart-row">
+                        <div class="analyze-main__chart-card">
+                            <div id="radarChart"></div>
+                        </div>
+                        <div class="analyze-main__chart-card">
+                            <div id="boxPlotChart"></div>
+                        </div>
+                    </div>
+                    <div class="analyze-main__chart-row">
+                        <div class="analyze-main__chart-card">
+                            <div id="tagFrequencyChart"></div>
+                        </div>
+                        <div class="analyze-main__chart-card">
+                            <div id="tagWordCloud"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Plotly.js CDN -->
+    <script src="https://cdn.plot.ly/plotly-2.35.2.min.js" charset="utf-8"></script>
+
+    <!-- Module -->
+    <script src="js/modules/analysisDataProcessor.js?v=2026-02-26.1"></script>
+
+    <!-- Components -->
+    <script src="js/components/base/patternExplorer.js?v=2026-02-26.1"></script>
+    <script src="js/components/base/analysisDataLoader.js?v=2026-02-26.1"></script>
+    <script src="js/components/variants/patternExplorerForAnalysis.js?v=2026-02-26.1"></script>
+    <script src="js/components/base/summaryStats.js?v=2026-02-26.1"></script>
+    <script src="js/components/base/radarChart.js?v=2026-02-26.1"></script>
+    <script src="js/components/base/boxPlotChart.js?v=2026-02-26.1"></script>
+    <script src="js/components/base/timeSeriesChart.js?v=2026-02-26.1"></script>
+    <script src="js/components/base/tagFrequencyChart.js?v=2026-02-26.1"></script>
+    <script src="js/components/base/tagWordCloud.js?v=2026-02-26.1"></script>
+    <!-- Page Script -->
+    <script src="js/analyze/config.js?v=2026-02-26.1"></script>
+    <script src="js/analyze/state.js?v=2026-02-26.1"></script>
+    <script src="js/analyze/app.js?v=2026-02-26.1"></script>
+    <script src="js/analyze/bootstrap.js?v=2026-02-26.1"></script>
+</body>
+</html>

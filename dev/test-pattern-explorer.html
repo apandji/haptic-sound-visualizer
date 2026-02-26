@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PatternExplorer Component Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Courier New', monospace;
+            background: #fafafa;
+            color: #333;
+            height: 100vh;
+            display: flex;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+        
+        .sidebar {
+            width: 250px;
+            background: #fff;
+            padding: 20px;
+            overflow-y: auto;
+            border-right: 1px solid #e0e0e0;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        #fileList {
+            flex: 1;
+            overflow-y: auto;
+        }
+        
+        .panel-header {
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 24px;
+            color: #999;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            padding: 0;
+        }
+        
+        .file-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 10px;
+            margin: 2px 0;
+            background: transparent;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 11px;
+            color: #666;
+            transition: all 0.15s ease;
+            position: relative;
+        }
+        
+        .file-item:hover {
+            background: #f5f5f5;
+            color: #333;
+        }
+        
+        .file-item.active {
+            background: #000;
+            color: #fff;
+        }
+        
+        .file-item-text {
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .file-item-play-btn {
+            flex-shrink: 0;
+            width: 20px;
+            height: 20px;
+            padding: 0;
+            background: transparent;
+            border: none;
+            color: inherit;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 2px;
+            transition: all 0.15s ease;
+            opacity: 0.6;
+        }
+        
+        .file-item-play-btn svg {
+            width: 16px;
+            height: 16px;
+            fill: currentColor;
+        }
+        
+        .file-item:hover .file-item-play-btn {
+            opacity: 1;
+        }
+        
+        .file-item-play-btn:hover {
+            background: rgba(0, 0, 0, 0.1);
+            opacity: 1;
+        }
+        
+        .file-item.active .file-item-play-btn {
+            opacity: 1;
+            color: #fff;
+        }
+        
+        .file-item.active .file-item-play-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        /* Progress Bar (optional) */
+        .file-item-progress {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+        
+        .file-item-progress.playing {
+            opacity: 1;
+        }
+        
+        .file-item-progress-fill {
+            height: 100%;
+            background: currentColor;
+            width: 0%;
+            transition: width 0.1s linear;
+        }
+        
+        .file-item.active .file-item-progress-fill {
+            background: #fff;
+        }
+        
+        .file-item {
+            position: relative; /* Needed for absolute positioning of progress bar */
+        }
+        
+        .main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #fff;
+            padding: 20px;
+        }
+        
+        .test-info {
+            background: #f0f0f0;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        
+        .test-info h2 {
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+        
+        .test-info p {
+            font-size: 11px;
+            margin: 5px 0;
+            color: #666;
+        }
+        
+        .test-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .test-controls button {
+            padding: 8px 16px;
+            background: #000;
+            color: #fff;
+            border: none;
+            border-radius: 2px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        
+        .test-controls button:hover {
+            background: #333;
+        }
+        
+        .console-output {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .console-output .log {
+            color: #d4d4d4;
+        }
+        
+        .console-output .error {
+            color: #f48771;
+        }
+        
+        .console-output .success {
+            color: #89d185;
+        }
+        
+        /* Tooltip styles */
+        .file-tooltip {
+            position: fixed;
+            background: #333;
+            color: #fff;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 11px;
+            pointer-events: none;
+            z-index: 10000;
+            visibility: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        
+        .file-tooltip.show {
+            visibility: visible;
+        }
+        
+        .tooltip-row {
+            margin: 2px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <div id="fileList"></div>
+    </div>
+    
+    <div class="main">
+        <div class="test-info">
+            <h2>PatternExplorer Component Test</h2>
+            <p><strong>Status:</strong> <span id="status">Initializing...</span></p>
+            <p><strong>Files Loaded:</strong> <span id="fileCount">0</span></p>
+            <p><strong>Selected File:</strong> <span id="selectedFile">None</span></p>
+        </div>
+        
+        <div class="test-controls">
+            <button onclick="testLoadFiles()">Load Test Files</button>
+            <button onclick="testLoadRealFiles()">Load Real Files</button>
+            <button onclick="testSetActive()">Set Active File</button>
+            <button onclick="testUpdateMetadata()">Update Metadata</button>
+            <button onclick="clearConsole()">Clear Console</button>
+        </div>
+        
+        <div class="console-output" id="console"></div>
+    </div>
+    
+    <script src="../js/components/base/patternExplorer.js"></script>
+    <script>
+        // Custom console that displays in the page
+        const consoleDiv = document.getElementById('console');
+        const originalLog = console.log;
+        const originalError = console.error;
+        
+        function addToConsole(message, type = 'log') {
+            const div = document.createElement('div');
+            div.className = type;
+            div.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            consoleDiv.appendChild(div);
+            consoleDiv.scrollTop = consoleDiv.scrollHeight;
+        }
+        
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            addToConsole(args.join(' '), 'log');
+        };
+        
+        console.error = function(...args) {
+            originalError.apply(console, args);
+            addToConsole(args.join(' '), 'error');
+        };
+        
+        function clearConsole() {
+            consoleDiv.innerHTML = '';
+        }
+        
+        // Initialize PatternExplorer
+        let patternExplorer;
+        let testFiles = [];
+        let metadata = {};
+        
+        // Test metadata
+        const testMetadata = {
+            'A_100_1.mp3': {
+                rms_mean: 0.123,
+                duration: 5.5,
+                stereo_balance: 0.0,
+                stereo_movement: 0.1
+            },
+            'A_100_2.mp3': {
+                rms_mean: 0.234,
+                duration: 6.2,
+                stereo_balance: -0.3,
+                stereo_movement: 0.2
+            },
+            'A_110_1.mp3': {
+                rms_mean: 0.345,
+                duration: 7.8,
+                stereo_balance: 0.5,
+                stereo_movement: 0.3
+            }
+        };
+        
+        function initPatternExplorer() {
+            try {
+                patternExplorer = new PatternExplorer({
+                    containerId: 'fileList',
+                    metadata: metadata,
+            onFileClick: (file) => {
+                console.log(`✅ File clicked: ${file.name}`);
+                document.getElementById('selectedFile').textContent = file.name;
+            },
+            onFilePreview: (file) => {
+                console.log(`▶️ File preview clicked: ${file.name}`);
+                document.getElementById('selectedFile').textContent = file.name + ' (preview)';
+                
+                // Note: setPlayingFile is already called by handlePlayClick
+                // This callback is just for handling the actual audio playback
+                // The component will update the icon automatically
+            },
+            onPlayStateChange: (file, isPlaying) => {
+                console.log(`${isPlaying ? '▶️' : '⏸️'} ${file.name} ${isPlaying ? 'playing' : 'paused'}`);
+            },
+            onFileHover: (file, meta) => {
+                console.log(`ℹ️ File hovered: ${file.name}`, meta ? '(has metadata)' : '(no metadata)');
+            }
+                });
+                
+                document.getElementById('status').textContent = 'Ready';
+                document.getElementById('status').style.color = '#89d185';
+                console.log('✅ PatternExplorer initialized successfully');
+            } catch (error) {
+                console.error('❌ Error initializing PatternExplorer:', error);
+                document.getElementById('status').textContent = 'Error: ' + error.message;
+                document.getElementById('status').style.color = '#f48771';
+            }
+        }
+        
+        function testLoadFiles() {
+            console.log('🧪 Test: Loading test files...');
+            testFiles = [
+                { name: 'A_100_1.mp3', path: '../audio_files/A_100_1.mp3' },
+                { name: 'A_100_2.mp3', path: '../audio_files/A_100_2.mp3' },
+                { name: 'A_110_1.mp3', path: '../audio_files/A_110_1.mp3' },
+                { name: 'test_file.mp3', path: '../audio_files/test_file.mp3' }
+            ];
+            
+            metadata = testMetadata;
+            patternExplorer.updateMetadata(metadata);
+            patternExplorer.render(testFiles);
+            
+            document.getElementById('fileCount').textContent = testFiles.length;
+            console.log(`✅ Rendered ${testFiles.length} test files`);
+        }
+        
+        async function testLoadRealFiles() {
+            console.log('🧪 Test: Loading real files from API...');
+            try {
+                const response = await fetch('/api/list-audio-files');
+                if (response.ok) {
+                    const files = await response.json();
+                    if (Array.isArray(files)) {
+                        // Take first 20 files for testing
+                        testFiles = files.slice(0, 20);
+                        
+                        // Try to load metadata
+                        try {
+                            const metaResponse = await fetch('../pattern_metadata.json');
+                            if (metaResponse.ok) {
+                                const metaData = await metaResponse.json();
+                                if (metaData.patterns) {
+                                    metadata = {};
+                                    metaData.patterns.forEach(pattern => {
+                                        metadata[pattern.filename] = pattern;
+                                    });
+                                }
+                            }
+                        } catch (e) {
+                            console.log('⚠️ Could not load metadata:', e.message);
+                        }
+                        
+                        patternExplorer.updateMetadata(metadata);
+                        patternExplorer.render(testFiles);
+                        
+                        document.getElementById('fileCount').textContent = testFiles.length;
+                        console.log(`✅ Loaded ${testFiles.length} real files`);
+                    }
+                } else {
+                    throw new Error('API returned non-OK status');
+                }
+            } catch (error) {
+                console.error('❌ Error loading real files:', error);
+                console.log('💡 Tip: Make sure the server is running (python3 server.py)');
+            }
+        }
+        
+        function testSetActive() {
+            if (testFiles.length === 0) {
+                console.error('❌ No files loaded. Load files first.');
+                return;
+            }
+            
+            const randomFile = testFiles[Math.floor(Math.random() * testFiles.length)];
+            console.log(`🧪 Test: Setting active file to ${randomFile.name}`);
+            patternExplorer.setActiveFile(randomFile.path);
+            document.getElementById('selectedFile').textContent = randomFile.name;
+        }
+        
+        function testUpdateMetadata() {
+            console.log('🧪 Test: Updating metadata...');
+            const newMetadata = {
+                ...metadata,
+                'test_file.mp3': {
+                    rms_mean: 0.999,
+                    duration: 10.5,
+                    stereo_balance: 0.8,
+                    stereo_movement: 0.9
+                }
+            };
+            
+            patternExplorer.updateMetadata(newMetadata);
+            console.log('✅ Metadata updated');
+            
+            // Re-render to show updated tooltips
+            if (testFiles.length > 0) {
+                patternExplorer.render(testFiles);
+            }
+        }
+        
+        // Initialize on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            console.log('🚀 Initializing PatternExplorer test page...');
+            initPatternExplorer();
+        });
+    </script>
+</body>
+</html>

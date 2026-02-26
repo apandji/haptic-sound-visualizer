@@ -1,0 +1,515 @@
+/* FilterPanel Component Styles */
+
+/* Sticky Wrapper - contains header + search + filters (like index.html's #filters) */
+.pattern-explorer-sticky-wrapper {
+    position: sticky;
+    top: 0;
+    background: #fff !important; /* Ensure solid background */
+    z-index: 1000 !important; /* Much higher z-index to prevent files from showing behind */
+    padding: var(--spacing-lg) var(--spacing-xl) var(--spacing-sm) var(--spacing-xl); /* Top padding for header, horizontal padding, bottom padding */
+    margin-bottom: var(--spacing-sm); /* More condensed */
+    border-bottom: 1px solid #e0e0e0; /* Border separates from file list */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05); /* Subtle shadow to ensure it's above content */
+    flex-shrink: 0; /* Don't shrink - fixed height */
+}
+
+/* Ensure parent container (sidebar) doesn't scroll - only file list does */
+/* Target parent containers that have the sticky wrapper */
+:has(> .pattern-explorer-sticky-wrapper) {
+    display: flex !important;
+    flex-direction: column !important;
+    overflow-y: hidden !important; /* Parent doesn't scroll */
+    overflow-x: hidden !important;
+    height: 100% !important;
+}
+
+/* Pattern Explorer Header (inside sticky wrapper, no longer sticky itself) */
+.pattern-explorer-header {
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-medium);
+    margin-bottom: var(--spacing-lg);
+    margin-top: 0;
+    padding: 0; /* No padding - wrapper handles it */
+    color: #000;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    display: flex;
+    align-items: baseline;
+    gap: var(--spacing-sm);
+}
+
+.pattern-explorer-header__text {
+    /* Main header text */
+}
+
+.pattern-explorer-header__count {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-normal);
+    color: #999;
+    text-transform: none;
+    letter-spacing: 0;
+}
+
+/* Pattern Explorer Search (inside sticky wrapper, no longer sticky itself) */
+.pattern-explorer-search {
+    padding-bottom: var(--spacing-md);
+    margin-bottom: 0; /* No margin - filters will have border-top */
+    /* No border-bottom - border is on wrapper */
+}
+
+/* Search input - ensure all borders including bottom are visible */
+.pattern-explorer-search-input,
+input.pattern-explorer-search-input,
+.pattern-explorer-search .pattern-explorer-search-input,
+.pattern-explorer-sticky-wrapper .pattern-explorer-search-input,
+.pattern-explorer-sticky-wrapper input.pattern-explorer-search-input,
+#filterPanel_search.pattern-explorer-search-input {
+    width: 100%;
+    padding: 6px var(--spacing-sm);
+    border: 1px solid #e0e0e0 !important;
+    border-top: 1px solid #e0e0e0 !important;
+    border-right: 1px solid #e0e0e0 !important;
+    border-bottom: 1px solid #e0e0e0 !important;
+    border-left: 1px solid #e0e0e0 !important;
+    border-radius: 2px;
+    font-size: var(--font-size-base);
+    font-family: inherit;
+    color: #333;
+    background: #fff;
+    box-sizing: border-box;
+}
+
+.pattern-explorer-search-input:focus,
+input.pattern-explorer-search-input:focus,
+.pattern-explorer-search .pattern-explorer-search-input:focus,
+.pattern-explorer-sticky-wrapper .pattern-explorer-search-input:focus,
+.pattern-explorer-sticky-wrapper input.pattern-explorer-search-input:focus,
+#filterPanel_search.pattern-explorer-search-input:focus {
+    outline: none;
+    border: 1px solid #000 !important;
+    border-top: 1px solid #000 !important;
+    border-right: 1px solid #000 !important;
+    border-bottom: 1px solid #000 !important;
+    border-left: 1px solid #000 !important;
+}
+
+.pattern-explorer-search-input::placeholder {
+    color: #999;
+}
+
+/* Filter Panel Well (contained box for collapsible filters) - inside sticky wrapper */
+/* Brutalistic design: no rounded corners, minimal padding, sharp edges */
+.filter-panel--collapsible {
+    background: #fff !important; /* White background, not gray well */
+    border: none !important;
+    border-bottom: none !important; /* No border - wrapper has border-bottom */
+    border-top: none !important; /* No top border */
+    border-radius: 0; /* Brutalistic: no rounded corners */
+    padding: 0; /* No padding - more condensed */
+    margin-bottom: 0;
+    margin-top: 0; /* No top margin */
+    /* No longer sticky - wrapper handles sticky positioning */
+    transition: none; /* No transitions - brutalistic */
+}
+
+.filter-panel--collapsible.filter-panel--collapsed {
+    padding: 0; /* No padding when collapsed */
+    margin-bottom: 0;
+    margin-top: 0; /* No top margin */
+    /* Border-bottom is on wrapper, not here */
+}
+
+/* Sticky positioning for filter container when not in well */
+#filters:not(.filter-panel--collapsible),
+#filterPanel:not(.filter-panel--collapsible),
+[id*="filterPanel"]:not(.filter-panel--collapsible) {
+    position: sticky;
+    top: 0;
+    background: #fff;
+    z-index: 10;
+    padding-bottom: 12px;
+    margin-bottom: 12px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+/* Remove border-bottom from filter panel when inside sticky wrapper */
+/* Only target the actual filter panel container div, not child elements like search inputs */
+.pattern-explorer-sticky-wrapper > #filterPanel.filter-panel--collapsible {
+    border-bottom: none !important;
+}
+
+.filter-panel__search {
+    margin-bottom: 12px;
+}
+
+.filter-panel__search-input {
+    width: 100%;
+    padding: 6px 8px;
+    border: 1px solid #e0e0e0;
+    border-radius: 2px;
+    font-size: 13px;
+    font-family: inherit;
+    color: #333;
+    background: #fff;
+    box-sizing: border-box;
+    max-width: 100%; /* Prevent overflow */
+}
+
+.filter-panel__search-input:focus {
+    outline: none;
+    border-color: #000;
+}
+
+.filter-panel__search-input::placeholder {
+    color: #999;
+}
+
+.filter-panel__sliders {
+    /* Container for all slider groups */
+    border: none !important; /* No borders */
+    margin: 0 !important; /* No margin */
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+    padding: 0 !important; /* No padding */
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+}
+
+.filter-panel__group {
+    margin-bottom: 2px !important; /* More condensed */
+    margin-top: 0 !important; /* No top margin */
+    padding: 0 !important; /* No padding */
+    overflow: visible; /* Ensure slider handles aren't clipped */
+    /* No horizontal padding - slider container handles the padding for handles */
+    border: none !important; /* No borders */
+    border-bottom: none !important; /* No bottom border */
+    border-top: none !important; /* No top border */
+}
+
+/* Ensure no borders on dual-slider elements within groups */
+.filter-panel__group .dual-slider {
+    border: none !important;
+    border-top: none !important;
+    border-bottom: none !important;
+    margin-bottom: 0 !important;
+}
+
+.filter-panel--collapsible .filter-panel__group {
+    margin-bottom: 2px !important; /* Even more condensed in collapsible mode */
+    margin-top: 0 !important; /* No top margin */
+    padding: 0 !important; /* No padding */
+    border: none !important; /* No borders */
+    border-bottom: none !important; /* No bottom border */
+    border-top: none !important; /* No top border */
+}
+
+.filter-panel__label {
+    display: block;
+    font-size: 11px;
+    color: #333; /* Darker for better legibility */
+    margin-bottom: 6px; /* Slightly more space for legibility */
+    cursor: pointer;
+    position: relative;
+    font-weight: 500; /* Slightly bolder for better readability */
+    line-height: 1.5; /* Better line height for readability */
+}
+
+.filter-panel__label-text {
+    display: inline;
+}
+
+.filter-panel__display {
+    color: #555; /* Darker for better legibility */
+    font-weight: 400; /* Normal weight */
+    font-size: 11px;
+    margin-left: 6px; /* Slightly more space */
+    letter-spacing: 0.3px; /* Slight letter spacing for readability */
+}
+
+.filter-panel__reset {
+    margin-top: 2px !important; /* More condensed */
+    margin-bottom: 0 !important; /* No margin bottom */
+    width: 100%;
+    padding: 4px;
+    background: #f5f5f5;
+    border: 1px solid #e0e0e0 !important;
+    border-top: none !important; /* No top border to remove line above */
+    border-bottom: none !important; /* No bottom border */
+    border-radius: 2px;
+    cursor: pointer;
+    font-size: 12px;
+    font-family: inherit;
+    color: #666;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+    font-weight: 500;
+}
+
+.filter-panel__reset:hover {
+    background: #e8e8e8;
+    border-color: #d0d0d0;
+    color: #333;
+}
+
+.filter-panel__reset:active {
+    background: #e0e0e0;
+}
+
+/* Enhanced RESET button when filters are active */
+.filter-panel__reset.has-active-filters {
+    background: #000;
+    border-color: #000;
+    color: #fff;
+    font-weight: 600;
+}
+
+.filter-panel__reset.has-active-filters:hover {
+    background: #333;
+    border-color: #333;
+}
+
+/* Collapsible variant - well styling */
+.filter-panel--collapsible {
+    /* Well styling - contained box */
+    background: #f9f9f9;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    padding: 8px 12px;
+    margin-bottom: 12px;
+    position: sticky;
+    top: 0;
+    z-index: 9;
+    transition: all 0.2s ease;
+}
+
+.filter-panel--collapsible.filter-panel--collapsed {
+    padding: 8px 12px;
+}
+
+.filter-panel__toggle {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 4px; /* Tighter gap - brutalistic */
+    padding: 6px 0; /* Minimal padding */
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 10px;
+    font-weight: 500;
+    color: #333; /* Darker for brutalistic */
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: none; /* No transitions - brutalistic */
+    margin-bottom: 0;
+}
+
+.filter-panel__toggle:hover {
+    color: #333;
+}
+
+.filter-panel__toggle-icon {
+    display: inline-block;
+    font-size: 12px; /* Slightly larger for + / − */
+    font-weight: 600; /* Bolder for brutalistic */
+    transition: none; /* No transitions - brutalistic */
+    width: 14px;
+    text-align: center;
+    color: #000; /* Black for brutalistic */
+    line-height: 1;
+}
+
+.filter-panel__toggle-label {
+    flex: 1;
+    text-align: left;
+}
+
+.filter-panel__content {
+    overflow: hidden;
+    transition: none; /* No transitions - brutalistic */
+    max-height: 1000px;
+    opacity: 1;
+    margin-top: 0 !important; /* No margin - brutalistic */
+    margin-bottom: 0 !important; /* No margin bottom */
+    padding: 0 !important; /* No padding - more compact */
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    border: none !important; /* No borders */
+}
+
+.filter-panel--collapsed .filter-panel__content {
+    max-height: 0;
+    opacity: 0;
+    padding: 0;
+    margin-top: 0;
+    overflow: hidden;
+}
+
+.filter-panel--collapsed .filter-panel__search,
+.filter-panel--collapsed .filter-panel__sliders,
+.filter-panel--collapsed .filter-panel__reset {
+    display: none;
+}
+
+/* Compact variant for PatternExplorer - matching index.html style */
+.filter-panel--compact .filter-panel__search {
+    margin-bottom: 12px;
+}
+
+.filter-panel--compact .filter-panel__search-input {
+    padding: 6px 8px;
+    font-size: 13px;
+}
+
+.filter-panel--compact .filter-panel__group {
+    margin-top: 2px !important; /* More compact spacing */
+    margin-bottom: 0 !important;
+    padding: 0 !important; /* No padding */
+    border: none !important; /* No borders */
+    border-bottom: none !important; /* No bottom border */
+    border-top: none !important; /* No top border */
+}
+
+.filter-panel--compact .filter-panel__group:first-child {
+    margin-top: 0;
+}
+
+.filter-panel--compact .filter-panel__label {
+    font-size: 10px; /* Slightly larger for better legibility */
+    margin-bottom: 6px; /* Slightly more space for legibility */
+    font-weight: 500; /* Slightly bolder for readability */
+    color: #333; /* Darker for better legibility */
+    line-height: 1.5; /* Better line height for readability */
+}
+
+.filter-panel--compact .filter-panel__display {
+    font-size: 10px; /* Slightly larger for legibility */
+    font-weight: 400; /* Normal weight */
+    color: #555; /* Darker for better legibility */
+    margin-left: 6px; /* Slightly more space */
+    letter-spacing: 0.3px; /* Slight letter spacing for readability */
+}
+
+.filter-panel--compact .filter-panel__reset {
+    margin-top: 2px !important; /* More compact */
+    margin-bottom: 0 !important; /* No bottom margin */
+    padding: 3px; /* More compact */
+    font-size: 11px; /* More compact */
+    border-top: none !important; /* No top border to remove line above */
+    border-bottom: none !important; /* No bottom border */
+}
+
+/* Collapsible + Compact combination */
+.filter-panel--collapsible.filter-panel--compact .filter-panel__toggle {
+    padding: 2px 0; /* Even more compact */
+    font-size: 10px;
+    margin-bottom: 0;
+}
+
+.filter-panel--collapsible.filter-panel--compact .filter-panel__toggle-icon {
+    font-size: 9px;
+    width: 10px;
+}
+
+/* Collapsible variant toggle styling */
+.filter-panel--collapsible .filter-panel__toggle {
+    width: 100%;
+    padding: 6px 0;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: inherit;
+    color: #666;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    transition: color 0.15s ease;
+    margin-bottom: 0;
+}
+
+.filter-panel--collapsible.filter-panel--compact .filter-panel__toggle {
+    padding: 4px 0;
+    font-size: 10px;
+}
+
+.filter-panel__toggle:hover {
+    color: #000;
+}
+
+.filter-panel__toggle-icon {
+    font-size: 10px;
+    transition: transform 0.2s ease;
+    display: inline-block;
+}
+
+.filter-panel--compact .filter-panel__toggle-icon {
+    font-size: 8px;
+}
+
+.filter-panel__toggle-label {
+    flex: 1;
+    text-align: left;
+}
+
+.filter-panel__content {
+    /* Content area that can be collapsed */
+    transition: opacity 0.2s ease, max-height 0.3s ease;
+    overflow: hidden;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+    padding: 0 !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+}
+
+.filter-panel--collapsed .filter-panel__content {
+    display: none;
+    max-height: 0;
+    opacity: 0;
+    margin-top: 0;
+}
+
+/* Filter label tooltips */
+.filter-label-tooltip {
+    position: fixed;
+    background: #000;
+    color: #fff;
+    padding: 8px 10px;
+    border-radius: 3px;
+    font-size: 11px;
+    max-width: 250px;
+    white-space: normal;
+    z-index: 10000;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Courier New', monospace;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    line-height: 1.4;
+}
+
+.filter-label-tooltip.show {
+    opacity: 1;
+}
+
+.filter-label-tooltip::before {
+    content: '';
+    position: absolute;
+    top: var(--arrow-top, 50%);
+    transform: translateY(-50%);
+    border: 4px solid transparent;
+}
+
+.filter-label-tooltip:not(.flipped)::before {
+    right: 100%;
+    border-right-color: #000;
+}
+
+.filter-label-tooltip.flipped::before {
+    left: 100%;
+    border-left-color: #000;
+}

@@ -1,0 +1,98 @@
+.time-series-chart__header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--spacing-md);
+    gap: var(--spacing-md);
+}
+
+.time-series-chart__header {
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
+    color: #999;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    flex-shrink: 0;
+}
+
+.time-series-chart__controls {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+}
+
+.time-series-chart__band-toggles {
+    display: flex;
+    gap: var(--spacing-xs);
+}
+
+.time-series-chart__band-btn {
+    font-family: inherit;
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-medium);
+    padding: 3px 8px;
+    border: 1px solid #e0e0e0;
+    background: #fff;
+    color: #999;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    text-transform: capitalize;
+    letter-spacing: 0.3px;
+}
+
+.time-series-chart__band-btn:hover {
+    color: #333;
+    border-color: #ccc;
+}
+
+.time-series-chart__band-btn--active {
+    background: #333;
+    color: #fff;
+    border-color: #333;
+}
+
+.time-series-chart__band-btn--active:hover {
+    color: #fff;
+}
+
+/* Power mode toggle (ABS / REL) */
+.time-series-chart__power-toggle {
+    display: flex;
+    gap: 0;
+    border: 1px solid #e0e0e0;
+}
+
+.time-series-chart__power-btn {
+    font-family: inherit;
+    font-size: 9px;
+    font-weight: var(--font-weight-semibold);
+    padding: 3px 8px;
+    border: none;
+    background: #fff;
+    color: #bbb;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    letter-spacing: 0.5px;
+}
+
+.time-series-chart__power-btn + .time-series-chart__power-btn {
+    border-left: 1px solid #e0e0e0;
+}
+
+.time-series-chart__power-btn:hover {
+    color: #666;
+}
+
+.time-series-chart__power-btn--active {
+    background: #333;
+    color: #fff;
+}
+
+.time-series-chart__power-btn--active:hover {
+    color: #fff;
+}
+
+.time-series-chart__plot {
+    width: 100%;
+    min-height: 300px;
+}

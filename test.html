@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SAIL Pattern Library - Test</title>
+    <!-- Page CSS -->
+    <link rel="stylesheet" href="css/pages/test.css?v=2026-02-26.1">
+    
+    <!-- Component CSS -->
+    <link rel="stylesheet" href="css/components/base/patternExplorer.css?v=2026-02-26.1">
+    <link rel="stylesheet" href="css/components/base/filterPanel.css?v=2026-02-26.1">
+    <link rel="stylesheet" href="css/components/base/dualSlider.css?v=2026-02-26.1">
+    <link rel="stylesheet" href="css/components/base/patternQueue.css?v=2026-02-26.1">
+    <link rel="stylesheet" href="css/components/base/sessionInfo.css?v=2026-02-26.1">
+    <link rel="stylesheet" href="css/components/base/audioControls.css?v=2026-02-26.1">
+    <link rel="stylesheet" href="css/components/base/testExecutionOverlay.css?v=2026-02-26.1">
+    <link rel="stylesheet" href="css/components/base/trialTagsSurvey.css?v=2026-02-26.1">
+    <link rel="stylesheet" href="css/components/base/signalQualityVisualizer.css?v=2026-02-26.1">
+</head>
+<body>
+    <!-- Top Navigation Header -->
+    <div class="top-header">
+        <a href="index.html" class="nav-link">Explore</a>
+        <span class="nav-separator">|</span>
+        <a href="test.html" class="nav-link active">Test</a>
+        <span class="nav-separator">|</span>
+        <a href="analyze.html" class="nav-link">Analyze</a>
+    </div>
+    
+    <!-- Page Title Header -->
+    <div class="page-title-header">
+        <h1 class="page-title">Setup Test</h1>
+    </div>
+    
+    <!-- Main Layout -->
+    <div class="layout">
+        <!-- Left Sidebar: Pattern Explorer with Selection -->
+        <div class="sidebar">
+            <div id="filterPanel"></div>
+            <div id="fileList">Loading files...</div>
+        </div>
+        
+        <!-- Middle: Queue -->
+        <div class="queue-sidebar">
+            <div id="queue"></div>
+        </div>
+        
+        <!-- Right Sidebar: Session Info -->
+        <div class="session-sidebar">
+            <div id="sessionInfo"></div>
+        </div>
+    </div>
+    
+    <!-- Audio Progress Bar (Fixed Bottom) -->
+    <div class="audio-progress-bar" id="audioProgressBar">
+        <div class="audio-progress-bar__file" id="audioProgressFile">No file playing</div>
+        <div class="audio-progress-bar__progress">
+            <div class="audio-progress-bar__progress-fill" id="audioProgressFill"></div>
+        </div>
+        <div class="audio-progress-bar__time" id="audioProgressTime">0:00 / 0:00</div>
+    </div>
+    
+    <!-- Tooltip element (for file metadata) -->
+    <div id="fileTooltip" class="file-tooltip"></div>
+    
+    <!-- Test Execution Overlay -->
+    <div id="testExecutionOverlay"></div>
+    
+    <!-- Custom Confirmation Dialog -->
+    <div id="customConfirmOverlay" class="custom-confirm-overlay">
+        <div class="custom-confirm-dialog">
+            <div class="custom-confirm-title" id="customConfirmTitle">Confirm Action</div>
+            <div class="custom-confirm-message" id="customConfirmMessage"></div>
+            <div class="custom-confirm-buttons">
+                <button class="custom-confirm-btn custom-confirm-btn--cancel" id="customConfirmCancel">Cancel</button>
+                <button class="custom-confirm-btn custom-confirm-btn--confirm" id="customConfirmConfirm">Abort</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- p5.js dependencies for audio playback -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/p5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/addons/p5.sound.min.js"></script>
+    
+    <!-- Component JavaScript -->
+    <script src="js/modules/filters.js?v=2026-02-26.1"></script>
+    <script src="js/modules/sessionTimeEstimator.js?v=2026-02-26.1"></script>
+    <script src="js/modules/audioPlayer.js?v=2026-02-26.1"></script>
+    <script src="js/modules/testSession.js?v=2026-02-26.1"></script>
+    <script src="js/modules/eegDataCollector.js?v=2026-02-26.1"></script>
+    <script src="js/components/base/patternExplorer.js?v=2026-02-26.1"></script>
+    <script src="js/components/base/filterPanel.js?v=2026-02-26.1"></script>
+    <script src="js/components/base/dualSlider.js?v=2026-02-26.1"></script>
+    <script src="js/components/base/patternQueue.js?v=2026-02-26.1"></script>
+    <script src="js/components/base/sessionInfo.js?v=2026-02-26.1"></script>
+    <script src="js/components/base/testExecutionOverlay.js?v=2026-02-26.1"></script>
+    <script src="js/components/base/trialTagsSurvey.js?v=2026-02-26.1"></script>
+    <script src="js/components/base/signalQualityVisualizer.js?v=2026-02-26.1"></script>
+    <script src="js/components/variants/patternExplorerWithSelection.js?v=2026-02-26.1"></script>
+    <!-- Page Script -->
+    <script src="js/test/state.js?v=2026-02-26.1"></script>
+    <script src="js/test/dataAndComponents.js?v=2026-02-26.1"></script>
+    <script src="js/test/audioPreview.js?v=2026-02-26.1"></script>
+    <script src="js/test/sessionPersistence.js?v=2026-02-26.1"></script>
+    <script src="js/test/testExecution.js?v=2026-02-26.1"></script>
+    <script src="js/test/signalQuality.js?v=2026-02-26.1"></script>
+    <script src="js/test/bootstrap.js?v=2026-02-26.1"></script>
+</body>
+</html>

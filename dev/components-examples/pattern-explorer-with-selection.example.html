@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PatternExplorerWithSelection + Queue Example</title>
+    <link rel="stylesheet" href="../../css/components/base/patternExplorer.css">
+    <link rel="stylesheet" href="../../css/components/base/dualSlider.css">
+    <link rel="stylesheet" href="../../css/components/base/filterPanel.css">
+    <link rel="stylesheet" href="../../css/components/base/patternQueue.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --font-size-xs: 10px;
+            --font-size-sm: 11px;
+            --font-size-base: 13px;
+            --font-size-md: 14px;
+            --font-size-lg: 16px;
+            --font-weight-normal: 400;
+            --font-weight-medium: 500;
+            --font-weight-semibold: 600;
+            --spacing-xs: 4px;
+            --spacing-sm: 8px;
+            --spacing-md: 12px;
+            --spacing-lg: 16px;
+            --spacing-xl: 20px;
+            --spacing-2xl: 24px;
+            --spacing-3xl: 32px;
+        }
+        
+        body {
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Courier New', monospace;
+            background: #fafafa;
+            color: #333;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            font-size: var(--font-size-base);
+        }
+        
+        h1 {
+            font-size: var(--font-size-lg);
+            padding: var(--spacing-lg) var(--spacing-xl);
+            background: #fff;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .layout {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+        
+        .sidebar {
+            width: 300px;
+            background: #fff;
+            border-right: 1px solid #e0e0e0;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        #fileList {
+            flex: 1;
+            overflow-y: auto;
+            min-height: 0;
+        }
+        
+        #filterPanel {
+            /* FilterPanel container */
+        }
+        
+        .queue-sidebar {
+            width: 380px;
+            background: transparent;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            padding: var(--spacing-lg);
+            padding-left: var(--spacing-xl);
+            padding-right: var(--spacing-xl);
+            padding-bottom: var(--spacing-lg);
+            z-index: 1001; /* Above filterPanel (1000) and pattern explorer */
+            position: relative;
+        }
+        
+        #queue {
+            flex: 1;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+        
+        .file-tooltip {
+            position: fixed;
+            background: #000;
+            color: #fff;
+            padding: 8px 10px;
+            border-radius: 3px;
+            font-size: 11px;
+            max-width: 250px;
+            white-space: normal;
+            z-index: 10000;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.15s ease;
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Courier New', monospace;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            line-height: 1.4;
+        }
+        
+        .file-tooltip.show {
+            opacity: 1;
+        }
+        
+        .file-tooltip.flipped::before {
+            left: 100%;
+            border-left-color: #000;
+        }
+        
+        .file-tooltip:not(.flipped)::before {
+            right: 100%;
+            border-right-color: #000;
+        }
+        
+        .file-tooltip::before {
+            content: '';
+            position: absolute;
+            top: var(--arrow-top, 50%);
+            transform: translateY(-50%);
+            border: 4px solid transparent;
+        }
+        
+        .tooltip-row {
+            margin: 2px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>PatternExplorerWithSelection + Queue Example</h1>
+    
+    <div class="layout">
+        <div class="sidebar">
+            <div id="filterPanel"></div>
+            <div id="fileList"></div>
+        </div>
+        
+        <div class="queue-sidebar">
+            <div id="queue"></div>
+        </div>
+    </div>
+    
+    <script src="../../js/modules/filters.js"></script>
+    <script src="../../js/components/base/dualSlider.js"></script>
+    <script src="../../js/components/base/patternExplorer.js"></script>
+    <script src="../../js/components/base/filterPanel.js"></script>
+    <script src="../../js/components/base/patternQueue.js"></script>
+    <script src="../../js/components/variants/patternExplorerWithSelection.js"></script>
+    <script>
+        let patternExplorer, queue;
+        
+        // Load real pattern metadata
+        async function loadPatternMetadata() {
+            try {
+                const response = await fetch('../../pattern_metadata.json');
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.patterns && Array.isArray(data.patterns)) {
+                        // Convert patterns array to metadata object keyed by filename
+                        const metadata = {};
+                        data.patterns.forEach(pattern => {
+                            if (pattern.filename) {
+                                metadata[pattern.filename] = {
+                                    rms_mean: pattern.rms_mean || 0,
+                                    duration: pattern.duration || 0,
+                                    stereo_balance: pattern.stereo_balance || 0,
+                                    stereo_movement: pattern.stereo_movement || 0
+                                };
+                            }
+                        });
+                        console.log('Loaded metadata for', Object.keys(metadata).length, 'patterns');
+                        return metadata;
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading pattern metadata:', error);
+            }
+            return {};
+        }
+        
+        // Load real audio files list
+        async function loadAudioFiles() {
+            try {
+                // Try API endpoint first (for local development)
+                try {
+                    const apiResponse = await fetch('/api/list-audio-files');
+                    if (apiResponse.ok) {
+                        const contentType = apiResponse.headers.get('content-type');
+                        if (contentType && contentType.includes('application/json')) {
+                            const data = await apiResponse.json();
+                            if (Array.isArray(data)) {
+                                // Convert strings to file objects
+                                const files = data.map(file => {
+                                    const filename = typeof file === 'string' ? file : file.name || file.filename;
+                                    return {
+                                        name: filename,
+                                        path: `../../audio_files/${filename}`
+                                    };
+                                });
+                                console.log('Loaded', files.length, 'files from API');
+                                return files;
+                            }
+                        }
+                    }
+                } catch (apiError) {
+                    console.log('API endpoint not available:', apiError.message);
+                }
+                
+                // Try static JSON file
+                const jsonPaths = [
+                    '../../audio-files.json',
+                    './audio-files.json',
+                    'audio-files.json'
+                ];
+                
+                for (const path of jsonPaths) {
+                    try {
+                        const response = await fetch(path);
+                        if (response.ok) {
+                            const data = await response.json();
+                            let fileArray = [];
+                            
+                            if (data.files && Array.isArray(data.files)) {
+                                fileArray = data.files;
+                            } else if (Array.isArray(data)) {
+                                fileArray = data;
+                            }
+                            
+                            if (fileArray.length > 0) {
+                                const files = fileArray.map(file => {
+                                    const filename = typeof file === 'string' ? file : file.name || file.filename;
+                                    return {
+                                        name: filename,
+                                        path: `../../audio_files/${filename}`
+                                    };
+                                });
+                                console.log('Loaded', files.length, 'files from', path);
+                                return files;
+                            }
+                        }
+                    } catch (e) {
+                        console.log('Error loading from', path, ':', e.message);
+                        continue;
+                    }
+                }
+                
+                // Fallback: get files from metadata
+                const metadataResponse = await fetch('../../pattern_metadata.json');
+                if (metadataResponse.ok) {
+                    const data = await metadataResponse.json();
+                    if (data.patterns && Array.isArray(data.patterns)) {
+                        const files = data.patterns.map(pattern => ({
+                            name: pattern.filename,
+                            path: pattern.path || `../../audio_files/${pattern.filename}`
+                        }));
+                        console.log('Loaded', files.length, 'files from metadata');
+                        return files;
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading audio files:', error);
+            }
+            console.warn('No files loaded - returning empty array');
+            return [];
+        }
+        
+        // Initialize components with real data
+        async function init() {
+            console.log('Loading data...');
+            
+            // Show loading state
+            showLoadingState();
+            
+            try {
+                const [metadata, files] = await Promise.all([
+                    loadPatternMetadata(),
+                    loadAudioFiles()
+                ]);
+                
+                console.log('Metadata loaded:', Object.keys(metadata).length, 'patterns');
+                console.log('Files loaded:', files.length, 'files');
+                console.log('Sample files:', files.slice(0, 5));
+                
+                // Hide loading state
+                hideLoadingState();
+                
+                if (files.length === 0) {
+                    console.error('No files loaded! Check file paths and data sources.');
+                    showErrorState('No files found. Check console for errors.');
+                    return;
+                }
+                
+                // Verify containers exist
+                const fileListContainer = document.getElementById('fileList');
+                const filterContainer = document.getElementById('filterPanel');
+                
+                if (!fileListContainer) {
+                    console.error('fileList container not found!');
+                    showErrorState('Required containers not found.');
+                    return;
+                }
+                
+                if (!filterContainer) {
+                    console.error('filterPanel container not found!');
+                    showErrorState('Required containers not found.');
+                    return;
+                }
+                
+                console.log('Containers found:', {
+                    fileList: !!fileListContainer,
+                    filterPanel: !!filterContainer
+                });
+                
+                // Initialize Queue
+                queue = new PatternQueue({
+                    containerId: 'queue',
+                    metadata: metadata,
+                    getAvailableFiles: () => {
+                        // Return currently filtered files for random selection
+                        if (patternExplorer && patternExplorer.getFilteredFiles) {
+                            return patternExplorer.getFilteredFiles();
+                        }
+                        return [];
+                    },
+                    onItemRemove: (file, index) => {
+                        console.log('Item removed from queue:', file.name);
+                        // Sync selection state
+                        if (patternExplorer) {
+                            patternExplorer.syncWithQueue();
+                        }
+                    },
+                    onReorder: (items) => {
+                        console.log('Queue reordered:', items.map(i => i.name));
+                    },
+                    onClear: (clearedItems) => {
+                        console.log('Queue cleared:', clearedItems.length, 'items');
+                        // Sync selection state
+                        if (patternExplorer) {
+                            patternExplorer.syncWithQueue();
+                        }
+                    },
+                    onRandomSelect: (selected, requestedCount) => {
+                        console.log(`Randomly selected ${selected.length} patterns (requested ${requestedCount})`);
+                        // Sync selection state
+                        if (patternExplorer) {
+                            patternExplorer.syncWithQueue();
+                        }
+                    }
+                });
+                
+                // Initialize PatternExplorerWithSelection
+                console.log('Initializing PatternExplorerWithSelection...');
+                patternExplorer = new PatternExplorerWithSelection({
+                    containerId: 'fileList',
+                    filterContainerId: 'filterPanel',
+                    files: files,
+                    metadata: metadata,
+                    queue: queue,
+                    compact: true,
+                    collapsible: true,
+                    defaultCollapsed: true,
+                    onSelectionChange: (file, isAdded) => {
+                        console.log(isAdded ? 'Added to queue:' : 'Removed from queue:', file.name);
+                    },
+                    onFileClick: (file) => {
+                        console.log('File clicked:', file.name);
+                    },
+                    onFilterChange: (filters, filteredFiles) => {
+                        console.log('Filters changed:', filters);
+                        console.log('Filtered files:', filteredFiles.length);
+                    }
+                });
+                
+                console.log('PatternExplorerWithSelection initialized');
+            } catch (error) {
+                console.error('Error initializing:', error);
+                hideLoadingState();
+                showErrorState('Failed to load data. Please refresh the page.');
+            }
+        }
+        
+        function showLoadingState() {
+            const fileList = document.getElementById('fileList');
+            if (fileList) {
+                fileList.innerHTML = '<div style="padding: var(--spacing-3xl); text-align: center; color: #999; font-size: var(--font-size-sm);">Loading patterns...</div>';
+            }
+        }
+        
+        function hideLoadingState() {
+            // Loading state will be replaced by component rendering
+        }
+        
+        function showErrorState(message) {
+            const fileList = document.getElementById('fileList');
+            if (fileList) {
+                fileList.innerHTML = `<div style="padding: var(--spacing-3xl); text-align: center; color: #999; font-size: var(--font-size-sm);">${message}</div>`;
+            }
+        }
+        
+        // Initialize on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            init();
+        });
+    </script>
+</body>
+</html>

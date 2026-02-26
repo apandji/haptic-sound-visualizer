@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Signal Quality Visualizer - Example</title>
+    
+    <!-- Component CSS -->
+    <link rel="stylesheet" href="../../css/components/base/signalQualityVisualizer.css">
+    
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 40px;
+            background: #f5f5f5;
+            color: #333;
+        }
+        
+        .example-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 40px;
+            border: 1px solid #e0e0e0;
+        }
+        
+        h1 {
+            margin-top: 0;
+            font-size: 24px;
+            font-weight: 600;
+        }
+        
+        .controls {
+            margin: 30px 0;
+            padding: 20px;
+            background: #fafafa;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .controls button {
+            margin-right: 10px;
+            margin-bottom: 10px;
+            padding: 8px 16px;
+            background: #000;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            border-radius: 0;
+            transition: background 0.15s ease;
+        }
+        
+        .controls button:hover {
+            background: #333;
+        }
+        
+        .controls button:active {
+            background: #666;
+        }
+        
+        .info {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-left: 3px solid #000;
+        }
+        
+        .info h2 {
+            margin-top: 0;
+            font-size: 18px;
+        }
+        
+        .info ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        
+        .info li {
+            margin: 5px 0;
+        }
+        
+        code {
+            background: #f0f0f0;
+            padding: 2px 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+    <div class="example-container">
+        <h1>Signal Quality Visualizer Component</h1>
+        
+        <p>This example demonstrates the SignalQualityVisualizer component with mock data from <code>data/ganglion_sample_data.csv</code>.</p>
+        
+        <div class="controls">
+            <button id="connectBtn">Connect Device</button>
+            <button id="disconnectBtn">Disconnect Device</button>
+            <button id="prepareBtn">Prepare Session</button>
+            <button id="startStreamBtn">Start Stream</button>
+            <button id="stopStreamBtn">Stop Stream</button>
+            <button id="releaseBtn">Release Session</button>
+            <button id="toggleBtn">Toggle Panel</button>
+        </div>
+        
+        <div class="controls" style="margin-top: 10px;">
+            <label>Channels: </label>
+            <button id="allChannelsBtn">All Channels</button>
+            <button id="ch1Ch2Btn">CH1, CH2</button>
+            <button id="ch1OnlyBtn">CH1 Only</button>
+        </div>
+        
+        <div class="info">
+            <h2>How it works:</h2>
+            <ul>
+                <li><strong>Connect Device</strong>: Shows the floating widget and starts monitoring</li>
+                <li><strong>Disconnect Device</strong>: Hides the widget and stops monitoring</li>
+                <li><strong>Toggle Panel</strong>: Expands/collapses the quality table</li>
+                <li><strong>Click the button</strong>: Click the floating button (bottom-right) to expand/collapse</li>
+            </ul>
+            
+            <h2>Features:</h2>
+            <ul>
+                <li>Information-dense minimized widget (shows all 4 channels at a glance)</li>
+                <li>Displays RMS values (μV) with color-coded quality indicators</li>
+                <li>Shows device type (e.g., "Ganglion v4 Signal")</li>
+                <li>Expandable panel with detailed quality table</li>
+                <li>Real-time updates every 1 second (configurable)</li>
+                <li>Mock data from CSV file (cycles through data)</li>
+                <li>Quality classification: good (green), ok (orange), poor (red)</li>
+                <li>Each channel can have different quality (realistic variation)</li>
+            </ul>
+            
+            <h2>Quality Metrics:</h2>
+            <ul>
+                <li><strong>RMS (μV)</strong>: Root mean square amplitude (1-45 Hz band) - shown in minimized view</li>
+                <li><strong>60Hz (rel)</strong>: 60Hz noise relative to total power</li>
+                <li><strong>Quality</strong>: Classification based on thresholds (shown via color):
+                    <ul>
+                        <li><strong>Good</strong> (green): RMS 3-100 μV, 60Hz &lt; 0.3</li>
+                        <li><strong>OK</strong> (orange): RMS 0.5-300 μV, 60Hz &lt; 0.6</li>
+                        <li><strong>Poor</strong> (red): Everything else</li>
+                    </ul>
+                </li>
+            </ul>
+            <p><strong>Minimized View:</strong> Shows RMS values (μV) for each channel. Color indicates quality classification.</p>
+        </div>
+    </div>
+    
+    <!-- Component JavaScript -->
+    <script src="../../js/components/base/signalQualityVisualizer.js?v=2026-02-26.1"></script>
+    
+    <script>
+        // Initialize component
+        const signalQuality = new SignalQualityVisualizer({
+            containerId: 'signalQualityVisualizer',
+            updateInterval: 1000, // 1 second
+            useMockData: true,
+            mockDataPath: '../../data/ganglion_sample_data.csv',
+            // deviceType defaults to 'ganglionDevice' if not provided
+            // deviceId: null, // Optional: device ID/serial number
+            onQualityChange: (qualities) => {
+                console.log('Quality updated:', qualities);
+            },
+            onConnectionChange: (state, previousState) => {
+                console.log('Connection changed:', previousState, '→', state);
+            }
+        });
+        
+        // Control buttons
+        document.getElementById('connectBtn').addEventListener('click', () => {
+            signalQuality.start(); // Convenience method (prepare + startStream)
+        });
+        
+        document.getElementById('disconnectBtn').addEventListener('click', () => {
+            signalQuality.stop(); // Convenience method (release)
+        });
+        
+        document.getElementById('prepareBtn').addEventListener('click', () => {
+            signalQuality.prepare();
+        });
+        
+        document.getElementById('startStreamBtn').addEventListener('click', () => {
+            signalQuality.startStream();
+        });
+        
+        document.getElementById('stopStreamBtn').addEventListener('click', () => {
+            signalQuality.stopStream();
+        });
+        
+        document.getElementById('releaseBtn').addEventListener('click', () => {
+            signalQuality.release();
+        });
+        
+        document.getElementById('toggleBtn').addEventListener('click', () => {
+            signalQuality.toggle();
+        });
+        
+        // Channel configuration buttons
+        document.getElementById('allChannelsBtn').addEventListener('click', () => {
+            signalQuality.setQualityChannels(null); // All channels
+            console.log('Set to all channels');
+        });
+        
+        document.getElementById('ch1Ch2Btn').addEventListener('click', () => {
+            signalQuality.setQualityChannels([0, 1]); // CH1 and CH2
+            console.log('Set to CH1, CH2');
+        });
+        
+        document.getElementById('ch1OnlyBtn').addEventListener('click', () => {
+            signalQuality.setQualityChannels([0]); // CH1 only
+            console.log('Set to CH1 only');
+        });
+        
+        // Error handling callback
+        signalQuality.onError = (error) => {
+            console.error('Signal quality error:', error);
+        };
+        
+        // Connection state change callback
+        signalQuality.onConnectionChange = (newState, previousState) => {
+            console.log(`Connection state: ${previousState} → ${newState}`);
+        };
+        
+        // Auto-connect for demo (after 2 seconds)
+        setTimeout(() => {
+            signalQuality.start();
+        }, 2000);
+    </script>
+</body>
+</html>

@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Queue Component Example</title>
+    <link rel="stylesheet" href="../../css/components/base/patternQueue.css">
+    <link rel="stylesheet" href="../../css/components/base/patternExplorer.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --font-size-xs: 10px;
+            --font-size-sm: 11px;
+            --font-size-base: 13px;
+            --font-size-md: 14px;
+            --font-size-lg: 16px;
+            --font-weight-normal: 400;
+            --font-weight-medium: 500;
+            --font-weight-semibold: 600;
+            --spacing-xs: 4px;
+            --spacing-sm: 8px;
+            --spacing-md: 12px;
+            --spacing-lg: 16px;
+            --spacing-xl: 20px;
+            --spacing-2xl: 24px;
+            --spacing-3xl: 32px;
+        }
+        
+        body {
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Courier New', monospace;
+            background: #fafafa;
+            color: #333;
+            padding: 40px;
+            font-size: var(--font-size-base);
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 40px;
+        }
+        
+        .demo-layout {
+            display: flex;
+            gap: var(--spacing-xl);
+            align-items: flex-start;
+        }
+        
+        .demo-section {
+            background: #fff;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            padding: var(--spacing-lg);
+            flex: 1;
+        }
+        
+        .demo-section h2 {
+            font-size: var(--font-size-md);
+            margin-bottom: var(--spacing-lg);
+            color: #333;
+        }
+        
+        #queue {
+            width: 300px;
+            height: 500px;
+            border: 1px solid #e0e0e0;
+            border-radius: 2px;
+        }
+        
+        .controls {
+            margin-top: var(--spacing-lg);
+            padding-top: var(--spacing-lg);
+            border-top: 1px solid #e0e0e0;
+        }
+        
+        .controls button {
+            padding: var(--spacing-sm) var(--spacing-md);
+            background: #000;
+            color: #fff;
+            border: none;
+            border-radius: 2px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: var(--font-size-sm);
+            margin-right: var(--spacing-sm);
+        }
+        
+        .controls button:hover {
+            background: #333;
+        }
+        
+        .file-tooltip {
+            position: fixed;
+            background: #000;
+            color: #fff;
+            padding: 8px 10px;
+            border-radius: 3px;
+            font-size: 11px;
+            max-width: 250px;
+            white-space: normal;
+            z-index: 10000;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.15s ease;
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Courier New', monospace;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            line-height: 1.4;
+        }
+        
+        .file-tooltip.show {
+            opacity: 1;
+        }
+        
+        .tooltip-row {
+            margin: 2px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Queue Component Example</h1>
+        <p class="subtitle">Test the Queue component with drag & drop reordering</p>
+        
+        <div class="demo-layout">
+            <div class="demo-section">
+                <h2>Test Queue</h2>
+                <div id="queue"></div>
+                
+                <div class="controls">
+                    <button onclick="addTestItem()">Add Test Item</button>
+                    <button onclick="clearQueue()">Clear Queue</button>
+                </div>
+            </div>
+            
+            <div class="demo-section">
+                <h2>Instructions</h2>
+                <ul style="font-size: var(--font-size-sm); line-height: 1.8; color: #666;">
+                    <li>Click "Add Test Item" to add items to the queue</li>
+                    <li>Drag items by the ≡ handle to reorder</li>
+                    <li>Click × to remove items</li>
+                    <li>Hover over items to see metadata tooltip</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <script src="../../js/components/base/patternQueue.js"></script>
+    <script>
+        // Test metadata
+        const testMetadata = {
+            'A_100_1.mp3': {
+                rms_mean: 0.123,
+                duration: 5.5,
+                stereo_balance: 0.0,
+                stereo_movement: 0.1
+            },
+            'A_100_2.mp3': {
+                rms_mean: 0.145,
+                duration: 6.2,
+                stereo_balance: 0.1,
+                stereo_movement: 0.15
+            },
+            'A_110_1.mp3': {
+                rms_mean: 0.167,
+                duration: 4.8,
+                stereo_balance: -0.05,
+                stereo_movement: 0.12
+            }
+        };
+        
+        // Initialize Queue
+        const queue = new PatternQueue({
+            containerId: 'queue',
+            metadata: testMetadata,
+            onItemRemove: (file, index) => {
+                console.log('Item removed:', file.name, 'at index', index);
+            },
+            onReorder: (items) => {
+                console.log('Queue reordered:', items.map(i => i.name));
+            }
+        });
+        
+        let itemCounter = 1;
+        
+        function addTestItem() {
+            const testFiles = [
+                { name: 'A_100_1.mp3', path: 'audio_files/A_100_1.mp3' },
+                { name: 'A_100_2.mp3', path: 'audio_files/A_100_2.mp3' },
+                { name: 'A_110_1.mp3', path: 'audio_files/A_110_1.mp3' }
+            ];
+            
+            const file = testFiles[(itemCounter - 1) % testFiles.length];
+            queue.addItem(file);
+            itemCounter++;
+        }
+        
+        function clearQueue() {
+            queue.clear();
+            itemCounter = 1;
+        }
+        
+        // Add a few test items on load
+        setTimeout(() => {
+            addTestItem();
+            addTestItem();
+            addTestItem();
+        }, 100);
+    </script>
+</body>
+</html>
