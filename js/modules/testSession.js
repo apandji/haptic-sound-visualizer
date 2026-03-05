@@ -53,6 +53,7 @@ class TestSession {
         this.calibrationDuration = options.timing?.calibrationDuration || 20; // seconds
         this.baselineDuration = options.timing?.baselineDuration || 30; // seconds
         this.stimulationDuration = options.timing?.stimulationDuration || 30; // seconds
+        this.collectBaselineOnlyOnFirstTrial = options.collectBaselineOnlyOnFirstTrial !== false;
 
         // Timing
         this.phaseStartTime = null;
@@ -202,6 +203,7 @@ class TestSession {
         this.currentPhase = 'baseline';
         this.phaseStartTime = Date.now();
         this.currentTrial.baselineReadings = [];
+        const collectsBaseline = this.shouldCollectBaselineInCurrentTrial();
 
         if (this.onPhaseChange) {
             this.onPhaseChange('baseline', {
@@ -210,7 +212,8 @@ class TestSession {
                 totalPatterns: this.trials.length,
                 pattern: this.currentTrial.pattern,
                 duration: this.baselineDuration,
-                startTime: this.phaseStartTime
+                startTime: this.phaseStartTime,
+                collectingData: collectsBaseline
             });
         }
     }
@@ -397,7 +400,9 @@ class TestSession {
         if (phase === 'calibration') {
             this.calibrationReadings.push(enrichedReading);
         } else if (phase === 'baseline' && this.currentTrial) {
-            this.currentTrial.baselineReadings.push(enrichedReading);
+            if (this.shouldCollectBaselineInCurrentTrial()) {
+                this.currentTrial.baselineReadings.push(enrichedReading);
+            }
         } else if (phase === 'stimulation' && this.currentTrial) {
             // Add audio_time_offset if available
             if (this.currentTrial.audioTimeOffset !== null) {
@@ -405,6 +410,15 @@ class TestSession {
             }
             this.currentTrial.stimulationReadings.push(enrichedReading);
         }
+    }
+    /**
+     * Check whether baseline readings should be collected for current trial.
+     * @returns {boolean}
+     */
+    shouldCollectBaselineInCurrentTrial() {
+        if (!this.currentTrial) return false;
+        if (!this.collectBaselineOnlyOnFirstTrial) return true;
+        return this.currentTrialIndex === 0;
     }
 
     /**
