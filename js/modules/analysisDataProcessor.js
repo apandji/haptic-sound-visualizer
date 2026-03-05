@@ -107,24 +107,75 @@ class AnalysisDataProcessor {
     // --- Internal helpers ---
 
     /**
-     * Get all completed trials for a pattern across all sessions
+     * Get all completed trials for a pattern across all sessions.
+     * Reuses the session's first completed baseline when later trials do not store baseline readings.
      */
     _getTrialsForPattern(patternName) {
         const trials = [];
         for (const session of this.sessions) {
             if (!session.trials) continue;
+
+            const sessionReferenceBaseline = this._getSessionReferenceBaseline(session);
+
             for (const trial of session.trials) {
                 if (trial.status !== 'completed') continue;
                 if (trial.pattern?.name !== patternName) continue;
-                if (!trial.baselineReadings?.length || !trial.stimulationReadings?.length) continue;
+
+                const baselineForComparison = this._resolveBaselineReadings(trial, sessionReferenceBaseline);
+                if (!baselineForComparison.length || !trial.stimulationReadings?.length) continue;
+
                 trials.push({
                     ...trial,
+                    analysisBaselineReadings: baselineForComparison,
                     participantId: session.participant_id,
                     calibrationReadings: session.calibrationReadings || []
                 });
             }
         }
         return trials;
+    }
+
+    /**
+     * Get the first completed trial baseline for a session.
+     */
+    _getSessionReferenceBaseline(session) {
+        if (!session?.trials?.length) return [];
+
+        const orderedTrials = [...session.trials]
+            .filter(trial => trial?.status === 'completed')
+            .sort((a, b) => (a?.trialOrder || 0) - (b?.trialOrder || 0));
+
+        const baselineTrial = orderedTrials.find(
+            trial => Array.isArray(trial.baselineReadings) && trial.baselineReadings.length > 0
+        );
+
+        return baselineTrial?.baselineReadings || [];
+    }
+
+    /**
+     * Resolve baseline readings for analysis (trial baseline first, then session reference baseline).
+     */
+    _resolveBaselineReadings(trial, sessionReferenceBaseline = []) {
+        if (Array.isArray(trial?.baselineReadings) && trial.baselineReadings.length > 0) {
+            return trial.baselineReadings;
+        }
+        if (Array.isArray(sessionReferenceBaseline) && sessionReferenceBaseline.length > 0) {
+            return sessionReferenceBaseline;
+        }
+        return [];
+    }
+
+    /**
+     * Get baseline readings used for analysis calculations.
+     */
+    _getBaselineReadingsForAnalysis(trial) {
+        if (Array.isArray(trial?.analysisBaselineReadings) && trial.analysisBaselineReadings.length > 0) {
+            return trial.analysisBaselineReadings;
+        }
+        if (Array.isArray(trial?.baselineReadings)) {
+            return trial.baselineReadings;
+        }
+        return [];
     }
 
     /**
@@ -152,7 +203,7 @@ class AnalysisDataProcessor {
         const delta = {};
         for (const band of this.bands) {
             const key = `${band}_rel`;
-            const baselineAvg = this._meanBand(trial.baselineReadings, key);
+            const baselineAvg = this._meanBand(this._getBaselineReadingsForAnalysis(trial), key);
             const stimulationAvg = this._meanBand(trial.stimulationReadings, key);
             delta[band] = stimulationAvg - baselineAvg;
         }
@@ -197,7 +248,7 @@ class AnalysisDataProcessor {
 
         for (const band of this.bands) {
             const key = `${band}_rel`;
-            const baselineValues = trials.map(t => this._meanBand(t.baselineReadings, key));
+            const baselineValues = trials.map(t => this._meanBand(this._getBaselineReadingsForAnalysis(t), key));
             const stimValues = trials.map(t => this._meanBand(t.stimulationReadings, key));
 
             baselineAvg[key] = baselineValues.reduce((s, v) => s + v, 0) / baselineValues.length;
@@ -238,9 +289,10 @@ class AnalysisDataProcessor {
         // Determine baseline duration (max across trials, in seconds)
         let baselineDuration = 0;
         for (const trial of trials) {
-            if (!trial.baselineReadings || trial.baselineReadings.length < 2) continue;
-            const blStart = trial.baselineReadings[0].timestamp_ms;
-            const blEnd = trial.baselineReadings[trial.baselineReadings.length - 1].timestamp_ms;
+            const baselineReadings = this._getBaselineReadingsForAnalysis(trial);
+            if (baselineReadings.length < 2) continue;
+            const blStart = baselineReadings[0].timestamp_ms;
+            const blEnd = baselineReadings[baselineReadings.length - 1].timestamp_ms;
             const dur = Math.ceil((blEnd - blStart) / 1000);
             if (dur > baselineDuration) baselineDuration = dur;
         }
@@ -285,9 +337,10 @@ class AnalysisDataProcessor {
                     }
 
                     // Baseline readings → negative time bins [-blDur ... 0)
-                    if (trial.baselineReadings && trial.baselineReadings.length > 0) {
-                        const blEnd = trial.baselineReadings[trial.baselineReadings.length - 1].timestamp_ms;
-                        for (const reading of trial.baselineReadings) {
+                    const baselineReadings = this._getBaselineReadingsForAnalysis(trial);
+                    if (baselineReadings.length > 0) {
+                        const blEnd = baselineReadings[baselineReadings.length - 1].timestamp_ms;
+                        for (const reading of baselineReadings) {
                             const relativeMs = reading.timestamp_ms - blEnd;
                             const binIndex = Math.floor(relativeMs / 1000);
                             if (binIndex < -baselineDuration) continue;
