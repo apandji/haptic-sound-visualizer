@@ -98,12 +98,39 @@
     padding-top: var(--spacing-md);
 }
 
+.trial-tags-survey__category-desc,
+.trial-tags-survey__intensity-prompt {
+    font-size: var(--font-size-sm);
+    color: #666;
+    line-height: var(--line-height-relaxed);
+}
+
+.trial-tags-survey__intensity-prompt {
+    margin-top: calc(var(--spacing-lg) * -1);
+}
+
 .trial-tags-survey__tags {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
     gap: var(--spacing-sm);
     margin-bottom: var(--spacing-3xl);
     max-width: 100%;
+}
+
+.trial-tags-survey__tag-item {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.trial-tags-survey__tag-item--with-intensity {
+    padding: var(--spacing-sm);
+    border: 1px solid #e0e0e0;
+    background: #fafafa;
+}
+
+.trial-tags-survey__tag-item--needs-intensity {
+    border-color: #000;
 }
 
 @media (min-width: 768px) {
@@ -149,6 +176,48 @@
 .trial-tags-survey__tag.selected:hover {
     background: #333;
     border-color: #333;
+}
+
+.trial-tags-survey__tag-intensity {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+}
+
+.trial-tags-survey__tag-intensity-label {
+    font-size: 11px;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.trial-tags-survey__tag-intensity-options {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--spacing-xs);
+}
+
+.trial-tags-survey__tag-intensity-btn {
+    padding: var(--spacing-sm);
+    background: #fff;
+    border: 1px solid #d0d0d0;
+    color: #444;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Courier New', monospace;
+}
+
+.trial-tags-survey__tag-intensity-btn:hover {
+    border-color: #000;
+    color: #000;
+}
+
+.trial-tags-survey__tag-intensity-btn.selected {
+    background: #000;
+    border-color: #000;
+    color: #fff;
 }
 
 /* Submit Section */
