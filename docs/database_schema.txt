@@ -59,6 +59,7 @@ CREATE TABLE trials (
 CREATE TABLE trial_tags (
     trial_id    INT NOT NULL,
     tag_id      INT NOT NULL,
+    intensity   INT CHECK (intensity BETWEEN 1 AND 4),
     selected_at DATETIME(3),
     PRIMARY KEY (trial_id, tag_id),
     FOREIGN KEY (trial_id) REFERENCES trials(trial_id),

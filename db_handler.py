@@ -148,19 +148,26 @@ def create_trial(conn, session_id: int, pattern_id: int, trial_order: int,
     return cursor.lastrowid
 
 
-def add_trial_tag(conn, trial_id: int, tag_id: int, selected_at: str = None):
+def add_trial_tag(conn, trial_id: int, tag_id: int, intensity: int = None, selected_at: str = None):
     """Add a tag to a trial."""
     cursor = conn.cursor()
     if selected_at is None:
         selected_at = datetime.now().isoformat()
+    if intensity is not None:
+        intensity = int(intensity)
+        if intensity < 1 or intensity > 4:
+            raise ValueError(f"Tag intensity must be between 1 and 4, got {intensity}")
 
     try:
         cursor.execute(
-            "INSERT OR IGNORE INTO trial_tags (trial_id, tag_id, selected_at) VALUES (?, ?, ?)",
-            (trial_id, tag_id, selected_at)
+            "INSERT OR IGNORE INTO trial_tags (trial_id, tag_id, intensity, selected_at) VALUES (?, ?, ?, ?)",
+            (trial_id, tag_id, intensity, selected_at)
         )
-    except sqlite3.IntegrityError:
-        pass  # Already exists
+    except sqlite3.IntegrityError as exc:
+        if 'PRIMARY KEY' in str(exc) or 'UNIQUE constraint failed' in str(exc):
+            pass  # Already exists
+        else:
+            raise
 
 
 def add_brainwave_reading(conn, trial_id: int, timestamp_ms: int, phase: str,
@@ -210,7 +217,8 @@ def save_session_data(session_data: Dict[str, Any]) -> Dict[str, Any]:
                 "baselineReadings": [...],
                 "stimulationReadings": [...],
                 "selectedTags": [
-                    { "id": "calm", "label": "Calm", "category": "feeling", "isCustom": false }
+                    { "id": "calm", "label": "Calm", "category": "feeling", "isCustom": false },
+                    { "id": "forward", "label": "Forward", "category": "action", "intensity": 3, "isCustom": false }
                 ]
             }
         ]
@@ -347,8 +355,9 @@ def save_session_data(session_data: Dict[str, Any]) -> Dict[str, Any]:
             for tag_data in trial_data.get('selectedTags', []):
                 tag_name = tag_data.get('label', tag_data.get('id', 'unknown'))
                 tag_category = tag_data.get('category', 'custom' if tag_data.get('isCustom') else None)
+                tag_intensity = tag_data.get('intensity')
                 tag_id = ensure_tag(conn, tag_name, tag_category)
-                add_trial_tag(conn, trial_id, tag_id)
+                add_trial_tag(conn, trial_id, tag_id, intensity=tag_intensity)
                 result['tags_saved'] += 1
 
         # Save calibration readings with first trial (as relaxation phase)
@@ -558,7 +567,8 @@ def get_analysis_sessions(limit: Optional[int] = None) -> List[Dict[str, Any]]:
                     tt.trial_id,
                     tags.tag_id,
                     tags.tag_name,
-                    tags.category
+                    tags.category,
+                    tt.intensity
                 FROM trial_tags tt
                 INNER JOIN tags ON tt.tag_id = tags.tag_id
                 WHERE tt.trial_id IN ({trial_placeholders})
@@ -572,11 +582,13 @@ def get_analysis_sessions(limit: Optional[int] = None) -> List[Dict[str, Any]]:
                 tag_id = row['tag_id']
                 tag_name = row['tag_name']
                 tag_category = row['category']
+                tag_intensity = row['intensity']
 
                 tags_by_trial.setdefault(trial_id, []).append({
                     'id': f"tag_{tag_id}",
                     'label': tag_name,
                     'category': tag_category,
+                    'intensity': tag_intensity,
                     'isCustom': tag_category == 'custom'
                 })
 

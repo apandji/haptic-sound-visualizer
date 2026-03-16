@@ -30,6 +30,7 @@ class TrialTagsSurvey {
         // State
         this.selectedTags = new Set();
         this.customTags = new Set();
+        this.tagIntensities = new Map();
         this.categories = [];
         this.currentCategoryIndex = 0;
         this.question = '';
@@ -71,15 +72,15 @@ class TrialTagsSurvey {
 
             // Support both old format (tags array) and new format (categories array)
             if (cleanConfig.categories && Array.isArray(cleanConfig.categories)) {
-                this.categories = cleanConfig.categories;
+                this.categories = this.normalizeCategories(cleanConfig.categories);
             } else if (cleanConfig.tags && Array.isArray(cleanConfig.tags)) {
                 // Legacy format: wrap in single category
-                this.categories = [{
+                this.categories = this.normalizeCategories([{
                     id: 'default',
                     name: 'Tags',
                     description: '',
                     tags: cleanConfig.tags
-                }];
+                }]);
             } else {
                 throw new Error('Invalid config format');
             }
@@ -89,7 +90,7 @@ class TrialTagsSurvey {
             console.error('TrialTagsSurvey: Error loading config:', error);
             // Fallback to default
             this.question = 'What did this pattern feel like?';
-            this.categories = [{
+            this.categories = this.normalizeCategories([{
                 id: 'default',
                 name: 'Tags',
                 description: '',
@@ -99,9 +100,25 @@ class TrialTagsSurvey {
                     { id: 'C', label: 'C' },
                     { id: 'D', label: 'D' }
                 ]
-            }];
+            }]);
             this.isLoaded = true;
         }
+    }
+
+    /**
+     * Normalize category config so optional intensity settings are always present.
+     * @param {Array<Object>} categories - Raw category config array
+     * @returns {Array<Object>}
+     */
+    normalizeCategories(categories) {
+        return categories.map(category => ({
+            ...category,
+            requiresIntensity: Boolean(category.requiresIntensity),
+            intensityPrompt: category.intensityPrompt || 'Choose intensity for each selected tag.',
+            intensityScale: Array.isArray(category.intensityScale) && category.intensityScale.length > 0
+                ? category.intensityScale
+                : [1, 2, 3, 4]
+        }));
     }
 
     /**
@@ -151,7 +168,9 @@ class TrialTagsSurvey {
         // Instructions
         const instructionsEl = document.createElement('div');
         instructionsEl.className = 'trial-tags-survey__instructions';
-        instructionsEl.textContent = 'Select one or more options from each category';
+        instructionsEl.textContent = this.categories.some(category => category.requiresIntensity)
+            ? 'Select one or more options from each category. For action tags, choose an intensity before continuing.'
+            : 'Select one or more options from each category';
         headerSection.appendChild(instructionsEl);
 
         // Category Tabs (only if more than one category)
@@ -259,6 +278,13 @@ class TrialTagsSurvey {
             this.categoryContentEl.appendChild(descEl);
         }
 
+        if (category.requiresIntensity) {
+            const intensityPromptEl = document.createElement('div');
+            intensityPromptEl.className = 'trial-tags-survey__intensity-prompt';
+            intensityPromptEl.textContent = category.intensityPrompt;
+            this.categoryContentEl.appendChild(intensityPromptEl);
+        }
+
         // Tags container
         const tagsContainer = document.createElement('div');
         tagsContainer.className = 'trial-tags-survey__tags';
@@ -266,6 +292,19 @@ class TrialTagsSurvey {
 
         // Create tag buttons
         category.tags.forEach(tag => {
+            const isSelected = this.selectedTags.has(tag.id);
+            const tagItem = document.createElement('div');
+            tagItem.className = 'trial-tags-survey__tag-item';
+            if (category.requiresIntensity) {
+                tagItem.classList.add('trial-tags-survey__tag-item--with-intensity');
+            }
+            if (isSelected) {
+                tagItem.classList.add('trial-tags-survey__tag-item--selected');
+            }
+            if (category.requiresIntensity && isSelected && !this.tagIntensities.has(tag.id)) {
+                tagItem.classList.add('trial-tags-survey__tag-item--needs-intensity');
+            }
+
             const tagButton = document.createElement('button');
             tagButton.className = 'trial-tags-survey__tag';
             tagButton.type = 'button';
@@ -278,15 +317,21 @@ class TrialTagsSurvey {
             }
 
             // Check if already selected
-            if (this.selectedTags.has(tag.id)) {
+            if (isSelected) {
                 tagButton.classList.add('selected');
             }
 
             tagButton.addEventListener('click', () => {
-                this.toggleTag(tag.id, tagButton, category.id);
+                this.toggleTag(tag.id, category.id);
             });
 
-            tagsContainer.appendChild(tagButton);
+            tagItem.appendChild(tagButton);
+
+            if (category.requiresIntensity && isSelected) {
+                tagItem.appendChild(this.createIntensitySelector(tag.id, category));
+            }
+
+            tagsContainer.appendChild(tagItem);
         });
     }
 
@@ -392,21 +437,89 @@ class TrialTagsSurvey {
     }
 
     /**
+     * Create intensity selector for a selected tag.
+     * @param {string} tagId - Tag ID
+     * @param {Object} category - Tag category
+     * @returns {HTMLElement}
+     */
+    createIntensitySelector(tagId, category) {
+        const intensityContainer = document.createElement('div');
+        intensityContainer.className = 'trial-tags-survey__tag-intensity';
+
+        const label = document.createElement('div');
+        label.className = 'trial-tags-survey__tag-intensity-label';
+        label.textContent = 'Intensity';
+        intensityContainer.appendChild(label);
+
+        const options = document.createElement('div');
+        options.className = 'trial-tags-survey__tag-intensity-options';
+        intensityContainer.appendChild(options);
+
+        const selectedIntensity = this.tagIntensities.get(tagId);
+        category.intensityScale.forEach(intensity => {
+            const intensityButton = document.createElement('button');
+            intensityButton.className = 'trial-tags-survey__tag-intensity-btn';
+            intensityButton.type = 'button';
+            intensityButton.textContent = String(intensity);
+            if (selectedIntensity === intensity) {
+                intensityButton.classList.add('selected');
+            }
+
+            intensityButton.addEventListener('click', (event) => {
+                event.stopPropagation();
+                this.setTagIntensity(tagId, intensity);
+            });
+
+            options.appendChild(intensityButton);
+        });
+
+        return intensityContainer;
+    }
+
+    /**
      * Toggle tag selection
      * @param {string} tagId - Tag ID
-     * @param {HTMLElement} button - Tag button element
      * @param {string} categoryId - Category ID
+     * @param {HTMLElement} [button] - Optional tag button element for custom tags
      */
-    toggleTag(tagId, button, categoryId) {
+    toggleTag(tagId, categoryId, button = null) {
         if (this.selectedTags.has(tagId)) {
             this.selectedTags.delete(tagId);
-            button.classList.remove('selected');
+            this.tagIntensities.delete(tagId);
+            if (button) {
+                button.classList.remove('selected');
+            }
         } else {
             this.selectedTags.add(tagId);
-            button.classList.add('selected');
+            if (button) {
+                button.classList.add('selected');
+            }
+        }
+
+        const currentCategory = this.categories[this.currentCategoryIndex];
+        if (currentCategory && currentCategory.id === categoryId) {
+            this.renderCategory(this.currentCategoryIndex);
         }
 
         this.updateTabBadges();
+        this.updateSubmitButton();
+    }
+
+    /**
+     * Set intensity for a selected tag.
+     * @param {string} tagId - Tag ID
+     * @param {number} intensity - Selected intensity
+     */
+    setTagIntensity(tagId, intensity) {
+        if (!this.selectedTags.has(tagId)) return;
+
+        this.tagIntensities.set(tagId, intensity);
+
+        const currentCategory = this.categories[this.currentCategoryIndex];
+        if (currentCategory && currentCategory.tags.some(tag => tag.id === tagId)) {
+            this.renderCategory(this.currentCategoryIndex);
+        }
+
         this.updateSubmitButton();
     }
 
@@ -440,7 +553,7 @@ class TrialTagsSurvey {
         tagButton.appendChild(removeBtn);
 
         tagButton.addEventListener('click', () => {
-            this.toggleTag(customTagId, tagButton, 'custom');
+            this.toggleTag(customTagId, 'custom', tagButton);
         });
 
         if (this.customTagsDisplayEl) {
@@ -458,6 +571,7 @@ class TrialTagsSurvey {
     removeCustomTag(tagId, button) {
         this.selectedTags.delete(tagId);
         this.customTags.delete(tagId);
+        this.tagIntensities.delete(tagId);
         if (button && button.parentElement) {
             button.remove();
         }
@@ -468,10 +582,77 @@ class TrialTagsSurvey {
      * Update submit button enabled state
      */
     updateSubmitButton() {
-        const overlayNextBtn = document.querySelector('.test-execution-overlay__next-btn');
+        const overlayNextBtn = this.submitButtonRef || document.querySelector('.test-execution-overlay__next-btn');
         if (overlayNextBtn) {
-            overlayNextBtn.disabled = this.selectedTags.size === 0;
+            const hasSelectedTags = this.selectedTags.size > 0;
+            const missingIntensityTagIds = this.getMissingIntensityTagIds();
+            overlayNextBtn.disabled = !hasSelectedTags || missingIntensityTagIds.length > 0;
+
+            if (!hasSelectedTags) {
+                overlayNextBtn.title = 'Select at least one tag.';
+            } else if (missingIntensityTagIds.length > 0) {
+                overlayNextBtn.title = 'Choose intensity 1-4 for each selected action tag.';
+            } else {
+                overlayNextBtn.title = '';
+            }
         }
+    }
+
+    /**
+     * Get selected tags that still need an intensity value.
+     * @returns {string[]} Selected tag IDs missing intensity
+     */
+    getMissingIntensityTagIds() {
+        const missingTagIds = [];
+
+        this.categories.forEach(category => {
+            if (!category.requiresIntensity) return;
+
+            category.tags.forEach(tag => {
+                if (this.selectedTags.has(tag.id) && !this.tagIntensities.has(tag.id)) {
+                    missingTagIds.push(tag.id);
+                }
+            });
+        });
+
+        return missingTagIds;
+    }
+
+    /**
+     * Build the payload for a selected tag.
+     * @param {string} tagId - Tag ID
+     * @returns {Object}
+     */
+    buildSelectedTagPayload(tagId) {
+        const customTagButton = this.container.querySelector(`[data-tag-id="${tagId}"].trial-tags-survey__tag--custom`);
+        if (customTagButton) {
+            return {
+                id: tagId,
+                label: customTagButton.dataset.customText || customTagButton.textContent.replace('×', '').trim(),
+                category: 'custom',
+                isCustom: true
+            };
+        }
+
+        for (const category of this.categories) {
+            const tag = category.tags.find(t => t.id === tagId);
+            if (!tag) continue;
+
+            const selectedTag = {
+                id: tag.id,
+                label: tag.label,
+                category: category.id,
+                isCustom: false
+            };
+
+            if (category.requiresIntensity) {
+                selectedTag.intensity = this.tagIntensities.get(tagId) ?? null;
+            }
+
+            return selectedTag;
+        }
+
+        return { id: tagId, label: tagId, category: 'unknown', isCustom: false };
     }
 
     /**
@@ -492,32 +673,13 @@ class TrialTagsSurvey {
             return;
         }
 
-        const selectedTagsArray = Array.from(this.selectedTags).map(tagId => {
-            // Check if it's a custom tag
-            const customTagButton = this.container.querySelector(`[data-tag-id="${tagId}"].trial-tags-survey__tag--custom`);
-            if (customTagButton) {
-                return {
-                    id: tagId,
-                    label: customTagButton.dataset.customText || customTagButton.textContent.replace('×', '').trim(),
-                    category: 'custom',
-                    isCustom: true
-                };
-            } else {
-                // Find tag in categories
-                for (const category of this.categories) {
-                    const tag = category.tags.find(t => t.id === tagId);
-                    if (tag) {
-                        return {
-                            id: tag.id,
-                            label: tag.label,
-                            category: category.id,
-                            isCustom: false
-                        };
-                    }
-                }
-                return { id: tagId, label: tagId, category: 'unknown', isCustom: false };
-            }
-        });
+        const missingIntensityTagIds = this.getMissingIntensityTagIds();
+        if (missingIntensityTagIds.length > 0) {
+            console.warn('TrialTagsSurvey: Cannot submit until all selected action tags have an intensity');
+            return;
+        }
+
+        const selectedTagsArray = Array.from(this.selectedTags).map(tagId => this.buildSelectedTagPayload(tagId));
 
         if (this.onComplete) {
             this.onComplete(selectedTagsArray);
@@ -530,6 +692,7 @@ class TrialTagsSurvey {
     reset() {
         this.selectedTags.clear();
         this.customTags.clear();
+        this.tagIntensities.clear();
         this.currentCategoryIndex = 0;
         this.isPlaying = false;
         this.updatePlayButtonUI();
@@ -543,29 +706,6 @@ class TrialTagsSurvey {
      * @returns {Array<Object>} Array of selected tag objects
      */
     getSelectedTags() {
-        return Array.from(this.selectedTags).map(tagId => {
-            const customTagButton = this.container.querySelector(`[data-tag-id="${tagId}"].trial-tags-survey__tag--custom`);
-            if (customTagButton) {
-                return {
-                    id: tagId,
-                    label: customTagButton.dataset.customText || customTagButton.textContent.replace('×', '').trim(),
-                    category: 'custom',
-                    isCustom: true
-                };
-            } else {
-                for (const category of this.categories) {
-                    const tag = category.tags.find(t => t.id === tagId);
-                    if (tag) {
-                        return {
-                            id: tag.id,
-                            label: tag.label,
-                            category: category.id,
-                            isCustom: false
-                        };
-                    }
-                }
-                return { id: tagId, label: tagId, category: 'unknown', isCustom: false };
-            }
-        });
+        return Array.from(this.selectedTags).map(tagId => this.buildSelectedTagPayload(tagId));
     }
 }
