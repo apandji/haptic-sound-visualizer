@@ -71,7 +71,7 @@ CREATE TABLE brainwave_readings (
     reading_id      INTEGER PRIMARY KEY AUTOINCREMENT,
     trial_id        INTEGER NOT NULL,
     timestamp_ms    INTEGER NOT NULL,
-    phase           TEXT NOT NULL CHECK (phase IN ('relaxation', 'stimulus', 'selection')),
+    phase           TEXT NOT NULL CHECK (phase IN ('baseline', 'stimulation')),
     signal_quality  INTEGER,
     delta_abs       REAL,
     theta_abs       REAL,

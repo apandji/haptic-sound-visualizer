@@ -335,7 +335,7 @@ class TestSession {
         const sessionData = {
             sessionId: this.sessionId,
             sessionData: this.sessionData,
-            calibrationReadings: [...this.calibrationReadings],
+            calibrationReadings: [],
             trials: this.trials.map(trial => ({
                 ...trial,
                 baselineReadings: [...trial.baselineReadings],
@@ -397,9 +397,7 @@ class TestSession {
             timestamp_ms: Date.now()
         };
 
-        if (phase === 'calibration') {
-            this.calibrationReadings.push(enrichedReading);
-        } else if (phase === 'baseline' && this.currentTrial) {
+        if (phase === 'baseline' && this.currentTrial) {
             if (this.shouldCollectBaselineInCurrentTrial()) {
                 this.currentTrial.baselineReadings.push(enrichedReading);
             }
@@ -485,7 +483,7 @@ class TestSession {
         return {
             sessionId: this.sessionId,
             sessionData: this.sessionData,
-            calibrationReadings: [...this.calibrationReadings],
+            calibrationReadings: [],
             trials: this.trials.map(trial => ({
                 ...trial,
                 baselineReadings: [...trial.baselineReadings],

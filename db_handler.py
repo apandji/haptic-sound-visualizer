@@ -113,15 +113,10 @@ def ensure_tag(conn, tag_name: str, category: str = None) -> int:
 
 
 def map_phase_to_db(phase: str) -> str:
-    """Map frontend phase names to database phase values."""
-    phase_map = {
-        'calibration': 'relaxation',  # Calibration is a relaxation period
-        'baseline': 'relaxation',      # Baseline before stimulus
-        'stimulation': 'stimulus',     # During pattern playback
-        'survey': 'selection',         # Tag selection phase
-        'selection': 'selection'       # Alternative name
-    }
-    return phase_map.get(phase, 'relaxation')
+    """Validate brainwave phase names before persisting them."""
+    if phase not in ('baseline', 'stimulation'):
+        raise ValueError(f"Unsupported brainwave phase: {phase}")
+    return phase
 
 
 def create_session(conn, participant_id: int, location_id: int, session_date: str,
@@ -206,7 +201,6 @@ def save_session_data(session_data: Dict[str, Any]) -> Dict[str, Any]:
         "startedAt": "2024-01-15T10:30:00.000Z",
         "completedAt": "2024-01-15T11:00:00.000Z",
         "isAborted": false,
-        "calibrationReadings": [...],
         "trials": [
             {
                 "trialId": "session_1234_trial_1",
@@ -279,12 +273,8 @@ def save_session_data(session_data: Dict[str, Any]) -> Dict[str, Any]:
         )
         result['session_id'] = db_session_id
 
-        # Process calibration readings - store with first trial or skip if no trials
-        calibration_readings = session_data.get('calibrationReadings', [])
-
         # Process trials
         trials = session_data.get('trials', [])
-        first_trial_id = None
 
         for trial_data in trials:
             # Get or create pattern
@@ -304,10 +294,6 @@ def save_session_data(session_data: Dict[str, Any]) -> Dict[str, Any]:
                 notes=f"Status: {trial_data.get('status', 'unknown')}"
             )
             result['trials_saved'] += 1
-
-            # Store first trial ID for calibration readings
-            if first_trial_id is None:
-                first_trial_id = trial_id
 
             # Save baseline readings
             for reading in trial_data.get('baselineReadings', []):
@@ -360,28 +346,6 @@ def save_session_data(session_data: Dict[str, Any]) -> Dict[str, Any]:
                 add_trial_tag(conn, trial_id, tag_id, intensity=tag_intensity)
                 result['tags_saved'] += 1
 
-        # Save calibration readings with first trial (as relaxation phase)
-        if first_trial_id and calibration_readings:
-            for reading in calibration_readings:
-                add_brainwave_reading(
-                    conn,
-                    trial_id=first_trial_id,
-                    timestamp_ms=reading.get('timestamp_ms', 0),
-                    phase='calibration',
-                    signal_quality=reading.get('signal_quality'),
-                    delta_abs=reading.get('delta_abs'),
-                    theta_abs=reading.get('theta_abs'),
-                    alpha_abs=reading.get('alpha_abs'),
-                    beta_abs=reading.get('beta_abs'),
-                    gamma_abs=reading.get('gamma_abs'),
-                    delta_rel=reading.get('delta_rel'),
-                    theta_rel=reading.get('theta_rel'),
-                    alpha_rel=reading.get('alpha_rel'),
-                    beta_rel=reading.get('beta_rel'),
-                    gamma_rel=reading.get('gamma_rel')
-                )
-                result['readings_saved'] += 1
-
         conn.commit()
         result['success'] = True
 
@@ -394,25 +358,6 @@ def save_session_data(session_data: Dict[str, Any]) -> Dict[str, Any]:
         conn.close()
 
     return result
-
-
-def _parse_iso_to_epoch_ms(timestamp: Optional[str]) -> Optional[int]:
-    """Parse ISO timestamp to epoch milliseconds."""
-    if not timestamp:
-        return None
-
-    value = timestamp.strip()
-    if not value:
-        return None
-
-    if value.endswith('Z'):
-        value = value[:-1] + '+00:00'
-
-    try:
-        return int(datetime.fromisoformat(value).timestamp() * 1000)
-    except ValueError:
-        return None
-
 
 def _extract_frontend_session_id(notes: Optional[str], db_session_id: int) -> str:
     """Extract frontend session ID from notes; fallback to database ID."""
@@ -447,8 +392,7 @@ def get_analysis_sessions(limit: Optional[int] = None) -> List[Dict[str, Any]]:
                 "participant_id": ...,
                 "location_id": ...,
                 "startedAt": "...",
-                "trials": [...],
-                "calibrationReadings": [...]
+                "trials": [...]
             }
         ]
     """
@@ -541,7 +485,7 @@ def get_analysis_sessions(limit: Optional[int] = None) -> List[Dict[str, Any]]:
 
             for row in cursor.fetchall():
                 trial_id = row['trial_id']
-                phase = row['phase'] or 'relaxation'
+                phase = row['phase'] or 'baseline'
 
                 reading = {
                     'timestamp_ms': row['timestamp_ms'],
@@ -619,30 +563,11 @@ def get_analysis_sessions(limit: Optional[int] = None) -> List[Dict[str, Any]]:
             }
 
             session_trials = trials_by_session.get(db_session_id, [])
-            first_trial = session_trials[0] if session_trials else None
-            first_trial_id = first_trial['trial_id'] if first_trial else None
-            first_trial_start_ms = _parse_iso_to_epoch_ms(first_trial['start_time']) if first_trial else None
 
             for trial_row in session_trials:
                 trial_id = trial_row['trial_id']
-                relaxation_readings = readings_by_trial.get(trial_id, {}).get('relaxation', [])
-                stimulus_readings = readings_by_trial.get(trial_id, {}).get('stimulus', [])
-
-                baseline_readings: List[Dict[str, Any]] = []
-
-                if (
-                    first_trial_id is not None and
-                    trial_id == first_trial_id and
-                    first_trial_start_ms is not None
-                ):
-                    for reading in relaxation_readings:
-                        reading_ts = reading.get('timestamp_ms')
-                        if isinstance(reading_ts, int) and reading_ts < first_trial_start_ms:
-                            session_payload['calibrationReadings'].append(reading)
-                        else:
-                            baseline_readings.append(reading)
-                else:
-                    baseline_readings = list(relaxation_readings)
+                baseline_phase_readings = readings_by_trial.get(trial_id, {}).get('baseline', [])
+                stimulation_phase_readings = readings_by_trial.get(trial_id, {}).get('stimulation', [])
 
                 trial_payload = {
                     'trialId': f"{session_id}_trial_{trial_row['trial_order']}",
@@ -653,8 +578,8 @@ def get_analysis_sessions(limit: Optional[int] = None) -> List[Dict[str, Any]]:
                     'trialOrder': trial_row['trial_order'],
                     'startTime': trial_row['start_time'],
                     'endTime': trial_row['end_time'],
-                    'baselineReadings': baseline_readings,
-                    'stimulationReadings': stimulus_readings,
+                    'baselineReadings': list(baseline_phase_readings),
+                    'stimulationReadings': stimulation_phase_readings,
                     'selectedTags': tags_by_trial.get(trial_id, []),
                     'status': _extract_trial_status(trial_row['trial_notes'], trial_row['end_time'])
                 }
