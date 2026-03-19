@@ -128,6 +128,15 @@ class SessionInfo {
         }
         this.container.appendChild(form);
         this.container.appendChild(footer);
+        this.syncSessionPanelId();
+    }
+
+    /**
+     * Sync session ID to panel header (#sessionPanelId) when in test setup one-view
+     */
+    syncSessionPanelId() {
+        const el = document.getElementById('sessionPanelId');
+        if (el) el.textContent = this.sessionId;
     }
     
     /**
@@ -905,6 +914,7 @@ class SessionInfo {
         if (sessionIdDisplay) {
             sessionIdDisplay.textContent = this.sessionId;
         }
+        this.syncSessionPanelId();
     }
     
     /**

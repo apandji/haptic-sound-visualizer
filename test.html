@@ -4,8 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SAIL Pattern Library - Test</title>
+    <!-- Design tokens (load first) -->
+    <link rel="stylesheet" href="css/design-tokens.css?v=2026-03-17.1">
     <!-- Page CSS -->
-    <link rel="stylesheet" href="css/pages/test.css?v=2026-02-26.1">
+    <link rel="stylesheet" href="css/pages/test.css?v=2026-03-17.1">
     
     <!-- Component CSS -->
     <link rel="stylesheet" href="css/components/base/patternExplorer.css?v=2026-02-26.1">
@@ -33,22 +35,33 @@
         <h1 class="page-title">Setup Test</h1>
     </div>
     
-    <!-- Main Layout -->
-    <div class="layout">
-        <!-- Left Sidebar: Pattern Explorer with Selection -->
-        <div class="sidebar">
-            <div id="filterPanel"></div>
-            <div id="fileList">Loading files...</div>
-        </div>
-        
-        <!-- Middle: Queue -->
-        <div class="queue-sidebar">
-            <div id="queue"></div>
-        </div>
-        
-        <!-- Right Sidebar: Session Info -->
-        <div class="session-sidebar">
-            <div id="sessionInfo"></div>
+    <!-- Main Layout: Patterns + Session in one view -->
+    <div class="layout layout--setup" id="setupLayout">
+        <div class="setup-one-view">
+            <div class="patterns-panel" role="region" aria-label="Patterns">
+                <div class="patterns-panel__header">
+                    <span class="patterns-panel__title">Patterns</span>
+                    <span id="patternsSelectedCount" class="patterns-panel__count" aria-live="polite">0 selected</span>
+                </div>
+                <div class="patterns-panel__body">
+                    <div class="patterns-panel__library">
+                        <div id="filterPanel"></div>
+                        <div id="fileList">Loading files...</div>
+                    </div>
+                    <div class="patterns-panel__queue">
+                        <div id="queue"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="session-panel" role="region" aria-label="Session">
+                <div class="session-panel__header">
+                    <span class="session-panel__title">Session</span>
+                    <span id="sessionPanelId" class="session-panel__id"></span>
+                </div>
+                <div class="session-panel__body">
+                    <div id="sessionInfo"></div>
+                </div>
+            </div>
         </div>
     </div>
     
@@ -88,13 +101,13 @@
     <script src="js/modules/sessionTimeEstimator.js?v=2026-02-26.1"></script>
     <script src="js/modules/audioPlayer.js?v=2026-02-26.1"></script>
     <script src="js/modules/testSession.js?v=2026-02-26.1"></script>
+    <script src="js/components/base/testExecutionOverlay.js?v=2026-02-26.1"></script>
     <script src="js/modules/eegDataCollector.js?v=2026-02-26.1"></script>
     <script src="js/components/base/patternExplorer.js?v=2026-02-26.1"></script>
     <script src="js/components/base/filterPanel.js?v=2026-02-26.1"></script>
     <script src="js/components/base/dualSlider.js?v=2026-02-26.1"></script>
     <script src="js/components/base/patternQueue.js?v=2026-02-26.1"></script>
     <script src="js/components/base/sessionInfo.js?v=2026-02-26.1"></script>
-    <script src="js/components/base/testExecutionOverlay.js?v=2026-02-26.1"></script>
     <script src="js/components/base/trialTagsSurvey.js?v=2026-02-26.1"></script>
     <script src="js/components/base/signalQualityVisualizer.js?v=2026-02-26.1"></script>
     <script src="js/components/variants/patternExplorerWithSelection.js?v=2026-02-26.1"></script>

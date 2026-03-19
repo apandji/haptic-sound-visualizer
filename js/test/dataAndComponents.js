@@ -158,6 +158,7 @@
             queue = new PatternQueue({
                 containerId: 'queue',
                 metadata: patternMetadata,
+                headerLabel: 'Queue',
                 getAvailableFiles: () => {
                     // Return currently filtered files for random selection
                     if (patternExplorer && patternExplorer.getFilteredFiles) {
@@ -183,11 +184,11 @@
                 },
                 onItemAdd: (file, index) => {
                     console.log('Item added to queue:', file.name);
-                    // Update session estimate after a short delay to ensure queue is updated
                     setTimeout(() => {
                         if (sessionInfo && queue) {
                             sessionInfo.updateSessionEstimate(queue.getItems().length);
                         }
+                        updatePatternsSelectedCount();
                     }, 0);
                 },
                 onItemRemove: (file, index) => {
@@ -201,11 +202,11 @@
                     setTimeout(() => {
                         if (sessionInfo && queue) {
                             const count = queue.getItems().length;
-                            // Only update if queue is not empty, otherwise onClear will handle it
                             if (count > 0) {
                                 sessionInfo.updateSessionEstimate(count);
                             }
                         }
+                        updatePatternsSelectedCount();
                     }, 0);
                 },
                 onClear: (clearedItems) => {
@@ -216,11 +217,11 @@
                     }
                     // Update session estimate immediately to 0 (queue is already empty)
                     if (sessionInfo) {
-                        // Set pattern count to 0 and update visibility
                         sessionInfo.patternCount = 0;
                         sessionInfo.updateEstimatePanelVisibility();
                         sessionInfo.updateSessionEstimate(0);
                     }
+                    updatePatternsSelectedCount();
                 },
                 onRandomSelect: (selected, requestedCount) => {
                     console.log(`Randomly selected ${selected.length} patterns (requested ${requestedCount})`);
@@ -233,6 +234,7 @@
                         if (sessionInfo && queue) {
                             sessionInfo.updateSessionEstimate(queue.getItems().length);
                         }
+                        updatePatternsSelectedCount();
                     }, 0);
                 },
                 onReorder: (items) => {
@@ -321,6 +323,51 @@
             if (sessionInfo) {
                 sessionInfo.updateSessionEstimate(queue.getItems().length);
             }
+
+            // Patterns header: "N selected"
+            updatePatternsSelectedCount();
+
+            // Filters: icon + popover (no longer inline so list isn't pushed down)
+            wrapFilterPanelInPopover();
+        }
+
+        function wrapFilterPanelInPopover() {
+            const fp = document.getElementById('filterPanel');
+            if (!fp || !fp.parentNode) return;
+            const parent = fp.parentNode;
+            const wrap = document.createElement('div');
+            wrap.className = 'filter-popover';
+            const trigger = document.createElement('button');
+            trigger.type = 'button';
+            trigger.className = 'filter-popover__trigger';
+            trigger.setAttribute('aria-label', 'Open filters');
+            trigger.setAttribute('aria-expanded', 'false');
+            trigger.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>';
+            const popoverContent = document.createElement('div');
+            popoverContent.className = 'filter-popover__content';
+            parent.insertBefore(wrap, fp);
+            parent.removeChild(fp);
+            popoverContent.appendChild(fp);
+            wrap.appendChild(trigger);
+            wrap.appendChild(popoverContent);
+            trigger.addEventListener('click', function (e) {
+                e.stopPropagation();
+                const open = popoverContent.classList.toggle('is-open');
+                trigger.setAttribute('aria-expanded', open ? 'true' : 'false');
+            });
+            document.addEventListener('click', function (e) {
+                if (!wrap.contains(e.target)) {
+                    popoverContent.classList.remove('is-open');
+                    trigger.setAttribute('aria-expanded', 'false');
+                }
+            });
+        }
+
+        function updatePatternsSelectedCount() {
+            const el = document.getElementById('patternsSelectedCount');
+            if (!el || !queue) return;
+            const n = queue.getItems().length;
+            el.textContent = n === 1 ? '1 selected' : `${n} selected`;
         }
         
         // Tooltip handling

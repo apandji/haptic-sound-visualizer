@@ -103,7 +103,12 @@ function handleFilePreview(file) {
 }
 
 function showPlaceholder(message) {
-    analyzePlaceholder.textContent = message || 'Load session data to begin analysis.';
+    const textEl = analyzePlaceholder.querySelector('.analyze-main__placeholder-text');
+    if (textEl) {
+        textEl.textContent = message || 'Load session data to begin analysis.';
+    } else {
+        analyzePlaceholder.textContent = message || 'Load session data to begin analysis.';
+    }
     analyzePlaceholder.style.display = 'flex';
     analyzeContent.classList.remove('active');
 }

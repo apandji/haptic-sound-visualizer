@@ -102,24 +102,26 @@ class BoxPlotChart {
     }
 
     _getLayout() {
-        const font = typeof PLOTLY_FONT !== 'undefined' ? PLOTLY_FONT : 'monospace';
+        const font = typeof PLOTLY_THEME !== 'undefined' ? PLOTLY_THEME.fontFamily : 'sans-serif';
+        const theme = typeof PLOTLY_THEME !== 'undefined' ? PLOTLY_THEME : {};
         return {
-            font: { family: font, size: 11, color: '#666' },
-            paper_bgcolor: 'transparent',
-            plot_bgcolor: 'transparent',
+            font: { family: font, size: theme.fontSize || 11, color: theme.fontColor || '#666' },
+            paper_bgcolor: theme.paperBg || 'transparent',
+            plot_bgcolor: theme.plotBg || 'transparent',
             margin: { l: 50, r: 20, t: 10, b: 40 },
             showlegend: false,
             height: 340,
             yaxis: {
-                title: { text: 'Change from baseline', font: { size: 10 } },
+                title: { text: 'Change from baseline', font: { size: theme.titleFontSize || 10, family: font } },
                 zeroline: true,
-                zerolinecolor: '#e0e0e0',
+                zerolinecolor: theme.lineColor || '#e0e0e0',
                 zerolinewidth: 1,
-                gridcolor: '#f0f0f0',
-                tickfont: { size: 9 }
+                gridcolor: theme.gridColor || '#e8e8e8',
+                tickfont: { size: 9, family: font }
             },
             xaxis: {
-                tickfont: { size: 10 }
+                gridcolor: theme.gridColor || '#e8e8e8',
+                tickfont: { size: 10, family: font }
             }
         };
     }

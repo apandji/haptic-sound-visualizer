@@ -248,8 +248,8 @@ class Visualizer {
                     p.fill(180);
                     p.textAlign(p.CENTER, p.CENTER);
                     p.textSize(12);
-                    // Set monospace font to match UI - use Courier New which is widely available
-                    p.textFont('Courier New');
+                    // Match UI data typography (Geist Mono from design-tokens)
+                    p.textFont('Geist Mono');
                     
                     let statusText = 'Select a file to play';
                     

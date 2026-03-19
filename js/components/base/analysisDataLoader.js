@@ -44,8 +44,17 @@ class AnalysisDataLoader {
         this.boundHandlers.localClick = () => this.loadFromLocalStorage();
         localBtn.addEventListener('click', this.boundHandlers.localClick);
 
+        const mockBtn = document.createElement('button');
+        mockBtn.className = 'analysis-data-loader__button analysis-data-loader__button--mock';
+        mockBtn.type = 'button';
+        mockBtn.textContent = 'LOAD SAMPLE DATA';
+        mockBtn.title = 'Load demo sessions to preview charts (no database or storage needed)';
+        this.boundHandlers.mockClick = () => this.loadMockSampleData();
+        mockBtn.addEventListener('click', this.boundHandlers.mockClick);
+
         actions.appendChild(dbBtn);
         actions.appendChild(localBtn);
+        actions.appendChild(mockBtn);
 
         // Status display
         const status = document.createElement('div');
@@ -59,7 +68,35 @@ class AnalysisDataLoader {
 
         this.dbButton = dbBtn;
         this.localButton = localBtn;
+        this.mockButton = mockBtn;
         this.updateStatus();
+    }
+
+    /**
+     * Load built-in mock sessions for dashboard preview (dev / demos).
+     */
+    loadMockSampleData() {
+        if (typeof window.getMockAnalysisSessions !== 'function') {
+            this.statusElement.textContent = 'Sample data script not loaded.';
+            this.statusElement.classList.add('analysis-data-loader__status--error');
+            return;
+        }
+        try {
+            const sessions = window.getMockAnalysisSessions();
+            if (!Array.isArray(sessions) || sessions.length === 0) {
+                this.statusElement.textContent = 'Sample data is empty.';
+                this.statusElement.classList.add('analysis-data-loader__status--error');
+                return;
+            }
+            this.statusElement.classList.remove('analysis-data-loader__status--error');
+            this.setSessions(sessions);
+            this.statusElement.textContent =
+                `${sessions.length} demo sessions loaded (preview only — not saved).`;
+        } catch (err) {
+            console.error('AnalysisDataLoader: mock sample load failed', err);
+            this.statusElement.textContent = 'Could not load sample data.';
+            this.statusElement.classList.add('analysis-data-loader__status--error');
+        }
     }
 
     async loadFromDatabase() {
@@ -132,6 +169,7 @@ class AnalysisDataLoader {
         this.isLoading = isLoading;
         if (this.dbButton) this.dbButton.disabled = isLoading;
         if (this.localButton) this.localButton.disabled = isLoading;
+        if (this.mockButton) this.mockButton.disabled = isLoading;
 
         if (isLoading && this.statusElement) {
             this.statusElement.classList.remove('analysis-data-loader__status--error');

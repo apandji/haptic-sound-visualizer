@@ -16,6 +16,7 @@ class PatternQueue {
         this.getAvailableFiles = options.getAvailableFiles || null; // Callback to get filtered/available files for random selection
         this.onFilePreview = options.onFilePreview || null; // Preview callback (play button)
         this.onPlayStateChange = options.onPlayStateChange || null; // Called when play/pause state changes
+        this.headerLabel = options.headerLabel !== undefined ? options.headerLabel : 'PATTERNS';
         
         // Queue state: array of file objects with order
         this.items = [];
@@ -128,7 +129,7 @@ class PatternQueue {
         
         const headerText = document.createElement('span');
         headerText.className = 'queue__header-text';
-        headerText.textContent = 'PATTERNS';
+        headerText.textContent = this.headerLabel;
         headerLeft.appendChild(headerText);
         
         const headerCount = document.createElement('span');

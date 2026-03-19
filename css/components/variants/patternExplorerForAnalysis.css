@@ -24,7 +24,7 @@
 
 .pattern-explorer-analysis__compare-btn {
     font-family: inherit;
-    font-size: 9px;
+    font-size: var(--font-size-2xs);
     font-weight: var(--font-weight-medium);
     letter-spacing: 0.5px;
     text-transform: uppercase;
@@ -59,7 +59,7 @@
 
 /* Trial count badge on each file item */
 .pattern-explorer-analysis__trial-count {
-    font-size: 9px;
+    font-size: var(--font-size-2xs);
     font-weight: var(--font-weight-medium);
     color: #999;
     background: #f5f5f5;
