@@ -8,13 +8,13 @@
     left: 0;
     width: 100%;
     height: 100%;
-    background: #fafafa;
+    background: var(--color-bg);
     z-index: 10000;
     display: none;
     align-items: center;
     justify-content: center;
-    color: #333;
-    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Courier New', monospace;
+    color: var(--color-text);
+    font-family: var(--font-sans);
     opacity: 0;
     transition: opacity 0.3s ease;
 }
@@ -37,6 +37,55 @@
     flex-direction: column;
 }
 
+/* Phase transition when switching (e.g. calibration → baseline) */
+.test-execution-overlay__phase {
+    transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+/* Tester info bar – for experimenter only (subject does not see screen) */
+.test-execution-overlay__tester-bar {
+    position: fixed;
+    top: 4rem;
+    left: var(--spacing-lg);
+    width: 280px;
+    max-width: calc(100vw - var(--spacing-lg) * 4);
+    padding: var(--spacing-md) var(--spacing-lg);
+    background: rgba(255, 255, 255, 0.92);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    z-index: 10001;
+    font-family: var(--font-sans);
+    font-size: var(--font-size-xs);
+    color: var(--color-text-secondary, #555);
+    line-height: var(--line-height-relaxed);
+    pointer-events: auto;
+}
+
+.test-execution-overlay__tester-bar--hidden {
+    display: none;
+}
+
+.test-execution-overlay__tester-step {
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text, #333);
+    font-size: var(--font-size-sm);
+    margin-bottom: var(--spacing-xs);
+    letter-spacing: 0.02em;
+}
+
+.test-execution-overlay__tester-next {
+    color: var(--color-accent);
+    font-weight: var(--font-weight-medium);
+    margin-bottom: var(--spacing-sm);
+}
+
+.test-execution-overlay__tester-instruction {
+    color: var(--color-text-secondary, #666);
+    font-size: var(--text-3xs, 0.625rem);
+    line-height: 1.4;
+}
+
 /* Top Buttons Container */
 .test-execution-overlay__top-right-buttons {
     position: fixed;
@@ -56,33 +105,34 @@
 
 /* NEXT Button - Primary Action */
 .test-execution-overlay__next-btn {
-    padding: 6px var(--spacing-md);
-    background: #000;
-    color: #fff;
-    border: 1px solid #000;
-    border-radius: 0;
+    padding: var(--spacing-sm) var(--spacing-md);
+    min-height: 2.25rem;
+    background: var(--color-accent);
+    color: var(--color-text-inverse);
+    border: 1px solid var(--color-accent);
+    border-radius: var(--radius-md);
     font-size: var(--font-size-sm);
     font-weight: var(--font-weight-medium);
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.05em;
     cursor: pointer;
     transition: all 0.15s ease;
     font-family: inherit;
 }
 
 .test-execution-overlay__next-btn:hover {
-    background: #333;
-    border-color: #333;
+    background: var(--color-accent-hover);
+    border-color: var(--color-accent-hover);
 }
 
 .test-execution-overlay__next-btn:active {
-    background: #000;
-    border-color: #000;
+    background: var(--color-accent);
+    border-color: var(--color-accent);
 }
 
-.test-execution-overlay__next-btn:focus {
+.test-execution-overlay__next-btn:focus-visible {
     outline: none;
-    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--focus-ring);
 }
 
 .test-execution-overlay__next-btn:disabled {
@@ -95,34 +145,35 @@
 
 /* Abort Button - Destructive Action */
 .test-execution-overlay__abort-btn {
-    padding: 6px var(--spacing-md);
-    background: #d32f2f;
-    color: #fff;
-    border: 1px solid #d32f2f;
-    border-radius: 0;
+    padding: var(--spacing-sm) var(--spacing-md);
+    min-height: 2.25rem;
+    background: var(--color-destructive);
+    color: var(--color-text-inverse);
+    border: 1px solid var(--color-destructive);
+    border-radius: var(--radius-md);
     font-size: var(--font-size-sm);
     font-weight: var(--font-weight-medium);
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.05em;
     cursor: pointer;
     transition: all 0.15s ease;
     font-family: inherit;
 }
 
 .test-execution-overlay__abort-btn:hover {
-    background: #b71c1c;
-    border-color: #b71c1c;
-    box-shadow: 0 2px 8px rgba(211, 47, 47, 0.3);
+    background: var(--color-destructive-hover);
+    border-color: var(--color-destructive-hover);
+    box-shadow: var(--shadow-sm);
 }
 
 .test-execution-overlay__abort-btn:active {
-    background: #8b0000;
-    border-color: #8b0000;
+    background: var(--color-destructive-hover);
+    border-color: var(--color-destructive-hover);
 }
 
-.test-execution-overlay__abort-btn:focus {
+.test-execution-overlay__abort-btn:focus-visible {
     outline: none;
-    box-shadow: 0 0 0 2px rgba(211, 47, 47, 0.3);
+    box-shadow: var(--focus-ring);
 }
 
 /* Phase Styles */
@@ -153,39 +204,97 @@
     }
 }
 
-/* Calibration Phase */
+/* Calibration Phase – two-column: flightlist left, Start/Exit right */
 .test-execution-overlay__phase--calibration {
-    background: #fafafa;
-    gap: var(--spacing-md);
-    padding: var(--spacing-2xl) var(--spacing-xl);
+    background: #f5f6f9;
+    display: grid;
+    grid-template-columns: minmax(320px, 600px) 1fr;
+    gap: var(--spacing-2xl);
+    align-items: stretch;
+    justify-content: center;
+    padding: var(--spacing-xl);
     box-sizing: border-box;
+    text-align: left;
+    max-width: 100%;
+    width: 100%;
 }
 
-.test-execution-overlay__phase--calibration .test-execution-overlay__phase-label {
-    font-size: var(--font-size-lg);
+.test-execution-overlay__calibration-flightlist {
+    background: var(--color-bg-elevated);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    padding: var(--spacing-xl);
+    min-width: 380px;
+    max-width: 600px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-lg);
+}
+
+.test-execution-overlay__calibration-flightlist-title {
+    font-size: var(--text-lg);
     font-weight: var(--font-weight-semibold);
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    color: #666;
-    margin-bottom: var(--spacing-md);
+    color: var(--color-text);
+    margin: 0 0 var(--spacing-xs) 0;
+    letter-spacing: 0.02em;
 }
 
-.test-execution-overlay__calibration-instructions {
-    max-width: 560px;
-    font-size: var(--font-size-base);
-    color: #555;
+.test-execution-overlay__calibration-checklist {
+    margin: 0 0 0 var(--spacing-lg);
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+}
+
+.test-execution-overlay__calibration-checklist-item {
+    font-size: var(--text-base);
     line-height: var(--line-height-relaxed);
-    text-align: center;
+    color: var(--color-text);
+    display: list-item;
+    padding-left: var(--spacing-xs);
+}
+
+.test-execution-overlay__calibration-checklist-item .test-execution-overlay__calibration-test-btn {
+    margin: 0 var(--spacing-xs);
+    vertical-align: middle;
+}
+
+.test-execution-overlay__calibration-test-btn {
+    padding: var(--spacing-xs) var(--spacing-md);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    font-family: inherit;
+    color: var(--color-accent);
+    background: transparent;
+    border: 1px solid var(--color-accent);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.test-execution-overlay__calibration-test-btn:hover {
+    background: var(--color-accent-subtle);
+    color: var(--color-accent-hover);
+    border-color: var(--color-accent-hover);
+}
+
+.test-execution-overlay__calibration-test-btn:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
 }
 
 .test-execution-overlay__calibration-gate {
-    border: 1px solid #d0d0d0;
-    background: #fff;
-    padding: var(--spacing-sm) var(--spacing-lg);
-    min-width: 320px;
-    text-align: center;
+    border: 1px solid var(--color-border);
+    background: var(--color-bg);
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--radius-md);
     font-size: var(--font-size-sm);
-    letter-spacing: 0.3px;
+    color: var(--color-text);
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .test-execution-overlay__calibration-gate--waiting {
@@ -196,88 +305,168 @@
 
 .test-execution-overlay__calibration-gate--ready {
     color: #1b5e20;
-    border-color: #4caf50;
-    background: #f1f8e9;
+    border-color: var(--color-success-border);
+    background: var(--color-success-bg);
 }
 
 .test-execution-overlay__calibration-widget-slot {
-    min-width: 340px;
     min-height: 220px;
+    margin-top: var(--spacing-2xl);
     display: flex;
     justify-content: center;
+    align-items: flex-start;
+    flex: 1 1 auto;
 }
 
-.test-execution-overlay__calibration-actions {
+.test-execution-overlay__calibration-flightlist .test-execution-overlay__calibration-gate {
+    margin-top: var(--spacing-lg);
+}
+
+/* Ganglion widget larger and easier to read when embedded in calibration */
+.test-execution-overlay__calibration-widget-slot .signal-quality-visualizer {
+    font-size: var(--text-base);
+}
+.test-execution-overlay__calibration-widget-slot .signal-quality-visualizer__minimized-title {
+    font-size: var(--text-sm);
+}
+.test-execution-overlay__calibration-widget-slot .signal-quality-visualizer__channel-label {
+    font-size: var(--text-sm);
+}
+.test-execution-overlay__calibration-widget-slot .signal-quality-visualizer__channel-status-value {
+    font-size: var(--text-base);
+}
+.test-execution-overlay__calibration-widget-slot .signal-quality-visualizer__channel-status-unit {
+    font-size: var(--text-sm);
+}
+.test-execution-overlay__calibration-widget-slot .signal-quality-visualizer__minimized-summary {
+    font-size: var(--text-sm);
+}
+.test-execution-overlay__calibration-widget-slot .signal-quality-visualizer--embedded .signal-quality-visualizer__panel {
+    width: min(100%, 420px);
+}
+
+.test-execution-overlay__calibration-main {
     display: flex;
-    gap: var(--spacing-sm);
-    justify-content: center;
+    flex-direction: column;
     align-items: center;
+    justify-content: center;
+    gap: 0;
+    padding: var(--spacing-xl);
+    min-width: 0;
 }
 
-.test-execution-overlay__calibration-btn {
-    padding: 8px var(--spacing-lg);
-    border: 1px solid;
-    border-radius: 0;
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-medium);
-    text-transform: uppercase;
-    letter-spacing: 0.6px;
-    cursor: pointer;
-    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+.test-execution-overlay__calibration-main .test-execution-overlay__calibration-start-circle {
+    margin-bottom: 0;
+}
+
+.test-execution-overlay__calibration-main .test-execution-overlay__calibration-exit-btn {
+    margin-top: var(--spacing-2xl);
+}
+
+/* Big circle Start Test – literal circle, hover fills (engine start feel) */
+.test-execution-overlay__calibration-start-circle {
+    width: 160px;
+    height: 160px;
+    border-radius: 50%;
+    border: 3px solid var(--color-accent);
+    background: transparent;
+    color: var(--color-accent);
+    font-size: var(--text-base);
+    font-weight: var(--font-weight-semibold);
     font-family: inherit;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.25s ease, color 0.25s ease, transform 0.2s ease, box-shadow 0.25s ease;
+    box-shadow: 0 0 0 0 rgba(186, 12, 47, 0);
 }
 
-.test-execution-overlay__calibration-btn:disabled {
-    opacity: 0.45;
+.test-execution-overlay__calibration-start-circle:hover {
+    background: var(--color-accent);
+    color: var(--color-text-inverse);
+    transform: scale(1.03);
+    box-shadow: 0 4px 20px rgba(186, 12, 47, 0.35);
+}
+
+.test-execution-overlay__calibration-start-circle:active {
+    transform: scale(0.98);
+}
+
+.test-execution-overlay__calibration-start-circle:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--color-accent-subtle), 0 0 0 5px var(--color-accent);
+}
+
+.test-execution-overlay__calibration-start-circle:disabled {
+    opacity: 0.5;
     cursor: not-allowed;
+    transform: none;
 }
 
-.test-execution-overlay__calibration-btn--abort {
-    background: #fff;
-    color: #d32f2f;
-    border-color: #d32f2f;
+.test-execution-overlay__calibration-start-circle-text {
+    text-align: center;
+    line-height: 1.2;
 }
 
-.test-execution-overlay__calibration-btn--abort:hover:not(:disabled) {
-    background: #ffebee;
+/* Exit – secondary, larger and spaced below circle */
+.test-execution-overlay__calibration-exit-btn {
+    padding: var(--spacing-sm) var(--spacing-lg);
+    font-size: var(--text-base);
+    font-weight: var(--font-weight-medium);
+    font-family: inherit;
+    color: var(--color-text-muted);
+    background: transparent;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease;
 }
 
-.test-execution-overlay__calibration-btn--start {
-    background: #000;
-    color: #fff;
-    border-color: #000;
+.test-execution-overlay__calibration-exit-btn:hover {
+    color: var(--color-text);
+    border-color: var(--color-border-strong);
+    background: var(--color-bg);
 }
 
-.test-execution-overlay__calibration-btn--start:hover:not(:disabled) {
-    background: #333;
-    border-color: #333;
+.test-execution-overlay__calibration-exit-btn:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
 }
 
-@media (max-width: 600px) {
-    .test-execution-overlay__calibration-widget-slot {
-        min-width: 0;
-        width: 100%;
+@media (max-width: 768px) {
+    .test-execution-overlay__phase--calibration {
+        grid-template-columns: 1fr;
+        padding: var(--spacing-md);
     }
 
-    .test-execution-overlay__calibration-gate {
-        min-width: 0;
-        width: 100%;
+    .test-execution-overlay__calibration-flightlist {
+        max-width: none;
     }
 
-    .test-execution-overlay__calibration-actions {
-        width: 100%;
-        flex-direction: column;
+    .test-execution-overlay__calibration-main {
+        order: -1;
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: var(--spacing-md);
     }
 
-    .test-execution-overlay__calibration-btn {
-        width: 100%;
-        max-width: 320px;
+    .test-execution-overlay__calibration-main .test-execution-overlay__calibration-exit-btn {
+        margin-top: var(--spacing-lg);
+    }
+
+    .test-execution-overlay__calibration-start-circle {
+        width: 140px;
+        height: 140px;
+        font-size: var(--font-size-sm);
     }
 }
 
-/* Baseline Phase */
+/* Baseline Phase – neutral light */
 .test-execution-overlay__phase--baseline {
-    background: #f8f9fa;
+    background: #f4f5f7;
 }
 
 .test-execution-overlay__phase--baseline .test-execution-overlay__phase-label {
@@ -290,16 +479,16 @@
 }
 
 .test-execution-overlay__phase--baseline .test-execution-overlay__countdown {
-    font-size: 80px;
+    font-size: var(--text-5xl);
     font-weight: var(--font-weight-normal);
     color: #333;
     margin-bottom: var(--spacing-xl);
     animation: subtlePulse 2s ease-in-out infinite;
 }
 
-/* Stimulation Phase */
+/* Stimulation Phase – soft green tint */
 .test-execution-overlay__phase--stimulation {
-    background: #f8faf8;
+    background: #f0f5f0;
 }
 
 .test-execution-overlay__phase--stimulation .test-execution-overlay__phase-label {
@@ -312,7 +501,7 @@
 }
 
 .test-execution-overlay__phase--stimulation .test-execution-overlay__countdown {
-    font-size: 80px;
+    font-size: var(--text-5xl);
     font-weight: var(--font-weight-normal);
     color: #4caf50;
     margin-bottom: var(--spacing-xl);
@@ -351,9 +540,11 @@
 
 /* Common Phase Elements */
 .test-execution-overlay__countdown {
-    font-size: 80px;
+    font-size: var(--text-5xl);
     font-weight: var(--font-weight-normal);
     line-height: 1;
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
     transition: color 0.3s ease, opacity 0.2s ease;
 }
 
@@ -381,12 +572,12 @@
     color: #333;
     margin-top: var(--spacing-xs);
     font-weight: var(--font-weight-medium);
-    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Courier New', monospace;
+    font-family: var(--font-mono);
 }
 
 /* Pattern Complete Phase (after survey) */
 .test-execution-overlay__phase--pattern-complete {
-    background: #fafafa;
+    background: #f6f6f8;
 }
 
 .test-execution-overlay__pattern-complete-content {
@@ -474,9 +665,9 @@
     box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.05);
 }
 
-/* Survey Phase */
+/* Survey Phase – soft warm tint */
 .test-execution-overlay__phase--survey {
-    background: #fafafa;
+    background: #faf8f5;
     opacity: 1;
     transition: opacity 0.2s ease;
 }
@@ -493,10 +684,10 @@
     overflow-x: hidden;
 }
 
-/* Complete Phase */
+/* Complete Phase / Aborted */
 .test-execution-overlay__phase--complete,
 .test-execution-overlay__phase--aborted {
-    background: #fafafa;
+    background: var(--color-bg);
 }
 
 .test-execution-overlay__complete-content,

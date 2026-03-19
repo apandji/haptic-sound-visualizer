@@ -232,7 +232,7 @@ class PatternExplorerWithSelection {
             
             const headerText = document.createElement('span');
             headerText.className = 'pattern-explorer-header__text';
-            headerText.textContent = 'PATTERN LIBRARY';
+            headerText.textContent = 'Library';
             header.appendChild(headerText);
             
             const headerCount = document.createElement('span');
@@ -248,7 +248,7 @@ class PatternExplorerWithSelection {
             if (!headerText) {
                 headerText = document.createElement('span');
                 headerText.className = 'pattern-explorer-header__text';
-                headerText.textContent = 'PATTERN LIBRARY';
+                headerText.textContent = 'Library';
                 header.insertBefore(headerText, header.firstChild);
             }
             

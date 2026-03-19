@@ -1,6 +1,36 @@
-// Shared Plotly configuration
-const PLOTLY_FONT = "'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Courier New', monospace";
-const COMPARISON_COLORS = ['#333333', '#999999', '#cc0000', '#006699'];
+// Shared Plotly configuration – fonts and colors aligned with design tokens
+const PLOTLY_FONT = "'Geist Mono', 'SF Mono', Monaco, 'Roboto Mono', 'Courier New', monospace";
+const PLOTLY_FONT_SANS = "'Geist Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+const PLOTLY_THEME = {
+    fontFamily: PLOTLY_FONT_SANS,
+    fontSize: 11,
+    fontColor: '#666666',
+    gridColor: '#e8e8e8',
+    lineColor: '#e0e0e0',
+    paperBg: 'transparent',
+    plotBg: 'transparent',
+    titleFontSize: 10
+};
+function getPlotlyLayoutTheme(overrides = {}) {
+    return {
+        font: { family: PLOTLY_THEME.fontFamily, size: PLOTLY_THEME.fontSize, color: PLOTLY_THEME.fontColor },
+        paper_bgcolor: PLOTLY_THEME.paperBg,
+        plot_bgcolor: PLOTLY_THEME.plotBg,
+        margin: { l: 50, r: 20, t: 25, b: 50 },
+        showlegend: false,
+        xaxis: {
+            gridcolor: PLOTLY_THEME.gridColor,
+            tickfont: { size: 9, family: PLOTLY_THEME.fontFamily },
+            zeroline: false
+        },
+        yaxis: {
+            gridcolor: PLOTLY_THEME.gridColor,
+            tickfont: { size: 9, family: PLOTLY_THEME.fontFamily }
+        },
+        ...overrides
+    };
+}
+const COMPARISON_COLORS = ['#333333', '#999999', '#BA0C2F', '#006699'];
 const BAND_COLORS = {
     delta: '#4a7eb5',
     theta: '#5bb5a2',

@@ -12,12 +12,14 @@ class TestExecutionOverlay {
      * @param {string} [options.containerId='testExecutionOverlay'] - Container ID
      * @param {Function} [options.onAbort] - Callback when session is aborted: () => void
      * @param {Function} [options.onManualStartCalibration] - Callback to start test manually during calibration: () => void
+     * @param {Function} [options.onPlayCalibrationTest] - Callback to play a short (~2s) calibration sound sample: () => void
      */
     constructor(options = {}) {
         this.containerId = options.containerId || 'testExecutionOverlay';
         this.container = document.getElementById(this.containerId);
         this.onAbort = options.onAbort || null;
         this.onManualStartCalibration = options.onManualStartCalibration || null;
+        this.onPlayCalibrationTest = options.onPlayCalibrationTest || null;
 
         // State
         this.isVisible = false;
@@ -49,6 +51,17 @@ class TestExecutionOverlay {
         this.contentContainer.className = 'test-execution-overlay__content';
         this.container.appendChild(this.contentContainer);
 
+        // Tester info bar (for experimenter; subject does not see screen)
+        this.testerBar = document.createElement('div');
+        this.testerBar.className = 'test-execution-overlay__tester-bar';
+        this.testerBar.setAttribute('aria-label', 'Tester information');
+        this.testerBar.innerHTML = `
+            <div class="test-execution-overlay__tester-step" id="testerStepLabel"></div>
+            <div class="test-execution-overlay__tester-next" id="testerNextStep"></div>
+            <div class="test-execution-overlay__tester-instruction" id="testerInstruction"></div>
+        `;
+        this.container.appendChild(this.testerBar);
+
         // Create top-right button container
         this.topRightButtons = document.createElement('div');
         this.topRightButtons.className = 'test-execution-overlay__top-right-buttons';
@@ -77,6 +90,32 @@ class TestExecutionOverlay {
 
         // Initially hidden
         this.hide();
+    }
+
+    /**
+     * Update tester info bar (for experimenter; subject does not see screen).
+     * @param {string} stepLabel - Current step e.g. "Calibration" or "Trial 2 of 5 · Baseline"
+     * @param {string} nextStep - What comes next e.g. "Stimulation (30s)" or "Select tags then Next"
+     * @param {string} instruction - Short instruction for tester
+     */
+    updateTesterBar(stepLabel, nextStep, instruction) {
+        if (!this.testerBar) return;
+        const stepEl = this.testerBar.querySelector('#testerStepLabel');
+        const nextEl = this.testerBar.querySelector('#testerNextStep');
+        const instEl = this.testerBar.querySelector('#testerInstruction');
+        if (stepEl) stepEl.textContent = stepLabel;
+        if (nextEl) nextEl.textContent = nextStep ? `Next: ${nextStep}` : '';
+        if (instEl) instEl.textContent = instruction || '';
+        this.testerBar.classList.remove('test-execution-overlay__tester-bar--hidden');
+    }
+
+    /**
+     * Hide tester info bar (e.g. on complete/aborted screens).
+     */
+    hideTesterBar() {
+        if (this.testerBar) {
+            this.testerBar.classList.add('test-execution-overlay__tester-bar--hidden');
+        }
     }
 
     /**
@@ -131,31 +170,37 @@ class TestExecutionOverlay {
             this.abortButton.style.display = 'none';
         }
 
+        const goodN = this.calibrationRequiredGoodChannels;
+        const totalN = this.calibrationRequiredChannels;
         this.contentContainer.innerHTML = `
             <div class="test-execution-overlay__phase test-execution-overlay__phase--calibration">
-                <div class="test-execution-overlay__phase-label">CALIBRATION CHECK</div>
-                <div class="test-execution-overlay__calibration-instructions">
-                    Continue when at least ${this.calibrationRequiredGoodChannels} of ${this.calibrationRequiredChannels} channels are <strong>good</strong>,
-                    or use manual start.
+                <div class="test-execution-overlay__calibration-flightlist" aria-label="Pre-flight checklist">
+                    <h2 class="test-execution-overlay__calibration-flightlist-title">Pre-flight checklist</h2>
+                    <ol class="test-execution-overlay__calibration-checklist">
+                        <li class="test-execution-overlay__calibration-checklist-item">Get the participant into the testing setup (Woojer vest, hat).</li>
+                        <li class="test-execution-overlay__calibration-checklist-item">Ensure that the hat is secure on the participant. A good fit.</li>
+                        <li class="test-execution-overlay__calibration-checklist-item">
+                            <span>Test to make sure sound is working.</span>
+                            <button type="button" class="test-execution-overlay__calibration-test-btn" id="calibrationTestSoundBtn">Test</button>
+                        </li>
+                        <li class="test-execution-overlay__calibration-checklist-item">Ask the participant if they feel anything when you click Test.</li>
+                        <li class="test-execution-overlay__calibration-checklist-item">Start test when at least ${goodN} of ${totalN} channels are good and showing green. You can also manually start the test.</li>
+                    </ol>
+                    <div class="test-execution-overlay__calibration-widget-slot" id="calibrationWidgetContainer"></div>
+                    <div class="test-execution-overlay__calibration-gate" id="calibrationGateStatus">Waiting for channel readings...</div>
                 </div>
-                <div class="test-execution-overlay__calibration-gate" id="calibrationGateStatus">
-                    Waiting for channel readings...
-                </div>
-                <div class="test-execution-overlay__calibration-widget-slot" id="calibrationWidgetContainer"></div>
-                <div class="test-execution-overlay__calibration-actions">
-                    <button class="test-execution-overlay__calibration-btn test-execution-overlay__calibration-btn--abort" id="calibrationAbortBtn">
-                        Abort Test
+                <div class="test-execution-overlay__calibration-main">
+                    <button type="button" class="test-execution-overlay__calibration-start-circle" id="calibrationManualStartBtn" aria-label="Start test">
+                        <span class="test-execution-overlay__calibration-start-circle-text">Start Test</span>
                     </button>
-                    <button class="test-execution-overlay__calibration-btn test-execution-overlay__calibration-btn--start" id="calibrationManualStartBtn">
-                        Start Test
-                    </button>
+                    <button type="button" class="test-execution-overlay__calibration-exit-btn" id="calibrationAbortBtn">Exit</button>
                 </div>
             </div>
         `;
 
-        const abortBtn = this.contentContainer.querySelector('#calibrationAbortBtn');
-        if (abortBtn) {
-            abortBtn.addEventListener('click', () => {
+        const exitBtn = this.contentContainer.querySelector('#calibrationAbortBtn');
+        if (exitBtn) {
+            exitBtn.addEventListener('click', () => {
                 if (this.onAbort) {
                     this.onAbort();
                 }
@@ -171,6 +216,13 @@ class TestExecutionOverlay {
             });
         }
 
+        const testSoundBtn = this.contentContainer.querySelector('#calibrationTestSoundBtn');
+        if (testSoundBtn && this.onPlayCalibrationTest) {
+            testSoundBtn.addEventListener('click', () => {
+                this.onPlayCalibrationTest();
+            });
+        }
+
         this.updateCalibrationGateStatus({
             pass: false,
             goodChannels: 0,
@@ -178,6 +230,8 @@ class TestExecutionOverlay {
             requiredGoodChannels: this.calibrationRequiredGoodChannels,
             requiredChannels: this.calibrationRequiredChannels
         });
+
+        this.hideTesterBar();
     }
 
     /**
@@ -215,6 +269,13 @@ class TestExecutionOverlay {
                 <div class="test-execution-overlay__pattern-name">${patternName}</div>
             </div>
         `;
+
+        const duration = data.duration || 30;
+        this.updateTesterBar(
+            `Trial ${patternNumber} of ${totalPatterns} · Baseline`,
+            `Stimulation (${duration}s)`,
+            'Subject at rest. No action needed.'
+        );
     }
 
     /**
@@ -251,6 +312,12 @@ class TestExecutionOverlay {
                 <div class="test-execution-overlay__pattern-name">${patternName}</div>
             </div>
         `;
+
+        this.updateTesterBar(
+            `Trial ${patternNumber} of ${totalPatterns} · Stimulation`,
+            'Survey (tag this trial, then Next or Finish)',
+            'Audio playing. No action needed.'
+        );
     }
 
     // Pattern-complete checkpoint removed - survey now goes directly to next pattern
@@ -322,6 +389,15 @@ class TestExecutionOverlay {
                 </div>
             </div>
         `;
+
+        const patternNumber = data.patternNumber || 1;
+        const totalPatterns = data.totalPatterns || 1;
+        const isLast = patternNumber >= totalPatterns;
+        this.updateTesterBar(
+            `Trial ${patternNumber} of ${totalPatterns} · Survey`,
+            isLast ? 'Finish session (click Finish)' : 'Next trial (click Next)',
+            'Select tags for this trial, then click Next or Finish.'
+        );
     }
 
     /**
@@ -331,6 +407,7 @@ class TestExecutionOverlay {
         this.currentPhase = 'complete';
         this.show();
         this.stopCountdown();
+        this.hideTesterBar();
         this.showNextButton(false); // Hide NEXT on complete screen
         // Hide ABORT button on complete screen
         if (this.abortButton) {
@@ -368,6 +445,7 @@ class TestExecutionOverlay {
         this.currentPhase = 'aborted';
         this.show();
         this.stopCountdown();
+        this.hideTesterBar();
         this.showNextButton(false); // Hide NEXT button
         // Hide ABORT button on aborted screen
         if (this.abortButton) {
@@ -550,4 +628,9 @@ class TestExecutionOverlay {
     getSurveyContainer() {
         return document.getElementById('surveyContainer');
     }
+}
+
+// Expose for non-module script usage (testExecution.js)
+if (typeof window !== 'undefined') {
+    window.TestExecutionOverlay = TestExecutionOverlay;
 }

@@ -340,7 +340,7 @@ class TimeSeriesChart {
         const calDuration = data?.calibrationDuration || 0;
         const blDuration = data?.baselineDuration || 10;
         const stimDuration = data?.stimulationDuration || 30;
-        const font = typeof PLOTLY_FONT !== 'undefined' ? PLOTLY_FONT : 'monospace';
+        const font = typeof PLOTLY_THEME !== 'undefined' ? PLOTLY_THEME.fontFamily : 'sans-serif';
 
         const totalStart = -(calDuration + blDuration);
         layout.xaxis.range = [totalStart, stimDuration - 1];
@@ -399,26 +399,24 @@ class TimeSeriesChart {
     }
 
     _getLayout() {
-        const font = typeof PLOTLY_FONT !== 'undefined' ? PLOTLY_FONT : 'monospace';
+        const font = typeof PLOTLY_THEME !== 'undefined' ? PLOTLY_THEME.fontFamily : 'sans-serif';
         const yLabel = this.powerMode === 'abs' ? 'Absolute Power' : 'Relative Power';
+        const base = typeof getPlotlyLayoutTheme === 'function' ? getPlotlyLayoutTheme({ height: 300 }) : {};
         return {
-            font: { family: font, size: 11, color: '#666' },
-            paper_bgcolor: 'transparent',
-            plot_bgcolor: 'transparent',
-            margin: { l: 50, r: 20, t: 25, b: 50 },
-            showlegend: false,
-            height: 300,
+            ...base,
+            font: { family: font, size: (PLOTLY_THEME && PLOTLY_THEME.fontSize) || 11, color: (PLOTLY_THEME && PLOTLY_THEME.fontColor) || '#666' },
             xaxis: {
-                title: { text: 'Time (seconds)', font: { size: 10 } },
+                ...(base.xaxis || {}),
+                title: { text: 'Time (seconds)', font: { size: (PLOTLY_THEME && PLOTLY_THEME.titleFontSize) || 10, family: font } },
                 dtick: 5,
-                gridcolor: '#f0f0f0',
-                tickfont: { size: 9 },
-                zeroline: false
+                gridcolor: (PLOTLY_THEME && PLOTLY_THEME.gridColor) || '#e8e8e8',
+                tickfont: { size: 9, family: font }
             },
             yaxis: {
-                title: { text: yLabel, font: { size: 10 } },
-                gridcolor: '#f0f0f0',
-                tickfont: { size: 9 }
+                ...(base.yaxis || {}),
+                title: { text: yLabel, font: { size: (PLOTLY_THEME && PLOTLY_THEME.titleFontSize) || 10, family: font } },
+                gridcolor: (PLOTLY_THEME && PLOTLY_THEME.gridColor) || '#e8e8e8',
+                tickfont: { size: 9, family: font }
             }
         };
     }

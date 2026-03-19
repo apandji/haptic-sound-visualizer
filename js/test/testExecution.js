@@ -6,6 +6,7 @@
         let testAudioPlayer = null;
         let baselineTimer = null;
         let stimulationTimer = null;
+        let calibrationTestTimeout = null;
         let calibrationPhaseCompleted = false;
         const calibrationGateConfig = {
             requiredChannels: 4,
@@ -195,11 +196,23 @@
                 onError: handleTestError
             });
 
-            // Create TestExecutionOverlay
-            testExecutionOverlay = new TestExecutionOverlay({
+            // Create TestExecutionOverlay (requires testExecutionOverlay.js to load before this script in test.html)
+            if (typeof window.TestExecutionOverlay === 'undefined') {
+                console.error('TestExecutionOverlay not loaded. Ensure js/components/base/testExecutionOverlay.js is loaded before js/test/testExecution.js in test.html.');
+                if (typeof sessionInfo !== 'undefined') {
+                    sessionInfo.isSessionStarted = false;
+                    if (sessionInfo.updateStartButton) sessionInfo.updateStartButton();
+                    if (sessionInfo.showValidationError) {
+                        sessionInfo.showValidationError('Cannot start test: overlay script failed to load. Refresh the page or check the browser console.');
+                    }
+                }
+                return;
+            }
+            testExecutionOverlay = new window.TestExecutionOverlay({
                 containerId: 'testExecutionOverlay',
                 onAbort: handleTestAbort,
-                onManualStartCalibration: handleManualCalibrationStart
+                onManualStartCalibration: handleManualCalibrationStart,
+                onPlayCalibrationTest: playCalibrationTestSample
             });
 
             // Create EEGDataCollector
@@ -281,7 +294,8 @@
                     testExecutionOverlay.showCalibration({
                         ...data,
                         requiredChannels: calibrationGateConfig.requiredChannels,
-                        requiredGoodChannels: calibrationGateConfig.requiredGoodChannels
+                        requiredGoodChannels: calibrationGateConfig.requiredGoodChannels,
+                        totalPatterns: testSession && testSession.trials ? testSession.trials.length : 0
                     });
                     dockSignalQualityWidgetInCalibration();
                     eegDataCollector.start();
@@ -557,6 +571,34 @@
                 clearTimeout(stimulationTimer);
                 stimulationTimer = null;
             }
+            if (calibrationTestTimeout) {
+                clearTimeout(calibrationTestTimeout);
+                calibrationTestTimeout = null;
+            }
+        }
+
+        /**
+         * Play a short (~2s) calibration sound sample from the first queue item (for "Test" button).
+         */
+        function playCalibrationTestSample() {
+            const items = queue ? queue.getItems() : [];
+            if (items.length === 0 || !testAudioPlayer) {
+                return;
+            }
+            const pattern = items[0];
+            testAudioPlayer.loadFile(pattern.path).then(() => {
+                testAudioPlayer.setLoop(false);
+                if (window.p5Instance) {
+                    window.p5Instance.userStartAudio();
+                }
+                testAudioPlayer.play();
+                calibrationTestTimeout = setTimeout(() => {
+                    testAudioPlayer.stop();
+                    calibrationTestTimeout = null;
+                }, 2000);
+            }).catch(err => {
+                console.warn('Calibration test sample failed to load:', err);
+            });
         }
 
         /**

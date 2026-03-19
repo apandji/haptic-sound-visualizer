@@ -53,6 +53,18 @@
     background: #f0f0f0;
 }
 
+.analysis-data-loader__button--mock {
+    background: var(--color-accent-subtle, rgba(186, 12, 47, 0.08));
+    border-color: var(--color-border);
+    color: var(--color-accent, #ba0c2f);
+    font-size: var(--font-size-xs);
+}
+
+.analysis-data-loader__button--mock:hover {
+    background: rgba(186, 12, 47, 0.12);
+    border-color: var(--color-accent, #ba0c2f);
+}
+
 .analysis-data-loader__status {
     font-size: var(--font-size-xs);
     color: #666;

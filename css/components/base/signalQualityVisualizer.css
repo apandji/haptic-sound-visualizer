@@ -83,7 +83,7 @@
 }
 
 .signal-quality-visualizer__minimized-title {
-    font-size: 10px;
+    font-size: var(--text-3xs);
     font-weight: var(--font-weight-medium, 500);
     color: #666;
     text-transform: uppercase;
@@ -155,10 +155,10 @@
 }
 
 .signal-quality-visualizer__channel-label {
-    font-size: 8px;
+    font-size: var(--text-2xs);
     font-weight: var(--font-weight-medium, 500);
     color: #666;
-    font-family: 'Courier New', monospace;
+    font-family: var(--font-mono);
     line-height: 1;
 }
 
@@ -181,14 +181,14 @@
 }
 
 .signal-quality-visualizer__channel-status-value {
-    font-size: 9px;
+    font-size: var(--font-size-2xs);
     font-weight: var(--font-weight-bold, 700);
-    font-family: 'Courier New', monospace; /* Monospace for numeric values */
+    font-family: var(--font-mono); /* Monospace for numeric values */
     line-height: 1;
 }
 
 .signal-quality-visualizer__channel-status-unit {
-    font-size: 6px;
+    font-size: var(--text-4xs);
     font-weight: var(--font-weight-normal, 400);
     opacity: 0.7;
     line-height: 1;
@@ -236,7 +236,7 @@
 
 /* Summary text */
 .signal-quality-visualizer__minimized-summary {
-    font-size: 9px;
+    font-size: var(--font-size-2xs);
     color: #666;
     text-align: center;
     margin-top: 3px;
@@ -296,7 +296,7 @@
     padding: 0;
     background: transparent;
     border: none;
-    font-size: 20px;
+    font-size: var(--text-lg);
     color: #666;
     cursor: pointer;
     display: flex;
@@ -348,10 +348,10 @@
 /* Last update time */
 .signal-quality-visualizer__last-update {
     padding: var(--spacing-xs, 4px) var(--spacing-md, 16px);
-    font-size: 11px;
+    font-size: var(--font-size-xs);
     color: #999;
     border-bottom: 1px solid #e0e0e0;
-    font-family: 'Courier New', monospace;
+    font-family: var(--font-mono);
 }
 
 .signal-quality-visualizer__last-update--active {
@@ -382,7 +382,7 @@
     color: #666;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    font-size: 11px;
+    font-size: var(--font-size-xs);
     border-bottom: 1px solid #e0e0e0;
 }
 
@@ -435,16 +435,16 @@
 
 .signal-quality-visualizer__channel {
     font-weight: var(--font-weight-medium, 500);
-    font-family: 'Courier New', monospace;
+    font-family: var(--font-mono);
 }
 
 .signal-quality-visualizer__rms {
-    font-family: 'Courier New', monospace;
+    font-family: var(--font-mono);
     text-align: right;
 }
 
 .signal-quality-visualizer__p60 {
-    font-family: 'Courier New', monospace;
+    font-family: var(--font-mono);
     text-align: right;
 }
 
@@ -453,7 +453,7 @@
     display: inline-block;
     padding: 2px 8px;
     border-radius: 0; /* Brutalistic */
-    font-size: 11px;
+    font-size: var(--font-size-xs);
     font-weight: var(--font-weight-medium, 500);
     text-transform: uppercase;
     letter-spacing: 0.5px;

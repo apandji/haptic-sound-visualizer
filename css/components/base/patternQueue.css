@@ -4,9 +4,10 @@
     display: flex;
     flex-direction: column;
     height: 100%;
-    background: #fff;
-    border: 1px solid #e0e0e0;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    background: var(--color-bg-elevated);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
     overflow: hidden;
     position: relative;
     z-index: 1001; /* Above filterPanel (z-index: 1000) and pattern explorer */
@@ -17,12 +18,12 @@
 /* Queue Header - matches PATTERN LIBRARY style */
 .queue__header {
     font-size: var(--font-size-base);
-    font-weight: var(--font-weight-medium);
+    font-weight: var(--font-weight-semibold);
     margin-bottom: var(--spacing-lg);
     margin-top: 0;
     padding: var(--spacing-lg) var(--spacing-xl) 0 var(--spacing-xl);
-    color: #000;
-    letter-spacing: 0.5px;
+    color: var(--color-text);
+    letter-spacing: 0.02em;
     text-transform: uppercase;
     display: flex;
     align-items: baseline;
@@ -79,7 +80,7 @@
     border: 1px solid #e0e0e0;
     border-radius: 2px;
     cursor: pointer;
-    font-size: 11px;
+    font-size: var(--font-size-xs);
     font-family: inherit;
     color: #666;
     font-weight: 500;
@@ -163,19 +164,21 @@
     background: #fff;
 }
 
+/* Same hierarchy as Session EXPORT SESSIONS */
 .queue__footer-clear {
-    padding: 4px var(--spacing-sm);
+    padding: 6px var(--spacing-md);
     background: #f5f5f5;
     border: 1px solid #e0e0e0;
-    border-radius: 2px;
+    border-radius: var(--radius-md);
     cursor: pointer;
-    font-size: 12px;
+    font-size: var(--font-size-sm);
     font-family: inherit;
     color: #666;
-    font-weight: 500;
-    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+    font-weight: var(--font-weight-medium);
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
     text-transform: uppercase;
     letter-spacing: 0.5px;
+    min-width: 120px;
 }
 
 .queue__footer-clear:disabled {
@@ -187,10 +190,13 @@
     background: #e8e8e8;
     border-color: #d0d0d0;
     color: #333;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .queue__footer-clear:active:not(:disabled) {
-    background: #e0e0e0;
+    transform: translateY(0);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .queue__footer-clear:focus {
@@ -203,13 +209,14 @@
     display: flex;
     align-items: center;
     gap: var(--spacing-sm);
-    padding: var(--spacing-sm) var(--spacing-xs);
+    padding: var(--spacing-sm) var(--spacing-md);
     margin-bottom: var(--spacing-xs);
-    background: #fff;
-    border: 1px solid #e0e0e0;
-    border-radius: 2px;
+    background: var(--color-bg-elevated);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    border-left: 3px solid transparent;
     cursor: move;
-    transition: background 0.15s ease, border-color 0.15s ease;
+    transition: background 0.2s ease, border-color 0.2s ease;
     position: relative;
 }
 
@@ -247,8 +254,9 @@
 }
 
 .queue__item:hover {
-    background: #f5f5f5;
-    border-color: #d0d0d0;
+    background: var(--color-accent-subtle);
+    border-color: var(--color-border-strong);
+    border-left-color: var(--color-accent);
 }
 
 .queue__item--dragging {
@@ -263,12 +271,12 @@
 
 @keyframes queueItemHighlight {
     0% {
-        background: rgba(0, 0, 0, 0.1);
-        border-color: #000;
+        background: var(--color-accent-subtle);
+        border-left-color: var(--color-accent);
     }
     100% {
-        background: #fff;
-        border-color: #e0e0e0;
+        background: var(--color-bg-elevated);
+        border-left-color: transparent;
     }
 }
 
@@ -289,10 +297,10 @@
 /* Drop zone indicator */
 .queue__drop-zone-indicator {
     height: 2px;
-    background: #000;
+    background: var(--color-accent);
     margin: var(--spacing-xs) 0;
     border-radius: 1px;
-    opacity: 0.6;
+    opacity: 0.7;
     animation: dropZonePulse 1s ease-in-out infinite;
 }
 

@@ -487,21 +487,24 @@ class RadarChart {
     // --- Layout helpers ---
 
     _getLayout() {
-        const font = typeof PLOTLY_FONT !== 'undefined' ? PLOTLY_FONT : 'monospace';
+        const font = typeof PLOTLY_THEME !== 'undefined' ? PLOTLY_THEME.fontFamily : 'sans-serif';
+        const gridColor = (typeof PLOTLY_THEME !== 'undefined' && PLOTLY_THEME.gridColor) || '#e8e8e8';
         return {
             polar: {
                 radialaxis: {
                     visible: true,
                     range: [0, undefined],
-                    tickfont: { size: 9, family: font }
+                    tickfont: { size: 9, family: font },
+                    gridcolor: gridColor
                 },
                 angularaxis: {
-                    tickfont: { size: 10, family: font }
+                    tickfont: { size: 10, family: font },
+                    gridcolor: gridColor
                 }
             },
-            font: { family: font, size: 11, color: '#666' },
-            paper_bgcolor: 'transparent',
-            plot_bgcolor: 'transparent',
+            font: { family: font, size: (PLOTLY_THEME && PLOTLY_THEME.fontSize) || 11, color: (PLOTLY_THEME && PLOTLY_THEME.fontColor) || '#666' },
+            paper_bgcolor: (PLOTLY_THEME && PLOTLY_THEME.paperBg) || 'transparent',
+            plot_bgcolor: (PLOTLY_THEME && PLOTLY_THEME.plotBg) || 'transparent',
             margin: { l: 60, r: 60, t: 20, b: 40 },
             showlegend: false,
             height: 300

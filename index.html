@@ -4,8 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SAIL Pattern Library</title>
+    <!-- Design tokens (load first) -->
+    <link rel="stylesheet" href="css/design-tokens.css?v=2026-03-17.1">
     <!-- Page CSS -->
-    <link rel="stylesheet" href="css/pages/index.css?v=2026-02-26.1">
+    <link rel="stylesheet" href="css/pages/index.css?v=2026-03-17.1">
     
     <!-- Component CSS -->
     <link rel="stylesheet" href="css/components/base/patternExplorer.css?v=2026-02-26.1">
@@ -42,8 +44,20 @@
         <!-- Main Content Area -->
         <div class="main-content">
             <!-- Placeholder when no file selected -->
-                <div class="main-content__placeholder" id="mainPlaceholder">
-                Select a pattern to preview.
+            <div class="main-content__placeholder" id="mainPlaceholder">
+                <span class="main-content__placeholder-icon" aria-hidden="true">
+                    <svg width="64" height="48" viewBox="0 0 64 48" fill="none" xmlns="http://www.w3.org/2000/svg" focusable="false">
+                        <rect x="8" y="18" width="4" height="12" rx="2" fill="currentColor" opacity="0.4"/>
+                        <rect x="16" y="12" width="4" height="24" rx="2" fill="currentColor" opacity="0.6"/>
+                        <rect x="24" y="6" width="4" height="36" rx="2" fill="currentColor"/>
+                        <rect x="32" y="14" width="4" height="20" rx="2" fill="currentColor" opacity="0.8"/>
+                        <rect x="40" y="10" width="4" height="28" rx="2" fill="currentColor" opacity="0.7"/>
+                        <rect x="48" y="16" width="4" height="16" rx="2" fill="currentColor" opacity="0.5"/>
+                        <rect x="56" y="20" width="4" height="8" rx="2" fill="currentColor" opacity="0.4"/>
+                    </svg>
+                </span>
+                <span class="main-content__placeholder-text">Select a pattern to preview.</span>
+                <span class="main-content__placeholder-hint">Choose a file from the library to play and visualize.</span>
             </div>
             
             <!-- Visualizer (shown when file is playing) -->

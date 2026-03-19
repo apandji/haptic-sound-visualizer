@@ -126,7 +126,7 @@ class TrialTagsSurvey {
      */
     render() {
         if (!this.isLoaded) {
-            this.container.innerHTML = '<div class="trial-tags-survey__loading">Loading survey...</div>';
+            this.container.innerHTML = '<div class="loading-state"><div class="loading-spinner" aria-hidden="true"></div><span class="loading-text">Loading survey...</span></div>';
             return;
         }
 

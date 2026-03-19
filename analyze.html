@@ -4,8 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SAIL Pattern Library - Analyze</title>
+    <!-- Design tokens (load first) -->
+    <link rel="stylesheet" href="css/design-tokens.css?v=2026-03-17.1">
     <!-- Page CSS -->
-    <link rel="stylesheet" href="css/pages/analyze.css?v=2026-02-26.1">
+    <link rel="stylesheet" href="css/pages/analyze.css?v=2026-03-17.1">
 
     <!-- Component CSS -->
     <link rel="stylesheet" href="css/components/base/patternExplorer.css?v=2026-02-26.1">
@@ -44,29 +46,41 @@
         <!-- Main Content Area -->
         <div class="analyze-main">
             <div class="analyze-main__placeholder" id="analyzePlaceholder">
-                Load session data to begin analysis.
+                <span class="analyze-main__placeholder-icon" aria-hidden="true">
+                    <svg width="64" height="48" viewBox="0 0 64 48" fill="none" xmlns="http://www.w3.org/2000/svg" focusable="false">
+                        <path d="M8 40V24h6v16H8zm14 0V16h6v24h-6zm14 0V8h6v32h-6zm14 0V20h6v20h-6zm14 0V28h6v12h-6z" fill="currentColor" opacity="0.9"/>
+                        <path d="M6 42h52" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.3"/>
+                    </svg>
+                </span>
+                <span class="analyze-main__placeholder-text">Load session data to begin analysis.</span>
+                <span class="analyze-main__placeholder-hint">Load from database or browser storage to see charts and stats.</span>
             </div>
             <div class="analyze-main__content" id="analyzeContent">
                 <div id="summaryStats"></div>
                 <div class="analyze-main__charts-grid">
                     <div class="analyze-main__chart-row">
                         <div class="analyze-main__chart-card analyze-main__chart-full">
+                            <h3 class="analyze-main__chart-card-title">Band power over time</h3>
                             <div id="timeSeriesChart"></div>
                         </div>
                     </div>
                     <div class="analyze-main__chart-row">
                         <div class="analyze-main__chart-card">
+                            <h3 class="analyze-main__chart-card-title">Band comparison</h3>
                             <div id="radarChart"></div>
                         </div>
                         <div class="analyze-main__chart-card">
+                            <h3 class="analyze-main__chart-card-title">Change from baseline</h3>
                             <div id="boxPlotChart"></div>
                         </div>
                     </div>
                     <div class="analyze-main__chart-row">
                         <div class="analyze-main__chart-card">
+                            <h3 class="analyze-main__chart-card-title">Tag frequency</h3>
                             <div id="tagFrequencyChart"></div>
                         </div>
                         <div class="analyze-main__chart-card">
+                            <h3 class="analyze-main__chart-card-title">Tag word cloud</h3>
                             <div id="tagWordCloud"></div>
                         </div>
                     </div>
@@ -93,6 +107,7 @@
     <script src="js/components/base/tagWordCloud.js?v=2026-02-26.1"></script>
     <!-- Page Script -->
     <script src="js/analyze/config.js?v=2026-02-26.1"></script>
+    <script src="js/analyze/mockDashboardData.js?v=2026-03-17.1"></script>
     <script src="js/analyze/state.js?v=2026-02-26.1"></script>
     <script src="js/analyze/app.js?v=2026-02-26.1"></script>
     <script src="js/analyze/bootstrap.js?v=2026-02-26.1"></script>

@@ -109,5 +109,5 @@
 
 .tag-frequency-chart__count--inline {
     width: auto;
-    font-size: 9px;
+    font-size: var(--font-size-2xs);
 }

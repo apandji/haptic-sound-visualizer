@@ -137,6 +137,7 @@ Calibration quality gate on `test.html` currently requires:
 - Analyze mode can load from:
   - Database (`/api/analysis/sessions`)
   - Browser storage fallback (`localStorage['sessions']`)
+  - **Sample data** — on Analyze, use **LOAD SAMPLE DATA** to preview charts with mock sessions (`js/analyze/mockDashboardData.js`).
 
 ## Repository Layout
 
