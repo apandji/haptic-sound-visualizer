@@ -204,10 +204,11 @@ class TestExecutionOverlay {
         const patternNumber = data.patternNumber || (data.patternIndex !== undefined ? data.patternIndex + 1 : 1);
         const totalPatterns = data.totalPatterns || (data.trials ? data.trials.length : 1);
         const patternName = data.pattern ? data.pattern.name : 'Unknown';
+        const phaseLabel = data.collectingData === false ? 'REST' : 'BASELINE';
 
         this.contentContainer.innerHTML = `
             <div class="test-execution-overlay__phase test-execution-overlay__phase--baseline">
-                <div class="test-execution-overlay__phase-label">BASELINE</div>
+                <div class="test-execution-overlay__phase-label">${phaseLabel}</div>
                 <div class="test-execution-overlay__countdown" id="baselineCountdown">${data.duration}</div>
                 <div class="test-execution-overlay__pattern-info">
                     Pattern ${patternNumber} of ${totalPatterns}

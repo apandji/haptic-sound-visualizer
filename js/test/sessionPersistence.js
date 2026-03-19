@@ -8,7 +8,7 @@ async function saveSessionData() {
                 ...sessionData.sessionData,
                 sessionId: sessionData.sessionId,
                 trials: sessionData.trials,
-                calibrationReadings: sessionData.calibrationReadings,
+                calibrationReadings: [],
                 isAborted: sessionData.isAborted,
                 abortReason: sessionData.abortReason,
                 completedAt: sessionData.completedAt,
