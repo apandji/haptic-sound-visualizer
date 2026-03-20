@@ -588,9 +588,9 @@ SignalQualityVisualizer Component
 ## References
 
 - **Python Reference**: `signal_quality.py`
-- **Database Schema**: `docs/database_schema.txt`
+- **Database Schema**: `docs/archive/database_schema.txt` (legacy sketch; use root `schema.sql`)
 - **Existing EEG Module**: `js/modules/eegDataCollector.js`
-- **Test Flow Design**: `docs/TEST_EXECUTION_FLOW_DESIGN.md`
+- **Test Flow Design**: `docs/archive/TEST_EXECUTION_FLOW_DESIGN.md`
 - **BrainFlow Documentation**: [To be added]
 
 ---

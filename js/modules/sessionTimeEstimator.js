@@ -27,7 +27,7 @@ class SessionTimeEstimator {
             calibrationDuration: config.calibrationDuration || this.defaultConfig.calibrationDuration,
             baselineDuration: config.baselineDuration || this.defaultConfig.baselineDuration,
             stimulationDuration: config.stimulationDuration || this.defaultConfig.stimulationDuration,
-            taggingDuration: config.taggingDuration || this.defaultConfig.taggingDuration,
+            taggingDuration: config.taggingDuration || config.surveyDurationEstimate || this.defaultConfig.taggingDuration,
         };
     }
     

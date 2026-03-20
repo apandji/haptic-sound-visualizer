@@ -1,7 +1,7 @@
 # Signal Quality Widget - Additional Requirements
 
 **Date**: February 3, 2026  
-**Based on**: `signal_quality.py` and `docs/database_schema.txt`
+**Based on**: `signal_quality.py` and `docs/archive/database_schema.txt` (legacy; prefer `schema.sql`)
 
 ---
 
@@ -189,7 +189,7 @@
 
 ### 9. Phase-Aware Quality Tracking ⭐ **HIGH PRIORITY**
 
-**Source**: `docs/TEST_EXECUTION_FLOW_DESIGN.md` - Phases: calibration, baseline, stimulation
+**Source**: `docs/archive/TEST_EXECUTION_FLOW_DESIGN.md` - Phases: calibration, baseline, stimulation
 
 **Requirement**: Track quality separately per phase
 
