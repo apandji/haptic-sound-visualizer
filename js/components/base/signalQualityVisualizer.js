@@ -311,7 +311,7 @@ class SignalQualityVisualizer {
         headerRow.innerHTML = `
             <th>Channel</th>
             <th>RMS (μV)</th>
-            <th>60Hz (rel)</th>
+            <!-- <th>60Hz (rel)</th> -->
             <th>Quality</th>
         `;
         thead.appendChild(headerRow);
@@ -327,7 +327,7 @@ class SignalQualityVisualizer {
             row.innerHTML = `
                 <td class="signal-quality-visualizer__channel">${this.channelLabels[i]}</td>
                 <td class="signal-quality-visualizer__rms">--</td>
-                <td class="signal-quality-visualizer__p60">--</td>
+                <!-- <td class="signal-quality-visualizer__p60">--</td> -->
                 <td class="signal-quality-visualizer__quality">
                     <span class="signal-quality-visualizer__quality-badge">--</span>
                 </td>
@@ -444,17 +444,17 @@ class SignalQualityVisualizer {
         return this.activeChannels.map((activeChannel, idx) => {
             const metric = rawMetrics.find((item) => Number(item.channel_index) === activeChannel) || rawMetrics[idx] || null;
             const metricRms = Number(metric?.rms_uV);
-            const metricP60 = Number(metric?.p60_rel);
+            // const metricP60 = Number(metric?.p60_rel);
 
             const rms_uV = Number.isFinite(metricRms) ? Math.max(0.1, metricRms) : fallbackRms;
-            const p60_rel = Number.isFinite(metricP60) ? Math.max(0, Math.min(1, metricP60)) : fallbackP60;
+            // const p60_rel = Number.isFinite(metricP60) ? Math.max(0, Math.min(1, metricP60)) : fallbackP60;
 
             return {
                 channel: this.channelLabels[idx],
                 channelIndex: idx,
                 rms_uV,
-                p60_rel,
-                quality: this.classifyQuality(rms_uV, p60_rel),
+                // p60_rel,
+                quality: this.classifyQuality(rms_uV),
                 timestamp
             };
         });
@@ -546,7 +546,7 @@ class SignalQualityVisualizer {
                 channel: this.channelLabels[i],
                 channelIndex: i,
                 rms_uV: channelRMS,
-                p60_rel: channelP60,
+                // p60_rel: channelP60,
                 quality: quality,
                 timestamp: Date.now()
             });
@@ -609,7 +609,7 @@ class SignalQualityVisualizer {
             }
             
             // Classify to ensure it matches (should match, but verify)
-            const quality = this.classifyQuality(rms_uV, p60_rel);
+            const quality = this.classifyQuality(rms_uV);
             
             qualities.push({
                 channel: this.channelLabels[i],
@@ -627,11 +627,22 @@ class SignalQualityVisualizer {
     /**
      * Classify quality based on RMS and 60Hz relative power
      * Matches Python script thresholds
-     */
+     
     classifyQuality(rms_uV, p60_rel) {
         if ((rms_uV >= 3.0 && rms_uV <= 100.0) && (p60_rel < 0.3)) {
             return 'good';
         } else if ((rms_uV >= 0.5 && rms_uV <= 300.0) && (p60_rel < 0.6)) {
+            return 'ok';
+        } else {
+            return 'poor';
+        }
+    }
+    */
+
+    classifyQuality(rms_uV) {
+        if (rms_uV >= 5.0 && rms_uV <= 100.0) {
+            return 'good';
+        } else if (rms_uV > 100.0 && rms_uV <= 150.0) {
             return 'ok';
         } else {
             return 'poor';
@@ -657,12 +668,14 @@ class SignalQualityVisualizer {
                 rmsCell.textContent = q.rms_uV.toFixed(1);
             }
             
+            /*
             // Update 60Hz relative
             const p60Cell = row.querySelector('.signal-quality-visualizer__p60');
             if (p60Cell) {
                 p60Cell.textContent = q.p60_rel.toFixed(2);
             }
-            
+            */
+
             // Update quality badge
             const qualityBadge = row.querySelector('.signal-quality-visualizer__quality-badge');
             if (qualityBadge) {
