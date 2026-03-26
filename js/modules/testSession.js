@@ -445,6 +445,7 @@ class TestSession {
             totalTrials,
             stepIndex,
             totalSteps,
+            completionPercent: totalSteps > 0 ? Math.round((stepIndex / totalSteps) * 100) : 0,
             compactMode: totalTrials >= 30,
             nextStepLabel,
             phaseSequence: this.getTrialPhaseSequence(trialIndex, collectsBaseline),
@@ -464,11 +465,11 @@ class TestSession {
         if (trialIndex === null || trialIndex < 0) {
             return [{ id: 'calibration', label: 'Calibration' }];
         }
+        const baselineLabel = collectingData || trialIndex === 0 ? 'Baseline' : 'Rest';
         return [
-            { id: 'baseline', label: 'Baseline' },
+            { id: 'baseline', label: baselineLabel },
             { id: 'stimulation', label: 'Stimulate' },
-            { id: 'survey', label: 'Survey' },
-            { id: 'rest', label: 'Rest' }
+            { id: 'survey', label: 'Survey' }
         ];
     }
 
@@ -569,7 +570,7 @@ class TestSession {
         if (phase === 'stimulation') return 'Survey';
         if (phase === 'survey') {
             if (!hasNextTrial) return 'Complete Session';
-            return 'Rest';
+            return `Trial ${trialIndex + 2}: Rest`;
         }
         return '';
     }

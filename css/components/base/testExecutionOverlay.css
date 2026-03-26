@@ -37,6 +37,14 @@
     flex-direction: column;
 }
 
+.test-execution-overlay--with-tester-panel .test-execution-overlay__content {
+    padding-left: min(460px, 44vw);
+}
+
+.test-execution-overlay--with-collapsed-tester-panel .test-execution-overlay__content {
+    padding-left: 84px;
+}
+
 /* Phase transition when switching (e.g. calibration → baseline) */
 .test-execution-overlay__phase {
     transition: opacity 0.25s ease, transform 0.25s ease;
@@ -78,6 +86,14 @@
 .test-execution-overlay__tester-progress-meta {
     font-size: var(--text-3xs, 0.625rem);
     color: var(--color-text-secondary, #666);
+    font-family: var(--font-mono);
+}
+
+.test-execution-overlay__tester-step-progress {
+    margin-top: 2px;
+    margin-bottom: var(--spacing-xs);
+    font-size: var(--text-3xs, 0.625rem);
+    color: #5c6f85;
     font-family: var(--font-mono);
 }
 
@@ -153,6 +169,12 @@
     background: #e9f0f8;
     color: #153e66;
     font-weight: var(--font-weight-semibold);
+}
+
+.test-execution-overlay__phase-chip--done {
+    border-color: #a7bfd7;
+    background: #f0f5fa;
+    color: #385978;
 }
 
 .test-execution-overlay__tester-bar--hidden {
@@ -285,6 +307,11 @@
     cursor: pointer;
 }
 
+.test-execution-overlay__tester-markers .test-execution-overlay__tester-marker--pulse {
+    transform: translateY(-1px);
+    box-shadow: 0 0 0 2px rgba(44, 95, 148, 0.15);
+}
+
 .test-execution-overlay__tester-note-row {
     margin-top: var(--spacing-sm);
     display: flex;
@@ -333,7 +360,9 @@
 .test-execution-overlay__tester-bar--collapsed .test-execution-overlay__tester-progress-row,
 .test-execution-overlay__tester-bar--collapsed .test-execution-overlay__tester-progress-meta,
 .test-execution-overlay__tester-bar--collapsed .test-execution-overlay__tester-eta,
-.test-execution-overlay__tester-bar--collapsed .test-execution-overlay__tester-trial-meta {
+.test-execution-overlay__tester-bar--collapsed .test-execution-overlay__tester-trial-meta,
+.test-execution-overlay__tester-bar--collapsed .test-execution-overlay__tester-step-progress,
+.test-execution-overlay__tester-bar--collapsed .test-execution-overlay__tester-footer {
     display: none;
 }
 
@@ -362,6 +391,33 @@
 
 .test-execution-overlay__tester-bar--collapsed + .test-execution-overlay__tester-toggle-btn {
     left: calc(var(--spacing-lg) + 56px - 1px);
+}
+
+@media (max-width: 1100px) {
+    .test-execution-overlay--with-tester-panel .test-execution-overlay__content {
+        padding-left: min(420px, 46vw);
+    }
+}
+
+@media (max-width: 860px) {
+    .test-execution-overlay__tester-bar {
+        width: min(360px, calc(100vw - var(--spacing-lg) * 2));
+    }
+
+    .test-execution-overlay__tester-toggle-btn {
+        left: calc(var(--spacing-lg) + min(360px, calc(100vw - var(--spacing-lg) * 2)) - 1px);
+    }
+
+    .test-execution-overlay--with-tester-panel .test-execution-overlay__content {
+        padding-left: min(390px, 52vw);
+    }
+}
+
+@media (max-width: 700px) {
+    .test-execution-overlay--with-tester-panel .test-execution-overlay__content,
+    .test-execution-overlay--with-collapsed-tester-panel .test-execution-overlay__content {
+        padding-left: 0;
+    }
 }
 
 .test-execution-overlay__tester-telemetry-slot {

@@ -10,6 +10,7 @@
         let calibrationPhaseCompleted = false;
         let completedTrialCount = 0;
         let testerMarkerCount = 0;
+        let abortInProgress = false;
         const calibrationGateConfig = {
             requiredChannels: 4,
             requiredGoodChannels: 3
@@ -183,6 +184,7 @@
          * Initialize test execution flow
          */
         function initializeTestExecution(sessionData, queueItems) {
+            abortInProgress = false;
             // Get participant and location details from sessionInfo
             const participant = sessionInfo.participants.find(p => p.participant_id === sessionData.data.participant_id);
             const location = sessionInfo.locations.find(l => l.location_id === sessionData.data.location_id);
@@ -637,24 +639,51 @@
          * Handle test abort
          */
         async function handleTestAbort() {
+            if (abortInProgress) {
+                return;
+            }
+            const currentPhase = testSession?.currentPhase || 'unknown phase';
+            const trialLabel = testSession && testSession.currentTrialIndex >= 0
+                ? `trial ${testSession.currentTrialIndex + 1}`
+                : 'calibration';
             const confirmed = await showCustomConfirm(
-                'Are you sure you want to abort this session? Partial data will be saved.',
+                `Abort now during ${currentPhase} (${trialLabel})? Partial data will be saved.`,
                 'Abort Session',
                 'Abort',
                 'Cancel'
             );
-            
-            if (confirmed) {
-                if (testSession) {
-                    testSession.abort('Manual abort by researcher.');
+
+            if (!confirmed) {
+                return;
+            }
+
+            if (currentPhase === 'stimulation') {
+                const secondConfirm = await showCustomConfirm(
+                    'Stimulation is active. Confirm abort to end the run immediately.',
+                    'Confirm Immediate Abort',
+                    'Abort Now',
+                    'Go Back'
+                );
+                if (!secondConfirm) {
+                    return;
                 }
-                clearTimers();
-                if (testAudioPlayer) {
-                    testAudioPlayer.stop();
-                }
-                if (eegDataCollector) {
-                    eegDataCollector.stop();
-                }
+            }
+
+            abortInProgress = true;
+            const abortBtn = document.querySelector('.test-execution-overlay__abort-btn');
+            if (abortBtn) {
+                abortBtn.disabled = true;
+                abortBtn.textContent = 'ABORTING...';
+            }
+            if (testSession) {
+                testSession.abort('Manual abort by researcher.');
+            }
+            clearTimers();
+            if (testAudioPlayer) {
+                testAudioPlayer.stop();
+            }
+            if (eegDataCollector) {
+                eegDataCollector.stop();
             }
         }
 

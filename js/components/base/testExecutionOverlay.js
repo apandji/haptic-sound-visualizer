@@ -33,6 +33,7 @@ class TestExecutionOverlay {
         this.testerPanelCollapsed = false;
         this.liveSignalBuffer = [];
         this.liveSignalBufferMax = 80;
+        this.lastMarkerLabel = null;
 
         if (!this.container) {
             console.error(`TestExecutionOverlay: Container #${this.containerId} not found`);
@@ -68,6 +69,7 @@ class TestExecutionOverlay {
                     <div class="test-execution-overlay__tester-step" id="testerStepLabel"></div>
                     <div class="test-execution-overlay__tester-progress-meta" id="testerProgressMeta"></div>
                 </div>
+                <div class="test-execution-overlay__tester-step-progress" id="testerStepProgress"></div>
                 <div class="test-execution-overlay__tester-trial-meta">
                     <span class="test-execution-overlay__trial-badge" id="testerTrialBadge"></span>
                 </div>
@@ -184,6 +186,17 @@ class TestExecutionOverlay {
         }
         if (nextEl) nextEl.textContent = nextStep ? `Next: ${nextStep}` : '';
         if (instEl) instEl.textContent = instruction || '';
+        const stepProgressEl = this.testerBar.querySelector('#testerStepProgress');
+        if (stepProgressEl) {
+            const stepIndex = Number(progress?.stepIndex) || 0;
+            const totalSteps = Number(progress?.totalSteps) || 0;
+            if (stepIndex > 0 && totalSteps > 0) {
+                const pct = Math.max(0, Math.min(100, Math.round((stepIndex / totalSteps) * 100)));
+                stepProgressEl.textContent = `Progress ${pct}%`;
+            } else {
+                stepProgressEl.textContent = '';
+            }
+        }
         this.renderTrialRail(progress);
         this.renderPhaseSequence(progress);
         this.showTesterBar();
@@ -209,7 +222,8 @@ class TestExecutionOverlay {
             if (idx === trialNumber) cls = 'active';
             segments.push(`<span class="test-execution-overlay__trial-segment test-execution-overlay__trial-segment--${cls}" title="Trial ${idx}"></span>`);
         }
-        railEl.innerHTML = `<div class="test-execution-overlay__trial-rail-label">Trials</div><div class="test-execution-overlay__trial-rail-track">${segments.join('')}</div>`;
+        const completed = Math.max(0, trialNumber - 1);
+        railEl.innerHTML = `<div class="test-execution-overlay__trial-rail-label">Trials (${completed}/${totalTrials} complete)</div><div class="test-execution-overlay__trial-rail-track">${segments.join('')}</div>`;
     }
 
     /**
@@ -225,9 +239,11 @@ class TestExecutionOverlay {
             return;
         }
         const activeChipLabel = progress?.activePhaseChipLabel || '';
-        const chips = sequence.map((phaseItem) => {
+        const activeIndex = sequence.findIndex((item) => item.label === activeChipLabel);
+        const chips = sequence.map((phaseItem, index) => {
             const isActive = phaseItem.label === activeChipLabel;
-            return `<span class="test-execution-overlay__phase-chip ${isActive ? 'test-execution-overlay__phase-chip--active' : ''}">${phaseItem.label}</span>`;
+            const isDone = activeIndex > -1 && index < activeIndex;
+            return `<span class="test-execution-overlay__phase-chip ${isDone ? 'test-execution-overlay__phase-chip--done' : ''} ${isActive ? 'test-execution-overlay__phase-chip--active' : ''}">${phaseItem.label}</span>`;
         });
         sequenceEl.innerHTML = `<div class="test-execution-overlay__phase-sequence-label">Current Trial</div><div class="test-execution-overlay__phase-chip-row">${chips.join('')}</div>`;
     }
@@ -267,7 +283,8 @@ class TestExecutionOverlay {
         const metricsEl = this.testerBar ? this.testerBar.querySelector('#testerMetrics') : null;
         if (!metricsEl) return;
         const { completedTrials, totalTrials, markerCount } = this.testerMetrics;
-        metricsEl.textContent = `Completed: ${completedTrials}/${totalTrials || 0} | Markers: ${markerCount || 0}`;
+        const markerLabel = this.lastMarkerLabel ? ` | Last marker: ${this.lastMarkerLabel}` : '';
+        metricsEl.textContent = `Completed: ${completedTrials}/${totalTrials || 0} | Markers: ${markerCount || 0}${markerLabel}`;
     }
 
     /**
@@ -283,7 +300,12 @@ class TestExecutionOverlay {
             markersEl.addEventListener('click', (event) => {
                 const markerBtn = event.target.closest('button[data-marker]');
                 if (!markerBtn || !this.onAddTesterEvent) return;
-                this.onAddTesterEvent(markerBtn.getAttribute('data-marker'));
+                const markerType = markerBtn.getAttribute('data-marker');
+                this.lastMarkerLabel = markerType;
+                markerBtn.classList.add('test-execution-overlay__tester-marker--pulse');
+                setTimeout(() => markerBtn.classList.remove('test-execution-overlay__tester-marker--pulse'), 180);
+                this.onAddTesterEvent(markerType);
+                this.setTesterMetrics();
             });
         }
 
@@ -317,6 +339,7 @@ class TestExecutionOverlay {
         if (this.testerPanelToggle) {
             this.testerPanelToggle.classList.add('test-execution-overlay__tester-toggle-btn--hidden');
         }
+        this.syncOverlayLayoutState();
     }
 
     /**
@@ -329,6 +352,7 @@ class TestExecutionOverlay {
         if (this.testerPanelToggle) {
             this.testerPanelToggle.classList.remove('test-execution-overlay__tester-toggle-btn--hidden');
         }
+        this.syncOverlayLayoutState();
         this.drawLiveSignalSparkline();
     }
 
@@ -345,6 +369,7 @@ class TestExecutionOverlay {
             this.testerPanelToggle.textContent = this.testerPanelCollapsed ? '❮' : '❯';
             this.testerPanelToggle.setAttribute('aria-expanded', this.testerPanelCollapsed ? 'false' : 'true');
         }
+        this.syncOverlayLayoutState();
     }
 
     /**
@@ -357,6 +382,16 @@ class TestExecutionOverlay {
             return;
         }
         this.hideTesterBar();
+    }
+
+    /**
+     * Keep content offset in sync with tester panel visibility/collapse state.
+     */
+    syncOverlayLayoutState() {
+        if (!this.container || !this.testerBar) return;
+        const hidden = this.testerBar.classList.contains('test-execution-overlay__tester-bar--hidden');
+        this.container.classList.toggle('test-execution-overlay--with-tester-panel', !hidden);
+        this.container.classList.toggle('test-execution-overlay--with-collapsed-tester-panel', !hidden && this.testerPanelCollapsed);
     }
 
     /**
@@ -841,7 +876,8 @@ class TestExecutionOverlay {
             return;
         }
 
-        gateStatusEl.textContent = `${goodChannels}/${requiredChannels} channels are good (need ${requiredGoodChannels}/${requiredChannels})`;
+        const needMore = Math.max(0, requiredGoodChannels - goodChannels);
+        gateStatusEl.textContent = `${goodChannels}/${requiredChannels} channels are good. Need ${needMore} more good channel${needMore === 1 ? '' : 's'} before recommended start.`;
         gateStatusEl.classList.add('test-execution-overlay__calibration-gate--waiting');
     }
 
