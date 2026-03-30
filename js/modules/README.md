@@ -57,7 +57,7 @@ Modules contain non-UI logic, state management, and utilities that can be used b
   - `getTrials(sessionId)` - Get all trials for session
   - `saveSession(session)` - Persist session to localStorage
   - `loadSessions()` - Load all sessions from localStorage
-  - See `docs/database_schema.txt` for data structure reference
+  - See root `schema.sql` for data structure (SQLite)
 
 - **fileLoader.js** - File loading utilities
 

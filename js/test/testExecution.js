@@ -8,6 +8,9 @@
         let stimulationTimer = null;
         let calibrationTestTimeout = null;
         let calibrationPhaseCompleted = false;
+        let completedTrialCount = 0;
+        let testerMarkerCount = 0;
+        let abortInProgress = false;
         const calibrationGateConfig = {
             requiredChannels: 4,
             requiredGoodChannels: 3
@@ -93,6 +96,20 @@
             signalQualityVisualizer.expand();
         }
 
+        function dockSignalQualityWidgetInTesterPanel() {
+            if (!signalQualityVisualizer || !testExecutionOverlay) {
+                return;
+            }
+            const telemetryHost = testExecutionOverlay.getTesterTelemetryContainer();
+            if (!telemetryHost) {
+                return;
+            }
+            signalQualityVisualizer.mountTo(telemetryHost);
+            signalQualityVisualizer.setEmbeddedMode(true);
+            signalQualityVisualizer.show();
+            signalQualityVisualizer.expand();
+        }
+
         function updateCalibrationGateFromReading(reading) {
             if (!testSession || testSession.currentPhase !== 'calibration' || calibrationPhaseCompleted) {
                 return;
@@ -102,6 +119,32 @@
             if (testExecutionOverlay) {
                 testExecutionOverlay.updateCalibrationGateStatus(gate);
             }
+        }
+
+        function updateTesterSignalFromReading(reading) {
+            if (!testExecutionOverlay) {
+                return;
+            }
+            const channelMetrics = Array.isArray(reading?.channel_metrics) ? reading.channel_metrics : [];
+            const normalizedChannels = channelMetrics
+                .filter((metric) => metric && typeof metric === 'object')
+                .sort((a, b) => Number(a.channel_index) - Number(b.channel_index))
+                .slice(0, calibrationGateConfig.requiredChannels);
+
+            if (normalizedChannels.length === 0) {
+                testExecutionOverlay.setTesterSignal('Signal: waiting for channels', 'neutral');
+                return;
+            }
+
+            const goodChannels = normalizedChannels.reduce((count, metric) => {
+                return getChannelQuality(metric) === 'good' ? count + 1 : count;
+            }, 0);
+            const ratio = goodChannels / calibrationGateConfig.requiredChannels;
+            const tone = ratio >= 0.75 ? 'good' : ratio >= 0.5 ? 'ok' : 'poor';
+            testExecutionOverlay.setTesterSignal(
+                `Signal: ${goodChannels}/${calibrationGateConfig.requiredChannels} channels good`,
+                tone
+            );
         }
 
         function handleManualCalibrationStart() {
@@ -140,6 +183,7 @@
          * Initialize test execution flow
          */
         function initializeTestExecution(sessionData, queueItems) {
+            abortInProgress = false;
             // Get participant and location details from sessionInfo
             const participant = sessionInfo.participants.find(p => p.participant_id === sessionData.data.participant_id);
             const location = sessionInfo.locations.find(l => l.location_id === sessionData.data.location_id);
@@ -211,7 +255,9 @@
                 containerId: 'testExecutionOverlay',
                 onAbort: handleTestAbort,
                 onManualStartCalibration: handleManualCalibrationStart,
-                onPlayCalibrationTest: playCalibrationTestSample
+                onPlayCalibrationTest: playCalibrationTestSample,
+                onAddTesterNote: handleTesterNoteAdded,
+                onAddTesterEvent: handleTesterEventAdded
             });
 
             // Create EEGDataCollector
@@ -221,10 +267,14 @@
                     if (testSession) {
                         testSession.addReading(reading);
                     }
+                    if (testExecutionOverlay) {
+                        testExecutionOverlay.pushLiveSignalReading(reading);
+                    }
                     if (signalQualityVisualizer) {
                         signalQualityVisualizer.ingestReading(reading);
                     }
                     updateCalibrationGateFromReading(reading);
+                    updateTesterSignalFromReading(reading);
                 },
                 onConnectionChange: (state, previousState) => {
                     console.log('EEG connection:', previousState, '→', state);
@@ -274,7 +324,7 @@
             clearTimers();
 
             // Stop audio if needed
-            if (testAudioPlayer && testAudioPlayer.isPlaying()) {
+            if (phase !== 'survey' && testAudioPlayer && testAudioPlayer.isPlaying()) {
                 testAudioPlayer.stop();
             }
 
@@ -302,6 +352,12 @@
 
                 case 'baseline':
                     testExecutionOverlay.showBaseline(data);
+                    dockSignalQualityWidgetInTesterPanel();
+                    testExecutionOverlay.setTesterMetrics({
+                        completedTrials: completedTrialCount,
+                        totalTrials: data.totalPatterns || 0,
+                        markerCount: testerMarkerCount
+                    });
                     eegDataCollector.start();
                     // Start baseline timer
                     baselineTimer = setTimeout(() => {
@@ -311,6 +367,12 @@
 
                 case 'stimulation':
                     testExecutionOverlay.showStimulation(data);
+                    dockSignalQualityWidgetInTesterPanel();
+                    testExecutionOverlay.setTesterMetrics({
+                        completedTrials: completedTrialCount,
+                        totalTrials: data.totalPatterns || 0,
+                        markerCount: testerMarkerCount
+                    });
                     eegDataCollector.start();
                     // Load and play audio
                     playTestAudio(data.pattern, () => {
@@ -324,11 +386,13 @@
                     break;
 
                 case 'survey':
-                    // Stop any currently playing audio from stimulation phase
-                    if (testAudioPlayer && testAudioPlayer.isPlaying()) {
-                        testAudioPlayer.stop();
-                    }
                     testExecutionOverlay.showSurvey(data);
+                    dockSignalQualityWidgetInTesterPanel();
+                    testExecutionOverlay.setTesterMetrics({
+                        completedTrials: completedTrialCount,
+                        totalTrials: data.totalPatterns || 0,
+                        markerCount: testerMarkerCount
+                    });
                     // Initialize survey component
                     const surveyContainer = testExecutionOverlay.getSurveyContainer();
                     if (surveyContainer) {
@@ -369,6 +433,9 @@
                             }
                         });
                         trialTagsSurvey = window.currentTrialTagsSurvey;
+                        if (window.currentTrialTagsSurvey && testAudioPlayer && testAudioPlayer.isPlaying()) {
+                            window.currentTrialTagsSurvey.setPlayingState(true);
+                        }
                         
                         // Connect survey to overlay's NEXT button
                         const overlayNextBtn = document.querySelector('.test-execution-overlay__next-btn');
@@ -454,8 +521,42 @@
          */
         function handleTrialComplete(trialData) {
             console.log('Trial complete:', trialData);
+            completedTrialCount += 1;
+            if (testExecutionOverlay && testSession) {
+                testExecutionOverlay.setTesterMetrics({
+                    completedTrials: completedTrialCount,
+                    totalTrials: testSession.trials.length,
+                    markerCount: testerMarkerCount
+                });
+            }
             // Trial data is already stored in testSession
             // We'll save everything when session completes
+        }
+
+        function handleTesterNoteAdded(text) {
+            if (!testSession || testSession.currentTrialIndex < 0) {
+                return;
+            }
+            testSession.addTesterNote(testSession.currentTrialIndex, text, {
+                phase: testSession.currentPhase
+            });
+        }
+
+        function handleTesterEventAdded(eventType) {
+            if (!testSession || testSession.currentTrialIndex < 0) {
+                return;
+            }
+            testSession.addTesterEvent(testSession.currentTrialIndex, eventType, {
+                phase: testSession.currentPhase
+            });
+            testerMarkerCount += 1;
+            if (testExecutionOverlay && testSession) {
+                testExecutionOverlay.setTesterMetrics({
+                    completedTrials: completedTrialCount,
+                    totalTrials: testSession.trials.length,
+                    markerCount: testerMarkerCount
+                });
+            }
         }
 
         /**
@@ -537,24 +638,51 @@
          * Handle test abort
          */
         async function handleTestAbort() {
+            if (abortInProgress) {
+                return;
+            }
+            const currentPhase = testSession?.currentPhase || 'unknown phase';
+            const trialLabel = testSession && testSession.currentTrialIndex >= 0
+                ? `trial ${testSession.currentTrialIndex + 1}`
+                : 'calibration';
             const confirmed = await showCustomConfirm(
-                'Are you sure you want to abort this session? Partial data will be saved.',
+                `Abort now during ${currentPhase} (${trialLabel})? Partial data will be saved.`,
                 'Abort Session',
                 'Abort',
                 'Cancel'
             );
-            
-            if (confirmed) {
-                if (testSession) {
-                    testSession.abort('Manual abort by researcher.');
+
+            if (!confirmed) {
+                return;
+            }
+
+            if (currentPhase === 'stimulation') {
+                const secondConfirm = await showCustomConfirm(
+                    'Stimulation is active. Confirm abort to end the run immediately.',
+                    'Confirm Immediate Abort',
+                    'Abort Now',
+                    'Go Back'
+                );
+                if (!secondConfirm) {
+                    return;
                 }
-                clearTimers();
-                if (testAudioPlayer) {
-                    testAudioPlayer.stop();
-                }
-                if (eegDataCollector) {
-                    eegDataCollector.stop();
-                }
+            }
+
+            abortInProgress = true;
+            const abortBtn = document.querySelector('.test-execution-overlay__abort-btn');
+            if (abortBtn) {
+                abortBtn.disabled = true;
+                abortBtn.textContent = 'ABORTING...';
+            }
+            if (testSession) {
+                testSession.abort('Manual abort by researcher.');
+            }
+            clearTimers();
+            if (testAudioPlayer) {
+                testAudioPlayer.stop();
+            }
+            if (eegDataCollector) {
+                eegDataCollector.stop();
             }
         }
 

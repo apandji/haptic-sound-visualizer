@@ -24,6 +24,8 @@ It is a vanilla JS frontend (no build step) plus Python services:
   - Compare patterns with charts (Plotly)
   - Inspect band-power deltas and tag frequency
 
+**Documentation index:** [docs/README.md](docs/README.md) (architecture, protocol, backlog, archive).
+
 ## Quick Start (Mock EEG)
 
 1. Install Python dependencies:
@@ -86,8 +88,9 @@ This updates `pattern_metadata.json` (with backup).
 ## Database
 
 - SQLite file: `haptic_research.db`
-- Schema file: `schema.sql`
+- Schema file: `schema.sql` (includes `trial_events` for tester markers — apply migrations if upgrading an old DB)
 - Init script: `create_database.py`
+- Legacy MySQL-style sketch (ignore): `docs/archive/database_schema.txt`
 
 Initialize (or recreate if DB is missing):
 
@@ -109,24 +112,21 @@ python create_database.py
 ## Key Config Files
 
 - `js/modules/sessionTimingConfig.json`
-  - Calibration/baseline/stimulation/tagging durations
+  - Calibration, baseline, and stimulation durations (seconds)
+  - `taggingDuration` — used by session time estimator (human-readable “~ how long” on setup)
+  - `surveyDurationEstimate` — used for **in-session ETA** in the tester control panel (falls back to `taggingDuration` if omitted)
 - `js/modules/trialTagsConfig.json`
   - Survey categories/tags shown after each trial
 
 ## Test Session Defaults
 
-Current defaults from code/config:
-- Calibration: `20s`
-- Baseline (per pattern): `30s`
-- Stimulation (per pattern): `30s`
-- Tagging/survey estimate (per pattern): `10s` (used by estimator)
+Current defaults from code/config (see `sessionTimingConfig.json` for live values):
+- Calibration: typically `20s`
+- Baseline (per trial): typically `30s`
+- Stimulation (per trial): typically `30s`
+- Survey/tagging **estimate**: `surveyDurationEstimate` and/or `taggingDuration` (for UI estimates only)
 
-Calibration quality gate on `test.html` currently requires:
-- At least `30` usable calibration readings
-- Latest reading age <= `3000ms`
-- Signal quality >= `70`
-- No more than `25%` channels marked `poor` per reading
-- At least `80%` passing readings in evaluation window
+**Calibration gate (channel quality)** on `test.html` uses per-channel metrics (e.g. RMS and 60 Hz relative power) and requires a minimum number of **good** channels before manual start is encouraged; see `js/test/testExecution.js` and the calibration UI copy for the exact thresholds.
 
 ## Data Flow and Storage
 
@@ -151,7 +151,7 @@ Calibration quality gate on `test.html` currently requires:
 |- js/modules/ (non-UI logic)
 |- css/components/ (component styles)
 |- audio_files/ (pattern assets)
-|- docs/ (protocol and architecture notes)
+|- docs/ (protocol and architecture notes — see [docs/README.md](docs/README.md))
 |- dev/ (component/module example pages)
 ```
 

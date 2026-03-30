@@ -67,6 +67,17 @@ CREATE TABLE trial_tags (
     FOREIGN KEY (tag_id) REFERENCES tags(tag_id)
 );
 
+CREATE TABLE trial_events (
+    event_id       INTEGER PRIMARY KEY AUTOINCREMENT,
+    trial_id       INTEGER NOT NULL,
+    event_type     TEXT NOT NULL,
+    phase          TEXT,
+    timestamp_ms   INTEGER,
+    created_at     DATETIME,
+    details_json   TEXT,
+    FOREIGN KEY (trial_id) REFERENCES trials(trial_id)
+);
+
 CREATE TABLE brainwave_readings (
     reading_id      INTEGER PRIMARY KEY AUTOINCREMENT,
     trial_id        INTEGER NOT NULL,
@@ -90,3 +101,4 @@ CREATE INDEX idx_readings_trial_time ON brainwave_readings(trial_id, timestamp_m
 CREATE INDEX idx_readings_trial_phase ON brainwave_readings(trial_id, phase);
 CREATE INDEX idx_trials_session ON trials(session_id);
 CREATE INDEX idx_sessions_participant ON sessions(participant_id);
+CREATE INDEX idx_trial_events_trial_time ON trial_events(trial_id, timestamp_ms);

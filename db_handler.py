@@ -165,6 +165,21 @@ def add_trial_tag(conn, trial_id: int, tag_id: int, intensity: int = None, selec
             raise
 
 
+def add_trial_event(conn, trial_id: int, event_type: str, phase: str = None,
+                    timestamp_ms: int = None, created_at: str = None, details: Dict[str, Any] = None):
+    """Add a tester event marker to a trial."""
+    cursor = conn.cursor()
+    if created_at is None:
+        created_at = datetime.now().isoformat()
+    details_json = json.dumps(details) if details else None
+    cursor.execute(
+        """INSERT INTO trial_events (trial_id, event_type, phase, timestamp_ms, created_at, details_json)
+           VALUES (?, ?, ?, ?, ?, ?)""",
+        (trial_id, event_type, phase, timestamp_ms, created_at, details_json)
+    )
+    return cursor.lastrowid
+
+
 def add_brainwave_reading(conn, trial_id: int, timestamp_ms: int, phase: str,
                           signal_quality: int = None,
                           delta_abs: float = None, theta_abs: float = None,
@@ -225,6 +240,7 @@ def save_session_data(session_data: Dict[str, Any]) -> Dict[str, Any]:
         "trials_saved": 0,
         "readings_saved": 0,
         "tags_saved": 0,
+        "events_saved": 0,
         "errors": []
     }
 
@@ -291,7 +307,7 @@ def save_session_data(session_data: Dict[str, Any]) -> Dict[str, Any]:
                 trial_order=trial_data.get('trialOrder', 1),
                 start_time=trial_data.get('startTime', datetime.now().isoformat()),
                 end_time=trial_data.get('endTime'),
-                notes=f"Status: {trial_data.get('status', 'unknown')}"
+                notes=f"Status: {trial_data.get('status', 'unknown')} | Tester notes: {json.dumps(trial_data.get('testerNotes', []), ensure_ascii=True)}"
             )
             result['trials_saved'] += 1
 
@@ -345,6 +361,19 @@ def save_session_data(session_data: Dict[str, Any]) -> Dict[str, Any]:
                 tag_id = ensure_tag(conn, tag_name, tag_category)
                 add_trial_tag(conn, trial_id, tag_id, intensity=tag_intensity)
                 result['tags_saved'] += 1
+
+            # Save tester events
+            for event_data in trial_data.get('testerEvents', []):
+                add_trial_event(
+                    conn,
+                    trial_id=trial_id,
+                    event_type=event_data.get('type', 'marker'),
+                    phase=event_data.get('phase'),
+                    timestamp_ms=event_data.get('timestampMs'),
+                    created_at=event_data.get('createdAt'),
+                    details=event_data.get('details')
+                )
+                result['events_saved'] += 1
 
         conn.commit()
         result['success'] = True
@@ -463,6 +492,7 @@ def get_analysis_sessions(limit: Optional[int] = None) -> List[Dict[str, Any]]:
 
         readings_by_trial: Dict[int, Dict[str, List[Dict[str, Any]]]] = {}
         tags_by_trial: Dict[int, List[Dict[str, Any]]] = {}
+        events_by_trial: Dict[int, List[Dict[str, Any]]] = {}
 
         if trial_ids:
             trial_placeholders = ','.join('?' for _ in trial_ids)
@@ -536,6 +566,41 @@ def get_analysis_sessions(limit: Optional[int] = None) -> List[Dict[str, Any]]:
                     'isCustom': tag_category == 'custom'
                 })
 
+            cursor.execute(
+                f"""
+                SELECT
+                    event_id,
+                    trial_id,
+                    event_type,
+                    phase,
+                    timestamp_ms,
+                    created_at,
+                    details_json
+                FROM trial_events
+                WHERE trial_id IN ({trial_placeholders})
+                ORDER BY trial_id, timestamp_ms, event_id
+                """,
+                trial_ids
+            )
+
+            for row in cursor.fetchall():
+                trial_id = row['trial_id']
+                details_json = row['details_json']
+                details_obj = None
+                if details_json:
+                    try:
+                        details_obj = json.loads(details_json)
+                    except json.JSONDecodeError:
+                        details_obj = None
+
+                events_by_trial.setdefault(trial_id, []).append({
+                    'type': row['event_type'],
+                    'phase': row['phase'],
+                    'timestampMs': row['timestamp_ms'],
+                    'createdAt': row['created_at'],
+                    'details': details_obj
+                })
+
         sessions: List[Dict[str, Any]] = []
         for session_row in session_rows:
             db_session_id = session_row['session_id']
@@ -581,8 +646,18 @@ def get_analysis_sessions(limit: Optional[int] = None) -> List[Dict[str, Any]]:
                     'baselineReadings': list(baseline_phase_readings),
                     'stimulationReadings': stimulation_phase_readings,
                     'selectedTags': tags_by_trial.get(trial_id, []),
+                    'testerNotes': [],
+                    'testerEvents': events_by_trial.get(trial_id, []),
                     'status': _extract_trial_status(trial_row['trial_notes'], trial_row['end_time'])
                 }
+
+                trial_notes_blob = trial_row['trial_notes'] or ''
+                notes_match = re.search(r'Tester notes:\s*(\[.*\])', trial_notes_blob)
+                if notes_match:
+                    try:
+                        trial_payload['testerNotes'] = json.loads(notes_match.group(1))
+                    except json.JSONDecodeError:
+                        trial_payload['testerNotes'] = []
 
                 session_payload['trials'].append(trial_payload)
 

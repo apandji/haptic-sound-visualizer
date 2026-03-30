@@ -1,5 +1,16 @@
 # Test Execution Flow - Design & Implementation Plan
 
+> **Document status (maintenance note)**  
+> This file captures early design decisions and planning. The **running app** may differ. As of 2025, the implementation includes at least:
+> - Calibration as a **pre-flight checklist** (not only a blank countdown screen).
+> - **No separate checkpoint phase** between trials — after survey, the next trial starts (or the session completes).
+> - **Baseline** on trial 1 collects EEG; later trials use a **rest** period in the same internal `baseline` phase with optional reduced collection (see `TestSession` / `collectBaselineOnlyOnFirstTrial`).
+> - **Tester control-room panel** on the left during trials (progress, telemetry slot, notes/markers, sparkline).
+> - **Audio** may continue into the survey phase (see `testExecution.js`).
+> - **Tester annotations**: trial notes and event markers; persistence includes `trial_events` when the DB schema is migrated (see `schema.sql`).
+>
+> For protocol wording, prefer [TESTING_PROTOCOL.md](../TESTING_PROTOCOL.md) and the code paths under `js/modules/testSession.js` and `js/test/testExecution.js`.
+
 ## Overview
 This document outlines the design, architecture, and implementation plan for the test execution flow that begins when a user clicks "START SESSION" on the test setup page (`test.html`).
 

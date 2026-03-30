@@ -53,6 +53,7 @@ class TestSession {
         this.calibrationDuration = options.timing?.calibrationDuration || 20; // seconds
         this.baselineDuration = options.timing?.baselineDuration || 30; // seconds
         this.stimulationDuration = options.timing?.stimulationDuration || 30; // seconds
+        this.surveyDurationEstimate = options.timing?.surveyDurationEstimate || options.timing?.taggingDuration || 20; // seconds
         this.collectBaselineOnlyOnFirstTrial = options.collectBaselineOnlyOnFirstTrial !== false;
 
         // Timing
@@ -96,11 +97,17 @@ class TestSession {
                 if (cleanConfig.stimulationDuration !== undefined) {
                     this.stimulationDuration = cleanConfig.stimulationDuration;
                 }
+                if (cleanConfig.surveyDurationEstimate !== undefined) {
+                    this.surveyDurationEstimate = cleanConfig.surveyDurationEstimate;
+                } else if (cleanConfig.taggingDuration !== undefined) {
+                    this.surveyDurationEstimate = cleanConfig.taggingDuration;
+                }
                 this.timingConfigLoaded = true;
                 console.log('TestSession: Loaded timing config:', {
                     calibration: this.calibrationDuration,
                     baseline: this.baselineDuration,
-                    stimulation: this.stimulationDuration
+                    stimulation: this.stimulationDuration,
+                    surveyEstimate: this.surveyDurationEstimate
                 });
             }
         } catch (error) {
@@ -141,6 +148,8 @@ class TestSession {
             stimulationReadings: [],
             audioTimeOffset: null,
             selectedTags: [],
+            testerNotes: [],
+            testerEvents: [],
             status: 'pending' // 'pending' | 'in_progress' | 'completed' | 'aborted' | 'skipped'
         }));
 
@@ -157,10 +166,11 @@ class TestSession {
         this.calibrationReadings = [];
 
         if (this.onPhaseChange) {
-            this.onPhaseChange('calibration', {
+            const payload = {
                 duration: this.calibrationDuration,
                 startTime: this.phaseStartTime
-            });
+            };
+            this.onPhaseChange('calibration', this.buildPhasePayload('calibration', payload));
         }
     }
 
@@ -206,7 +216,7 @@ class TestSession {
         const collectsBaseline = this.shouldCollectBaselineInCurrentTrial();
 
         if (this.onPhaseChange) {
-            this.onPhaseChange('baseline', {
+            const payload = {
                 patternIndex: this.currentTrialIndex,
                 patternNumber: this.currentTrialIndex + 1,
                 totalPatterns: this.trials.length,
@@ -214,7 +224,8 @@ class TestSession {
                 duration: this.baselineDuration,
                 startTime: this.phaseStartTime,
                 collectingData: collectsBaseline
-            });
+            };
+            this.onPhaseChange('baseline', this.buildPhasePayload('baseline', payload));
         }
     }
 
@@ -240,14 +251,15 @@ class TestSession {
         this.currentTrial.audioTimeOffset = null; // Will be set when audio actually starts
 
         if (this.onPhaseChange) {
-            this.onPhaseChange('stimulation', {
+            const payload = {
                 patternIndex: this.currentTrialIndex,
                 patternNumber: this.currentTrialIndex + 1,
                 totalPatterns: this.trials.length,
                 pattern: this.currentTrial.pattern,
                 duration: this.stimulationDuration,
                 startTime: this.phaseStartTime
-            });
+            };
+            this.onPhaseChange('stimulation', this.buildPhasePayload('stimulation', payload));
         }
     }
 
@@ -280,12 +292,13 @@ class TestSession {
         this.currentPhase = 'survey';
 
         if (this.onPhaseChange) {
-            this.onPhaseChange('survey', {
+            const payload = {
                 patternIndex: this.currentTrialIndex,
                 patternNumber: this.currentTrialIndex + 1,
                 totalPatterns: this.trials.length,
                 pattern: this.currentTrial.pattern
-            });
+            };
+            this.onPhaseChange('survey', this.buildPhasePayload('survey', payload));
         }
     }
 
@@ -372,12 +385,229 @@ class TestSession {
         }
 
         if (this.onPhaseChange) {
-            this.onPhaseChange('aborted', {
+            const payload = {
                 abortedAt: new Date().toISOString(),
                 currentTrialIndex: this.currentTrialIndex,
                 reason: this.abortReason
-            });
+            };
+            this.onPhaseChange('aborted', this.buildPhasePayload('aborted', payload));
         }
+    }
+
+    /**
+     * Build a normalized phase payload for all phase-change callbacks.
+     * This keeps progress and breadcrumb metadata consistent across UI surfaces.
+     * @param {string} phase
+     * @param {Object} payload
+     * @returns {Object}
+     */
+    buildPhasePayload(phase, payload = {}) {
+        return {
+            ...payload,
+            progress: this.getProgressContract(phase, payload)
+        };
+    }
+
+    /**
+     * Compute normalized progress/breadcrumb metadata for the current phase.
+     * @param {string} phase
+     * @param {Object} payload
+     * @returns {Object}
+     */
+    getProgressContract(phase, payload = {}) {
+        const totalTrials = this.trials.length;
+        const trialIndex = payload.patternIndex ?? this.currentTrialIndex;
+        const trialNumber = Number.isInteger(trialIndex) && trialIndex >= 0 ? trialIndex + 1 : null;
+        const collectsBaseline = Boolean(payload.collectingData);
+        const displayPhase = this.getDisplayPhaseLabel(phase, collectsBaseline, trialIndex);
+        const totalSteps = 1 + (totalTrials * 3); // calibration + 3 steps per trial
+        let stepIndex = 1; // calibration by default
+        let nextStepLabel = '';
+
+        if (phase === 'calibration') {
+            nextStepLabel = totalTrials > 0 ? 'Trial 1: Baseline' : '';
+        } else if (trialNumber !== null) {
+            const stepOffsetByPhase = {
+                baseline: 1,
+                stimulation: 2,
+                survey: 3
+            };
+            const offset = stepOffsetByPhase[phase] || 1;
+            stepIndex = 1 + (trialIndex * 3) + offset;
+            nextStepLabel = this.getNextStepLabel(phase, trialIndex);
+        }
+
+        return {
+            phase,
+            displayPhase,
+            trialIndex,
+            trialNumber,
+            totalTrials,
+            stepIndex,
+            totalSteps,
+            completionPercent: totalSteps > 0 ? Math.round((stepIndex / totalSteps) * 100) : 0,
+            compactMode: totalTrials >= 30,
+            nextStepLabel,
+            phaseSequence: this.getTrialPhaseSequence(trialIndex, collectsBaseline),
+            activePhaseChipLabel: this.getActivePhaseChipLabel(phase, collectsBaseline, trialIndex),
+            estimatedRemainingSeconds: this.getEstimatedRemainingSeconds(phase, trialIndex),
+            estimatedRemainingLabel: this.formatDuration(this.getEstimatedRemainingSeconds(phase, trialIndex))
+        };
+    }
+
+    /**
+     * Get phase sequence labels for the active trial.
+     * @param {number|null} trialIndex
+     * @param {boolean} collectingData
+     * @returns {Array<{id: string, label: string}>}
+     */
+    getTrialPhaseSequence(trialIndex, collectingData = false) {
+        if (trialIndex === null || trialIndex < 0) {
+            return [{ id: 'calibration', label: 'Calibration' }];
+        }
+        const baselineLabel = collectingData || trialIndex === 0 ? 'Baseline' : 'Rest';
+        return [
+            { id: 'baseline', label: baselineLabel },
+            { id: 'stimulation', label: 'Stimulate' },
+            { id: 'survey', label: 'Survey' }
+        ];
+    }
+
+    /**
+     * Determine which phase chip is active for current state.
+     * @param {string} phase
+     * @param {boolean} collectingData
+     * @param {number|null} trialIndex
+     * @returns {string}
+     */
+    getActivePhaseChipLabel(phase, collectingData = false, trialIndex = null) {
+        if (phase === 'baseline') {
+            return this.getDisplayPhaseLabel('baseline', collectingData, trialIndex);
+        }
+        if (phase === 'stimulation') return 'Stimulate';
+        if (phase === 'survey') return 'Survey';
+        if (phase === 'calibration') return 'Calibration';
+        return '';
+    }
+
+    /**
+     * Estimate remaining session time in seconds.
+     * @param {string} phase
+     * @param {number|null} trialIndex
+     * @returns {number}
+     */
+    getEstimatedRemainingSeconds(phase, trialIndex) {
+        const trialBlock = this.baselineDuration + this.stimulationDuration + this.surveyDurationEstimate;
+        const safeTrialIndex = Number.isInteger(trialIndex) ? trialIndex : -1;
+        const elapsedSec = Math.max(0, Math.floor(this.getPhaseElapsedTime() / 1000));
+        const calibrationRemaining = Math.max(0, this.calibrationDuration - elapsedSec);
+
+        if (phase === 'calibration') {
+            return calibrationRemaining + (this.trials.length * trialBlock);
+        }
+
+        if (safeTrialIndex < 0 || safeTrialIndex >= this.trials.length) {
+            return 0;
+        }
+
+        const remainingTrialsAfterCurrent = Math.max(0, this.trials.length - safeTrialIndex - 1);
+        let currentTrialRemaining = 0;
+        if (phase === 'baseline') {
+            currentTrialRemaining = Math.max(0, this.baselineDuration - elapsedSec) + this.stimulationDuration + this.surveyDurationEstimate;
+        } else if (phase === 'stimulation') {
+            currentTrialRemaining = Math.max(0, this.stimulationDuration - elapsedSec) + this.surveyDurationEstimate;
+        } else if (phase === 'survey') {
+            currentTrialRemaining = Math.max(0, this.surveyDurationEstimate - elapsedSec);
+        }
+
+        return currentTrialRemaining + (remainingTrialsAfterCurrent * trialBlock);
+    }
+
+    /**
+     * Format seconds to MM:SS / HH:MM:SS.
+     * @param {number} totalSeconds
+     * @returns {string}
+     */
+    formatDuration(totalSeconds) {
+        const seconds = Math.max(0, Number(totalSeconds) || 0);
+        const hrs = Math.floor(seconds / 3600);
+        const mins = Math.floor((seconds % 3600) / 60);
+        const secs = seconds % 60;
+        const two = (value) => String(value).padStart(2, '0');
+        if (hrs > 0) return `${two(hrs)}:${two(mins)}:${two(secs)}`;
+        return `${two(mins)}:${two(secs)}`;
+    }
+
+    /**
+     * Map internal phases to user-facing display labels.
+     * @param {string} phase
+     * @param {boolean} collectingData
+     * @param {number|null} trialIndex
+     * @returns {string}
+     */
+    getDisplayPhaseLabel(phase, collectingData = false, trialIndex = null) {
+        if (phase === 'baseline') {
+            const isFirstTrial = trialIndex === 0;
+            return collectingData || isFirstTrial ? 'Baseline' : 'Rest';
+        }
+        if (phase === 'stimulation') return 'Stimulate';
+        if (phase === 'survey') return 'Survey';
+        if (phase === 'calibration') return 'Calibration';
+        if (phase === 'complete') return 'Complete';
+        if (phase === 'aborted') return 'Aborted';
+        return phase;
+    }
+
+    /**
+     * Get the expected next display step for current trial/phase.
+     * @param {string} phase
+     * @param {number} trialIndex
+     * @returns {string}
+     */
+    getNextStepLabel(phase, trialIndex) {
+        const hasNextTrial = trialIndex + 1 < this.trials.length;
+        if (phase === 'baseline') return 'Stimulate';
+        if (phase === 'stimulation') return 'Survey';
+        if (phase === 'survey') {
+            if (!hasNextTrial) return 'Complete Session';
+            return `Trial ${trialIndex + 2}: Rest`;
+        }
+        return '';
+    }
+
+    /**
+     * Attach a tester note to a trial.
+     * @param {number} trialIndex
+     * @param {string} text
+     * @param {Object} metadata
+     */
+    addTesterNote(trialIndex, text, metadata = {}) {
+        const trial = this.trials[trialIndex];
+        if (!trial || !text || !String(text).trim()) return;
+        trial.testerNotes.push({
+            text: String(text).trim(),
+            createdAt: new Date().toISOString(),
+            phase: metadata.phase || this.currentPhase,
+            timestampMs: Number.isFinite(metadata.timestampMs) ? metadata.timestampMs : Date.now()
+        });
+    }
+
+    /**
+     * Attach a tester event marker to a trial.
+     * @param {number} trialIndex
+     * @param {string} eventType
+     * @param {Object} metadata
+     */
+    addTesterEvent(trialIndex, eventType, metadata = {}) {
+        const trial = this.trials[trialIndex];
+        if (!trial || !eventType) return;
+        trial.testerEvents.push({
+            type: String(eventType),
+            createdAt: new Date().toISOString(),
+            phase: metadata.phase || this.currentPhase,
+            timestampMs: Number.isFinite(metadata.timestampMs) ? metadata.timestampMs : Date.now(),
+            details: metadata.details || null
+        });
     }
 
     /**

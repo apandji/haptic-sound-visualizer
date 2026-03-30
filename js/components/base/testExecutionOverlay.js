@@ -20,12 +20,20 @@ class TestExecutionOverlay {
         this.onAbort = options.onAbort || null;
         this.onManualStartCalibration = options.onManualStartCalibration || null;
         this.onPlayCalibrationTest = options.onPlayCalibrationTest || null;
+        this.onAddTesterNote = options.onAddTesterNote || null;
+        this.onAddTesterEvent = options.onAddTesterEvent || null;
 
         // State
         this.isVisible = false;
         this.currentPhase = null;
         this.countdown = 0;
         this.countdownInterval = null;
+        this.testerSignal = { label: 'Signal: --', tone: 'neutral' };
+        this.testerMetrics = { completedTrials: 0, totalTrials: 0, markerCount: 0 };
+        this.testerPanelCollapsed = false;
+        this.liveSignalBuffer = [];
+        this.liveSignalBufferMax = 80;
+        this.lastMarkerLabel = null;
 
         if (!this.container) {
             console.error(`TestExecutionOverlay: Container #${this.containerId} not found`);
@@ -56,18 +64,66 @@ class TestExecutionOverlay {
         this.testerBar.className = 'test-execution-overlay__tester-bar';
         this.testerBar.setAttribute('aria-label', 'Tester information');
         this.testerBar.innerHTML = `
-            <div class="test-execution-overlay__tester-step" id="testerStepLabel"></div>
-            <div class="test-execution-overlay__tester-next" id="testerNextStep"></div>
-            <div class="test-execution-overlay__tester-instruction" id="testerInstruction"></div>
+            <div class="test-execution-overlay__tester-section">
+                <div class="test-execution-overlay__tester-progress-row">
+                    <div class="test-execution-overlay__tester-step" id="testerStepLabel"></div>
+                    <div class="test-execution-overlay__tester-progress-meta" id="testerProgressMeta"></div>
+                </div>
+                <div class="test-execution-overlay__tester-step-progress" id="testerStepProgress"></div>
+                <div class="test-execution-overlay__tester-trial-meta">
+                    <span class="test-execution-overlay__trial-badge" id="testerTrialBadge"></span>
+                </div>
+                <div class="test-execution-overlay__tester-eta" id="testerEta">ETA remaining: --:--</div>
+                <div class="test-execution-overlay__tester-trial-rail" id="testerTrialRail"></div>
+                <div class="test-execution-overlay__tester-phase-sequence" id="testerPhaseSequence"></div>
+                <div class="test-execution-overlay__tester-next" id="testerNextStep"></div>
+                <div class="test-execution-overlay__tester-instruction" id="testerInstruction"></div>
+            </div>
+
+            <div class="test-execution-overlay__tester-section">
+                <div class="test-execution-overlay__tester-section-title">Note Taking</div>
+                <div class="test-execution-overlay__tester-markers" id="testerMarkers">
+                    <button type="button" data-marker="movement">Mark Movement</button>
+                    <button type="button" data-marker="noise">Mark Noise</button>
+                    <button type="button" data-marker="distraction">Mark Distraction</button>
+                </div>
+                <div class="test-execution-overlay__tester-note-row">
+                    <input id="testerNoteInput" type="text" maxlength="200" placeholder="Add tester note..." />
+                    <button type="button" id="testerNoteAddBtn">Add</button>
+                </div>
+            </div>
+
+            <div class="test-execution-overlay__tester-section">
+                <div class="test-execution-overlay__tester-section-title">BCI Telemetry</div>
+                <div class="test-execution-overlay__tester-signal" id="testerSignalBadge">Signal: --</div>
+                <div class="test-execution-overlay__tester-metrics" id="testerMetrics"></div>
+                <canvas class="test-execution-overlay__tester-live-canvas" id="testerLiveSignalCanvas" width="360" height="96" aria-label="Live BCI trend"></canvas>
+                <div class="test-execution-overlay__tester-telemetry-slot" id="testerTelemetryContainer"></div>
+            </div>
+
+            <div class="test-execution-overlay__tester-footer" id="testerFooterActions"></div>
         `;
         this.container.appendChild(this.testerBar);
+        this.bindTesterPanelEvents();
+        this.testerPanelToggle = document.createElement('button');
+        this.testerPanelToggle.className = 'test-execution-overlay__tester-toggle-btn';
+        this.testerPanelToggle.type = 'button';
+        this.testerPanelToggle.textContent = '❯';
+        this.testerPanelToggle.setAttribute('aria-expanded', 'true');
+        this.testerPanelToggle.addEventListener('click', () => {
+            this.setTesterPanelCollapsed(!this.testerPanelCollapsed);
+        });
+        this.container.appendChild(this.testerPanelToggle);
+        requestAnimationFrame(() => {
+            this.drawLiveSignalSparkline();
+        });
 
         // Create top-right button container
         this.topRightButtons = document.createElement('div');
         this.topRightButtons.className = 'test-execution-overlay__top-right-buttons';
         this.container.appendChild(this.topRightButtons);
 
-        // Create abort button (always visible, destructive) - on LEFT
+        // Create abort button (now in tester panel footer)
         this.abortButton = document.createElement('button');
         this.abortButton.className = 'test-execution-overlay__abort-btn';
         this.abortButton.textContent = 'ABORT';
@@ -76,7 +132,10 @@ class TestExecutionOverlay {
                 this.onAbort();
             }
         });
-        this.topRightButtons.appendChild(this.abortButton);
+        const testerFooterActions = this.testerBar.querySelector('#testerFooterActions');
+        if (testerFooterActions) {
+            testerFooterActions.appendChild(this.abortButton);
+        }
 
         // Create NEXT button (shown conditionally) - on RIGHT
         this.nextButton = document.createElement('button');
@@ -98,15 +157,176 @@ class TestExecutionOverlay {
      * @param {string} nextStep - What comes next e.g. "Stimulation (30s)" or "Select tags then Next"
      * @param {string} instruction - Short instruction for tester
      */
-    updateTesterBar(stepLabel, nextStep, instruction) {
+    updateTesterBar(stepLabel, nextStep, instruction, progress = null) {
         if (!this.testerBar) return;
         const stepEl = this.testerBar.querySelector('#testerStepLabel');
+        const progressMetaEl = this.testerBar.querySelector('#testerProgressMeta');
+        const trialBadgeEl = this.testerBar.querySelector('#testerTrialBadge');
+        const etaEl = this.testerBar.querySelector('#testerEta');
         const nextEl = this.testerBar.querySelector('#testerNextStep');
         const instEl = this.testerBar.querySelector('#testerInstruction');
         if (stepEl) stepEl.textContent = stepLabel;
+        if (this.testerBar) {
+            this.testerBar.classList.toggle('test-execution-overlay__tester-bar--compact', Boolean(progress?.compactMode));
+        }
+        if (progressMetaEl) {
+            const stepIndex = progress?.stepIndex || null;
+            const totalSteps = progress?.totalSteps || null;
+            progressMetaEl.textContent = stepIndex && totalSteps
+                ? `Step ${stepIndex}/${totalSteps}`
+                : '';
+        }
+        if (trialBadgeEl) {
+            const trialNumber = progress?.trialNumber || '-';
+            const totalTrials = progress?.totalTrials || '-';
+            trialBadgeEl.textContent = `Trial ${trialNumber}/${totalTrials}`;
+        }
+        if (etaEl) {
+            etaEl.textContent = `ETA remaining: ${progress?.estimatedRemainingLabel || '--:--'}`;
+        }
         if (nextEl) nextEl.textContent = nextStep ? `Next: ${nextStep}` : '';
         if (instEl) instEl.textContent = instruction || '';
-        this.testerBar.classList.remove('test-execution-overlay__tester-bar--hidden');
+        const stepProgressEl = this.testerBar.querySelector('#testerStepProgress');
+        if (stepProgressEl) {
+            const stepIndex = Number(progress?.stepIndex) || 0;
+            const totalSteps = Number(progress?.totalSteps) || 0;
+            if (stepIndex > 0 && totalSteps > 0) {
+                const pct = Math.max(0, Math.min(100, Math.round((stepIndex / totalSteps) * 100)));
+                stepProgressEl.textContent = `Progress ${pct}%`;
+            } else {
+                stepProgressEl.textContent = '';
+            }
+        }
+        this.renderTrialRail(progress);
+        this.renderPhaseSequence(progress);
+        this.showTesterBar();
+    }
+
+    /**
+     * Render compact trial progression rail.
+     * @param {Object|null} progress
+     */
+    renderTrialRail(progress) {
+        const railEl = this.testerBar ? this.testerBar.querySelector('#testerTrialRail') : null;
+        if (!railEl) return;
+        const totalTrials = Number(progress?.totalTrials) || 0;
+        const trialNumber = Number(progress?.trialNumber) || 0;
+        if (totalTrials <= 0) {
+            railEl.innerHTML = '';
+            return;
+        }
+        const segments = [];
+        for (let idx = 1; idx <= totalTrials; idx++) {
+            let cls = 'pending';
+            if (idx < trialNumber) cls = 'done';
+            if (idx === trialNumber) cls = 'active';
+            segments.push(`<span class="test-execution-overlay__trial-segment test-execution-overlay__trial-segment--${cls}" title="Trial ${idx}"></span>`);
+        }
+        const completed = Math.max(0, trialNumber - 1);
+        railEl.innerHTML = `<div class="test-execution-overlay__trial-rail-label">Trials (${completed}/${totalTrials} complete)</div><div class="test-execution-overlay__trial-rail-track">${segments.join('')}</div>`;
+    }
+
+    /**
+     * Render phase chips for current trial section.
+     * @param {Object|null} progress
+     */
+    renderPhaseSequence(progress) {
+        const sequenceEl = this.testerBar ? this.testerBar.querySelector('#testerPhaseSequence') : null;
+        if (!sequenceEl) return;
+        const sequence = Array.isArray(progress?.phaseSequence) ? progress.phaseSequence : [];
+        if (sequence.length === 0) {
+            sequenceEl.innerHTML = '';
+            return;
+        }
+        const activeChipLabel = progress?.activePhaseChipLabel || '';
+        const activeIndex = sequence.findIndex((item) => item.label === activeChipLabel);
+        const chips = sequence.map((phaseItem, index) => {
+            const isActive = phaseItem.label === activeChipLabel;
+            const isDone = activeIndex > -1 && index < activeIndex;
+            return `<span class="test-execution-overlay__phase-chip ${isDone ? 'test-execution-overlay__phase-chip--done' : ''} ${isActive ? 'test-execution-overlay__phase-chip--active' : ''}">${phaseItem.label}</span>`;
+        });
+        sequenceEl.innerHTML = `<div class="test-execution-overlay__phase-sequence-label">Current Trial</div><div class="test-execution-overlay__phase-chip-row">${chips.join('')}</div>`;
+    }
+
+    /**
+     * Update tester panel signal quality chip.
+     * @param {string} label
+     * @param {string} tone
+     */
+    setTesterSignal(label, tone = 'neutral') {
+        this.testerSignal = {
+            label: label || 'Signal: --',
+            tone: tone || 'neutral'
+        };
+        const signalEl = this.testerBar ? this.testerBar.querySelector('#testerSignalBadge') : null;
+        if (!signalEl) return;
+        signalEl.textContent = this.testerSignal.label;
+        signalEl.classList.remove(
+            'test-execution-overlay__tester-signal--good',
+            'test-execution-overlay__tester-signal--ok',
+            'test-execution-overlay__tester-signal--poor'
+        );
+        if (this.testerSignal.tone === 'good') signalEl.classList.add('test-execution-overlay__tester-signal--good');
+        if (this.testerSignal.tone === 'ok') signalEl.classList.add('test-execution-overlay__tester-signal--ok');
+        if (this.testerSignal.tone === 'poor') signalEl.classList.add('test-execution-overlay__tester-signal--poor');
+    }
+
+    /**
+     * Update tester panel metrics block.
+     * @param {Object} metrics
+     */
+    setTesterMetrics(metrics = {}) {
+        this.testerMetrics = {
+            ...this.testerMetrics,
+            ...metrics
+        };
+        const metricsEl = this.testerBar ? this.testerBar.querySelector('#testerMetrics') : null;
+        if (!metricsEl) return;
+        const { completedTrials, totalTrials, markerCount } = this.testerMetrics;
+        const markerLabel = this.lastMarkerLabel ? ` | Last marker: ${this.lastMarkerLabel}` : '';
+        metricsEl.textContent = `Completed: ${completedTrials}/${totalTrials || 0} | Markers: ${markerCount || 0}${markerLabel}`;
+    }
+
+    /**
+     * Wire tester note and marker interactions.
+     */
+    bindTesterPanelEvents() {
+        if (!this.testerBar) return;
+        const markersEl = this.testerBar.querySelector('#testerMarkers');
+        const noteInput = this.testerBar.querySelector('#testerNoteInput');
+        const noteBtn = this.testerBar.querySelector('#testerNoteAddBtn');
+
+        if (markersEl) {
+            markersEl.addEventListener('click', (event) => {
+                const markerBtn = event.target.closest('button[data-marker]');
+                if (!markerBtn || !this.onAddTesterEvent) return;
+                const markerType = markerBtn.getAttribute('data-marker');
+                this.lastMarkerLabel = markerType;
+                markerBtn.classList.add('test-execution-overlay__tester-marker--pulse');
+                setTimeout(() => markerBtn.classList.remove('test-execution-overlay__tester-marker--pulse'), 180);
+                this.onAddTesterEvent(markerType);
+                this.setTesterMetrics();
+            });
+        }
+
+        const submitNote = () => {
+            if (!this.onAddTesterNote || !noteInput) return;
+            const text = noteInput.value.trim();
+            if (!text) return;
+            this.onAddTesterNote(text);
+            noteInput.value = '';
+        };
+
+        if (noteBtn) {
+            noteBtn.addEventListener('click', submitNote);
+        }
+        if (noteInput) {
+            noteInput.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter') {
+                    submitNote();
+                }
+            });
+        }
     }
 
     /**
@@ -116,6 +336,62 @@ class TestExecutionOverlay {
         if (this.testerBar) {
             this.testerBar.classList.add('test-execution-overlay__tester-bar--hidden');
         }
+        if (this.testerPanelToggle) {
+            this.testerPanelToggle.classList.add('test-execution-overlay__tester-toggle-btn--hidden');
+        }
+        this.syncOverlayLayoutState();
+    }
+
+    /**
+     * Show tester panel and toggle.
+     */
+    showTesterBar() {
+        if (this.testerBar) {
+            this.testerBar.classList.remove('test-execution-overlay__tester-bar--hidden');
+        }
+        if (this.testerPanelToggle) {
+            this.testerPanelToggle.classList.remove('test-execution-overlay__tester-toggle-btn--hidden');
+        }
+        this.syncOverlayLayoutState();
+        this.drawLiveSignalSparkline();
+    }
+
+    /**
+     * Collapse or expand tester panel.
+     * @param {boolean} collapsed
+     */
+    setTesterPanelCollapsed(collapsed) {
+        this.testerPanelCollapsed = Boolean(collapsed);
+        if (this.testerBar) {
+            this.testerBar.classList.toggle('test-execution-overlay__tester-bar--collapsed', this.testerPanelCollapsed);
+        }
+        if (this.testerPanelToggle) {
+            this.testerPanelToggle.textContent = this.testerPanelCollapsed ? '❮' : '❯';
+            this.testerPanelToggle.setAttribute('aria-expanded', this.testerPanelCollapsed ? 'false' : 'true');
+        }
+        this.syncOverlayLayoutState();
+    }
+
+    /**
+     * Explicitly hide/show tester panel by phase.
+     * @param {boolean} visible
+     */
+    setTesterPanelVisible(visible) {
+        if (visible) {
+            this.showTesterBar();
+            return;
+        }
+        this.hideTesterBar();
+    }
+
+    /**
+     * Keep content offset in sync with tester panel visibility/collapse state.
+     */
+    syncOverlayLayoutState() {
+        if (!this.container || !this.testerBar) return;
+        const hidden = this.testerBar.classList.contains('test-execution-overlay__tester-bar--hidden');
+        this.container.classList.toggle('test-execution-overlay--with-tester-panel', !hidden);
+        this.container.classList.toggle('test-execution-overlay--with-collapsed-tester-panel', !hidden && this.testerPanelCollapsed);
     }
 
     /**
@@ -245,6 +521,7 @@ class TestExecutionOverlay {
     showBaseline(data) {
         this.currentPhase = 'baseline';
         this.show();
+        this.setTesterPanelVisible(true);
         this.showNextButton(false); // Hide NEXT during countdown phases
         // Show ABORT button during active phases
         if (this.abortButton) {
@@ -272,11 +549,15 @@ class TestExecutionOverlay {
         `;
 
         const duration = data.duration || 30;
+        const displayPhase = data.progress?.displayPhase || (data.collectingData === false ? 'Rest' : 'Baseline');
+        const baselineNextStep = data.progress?.nextStepLabel || `Stimulation (${duration}s)`;
         this.updateTesterBar(
-            `Trial ${patternNumber} of ${totalPatterns} · Baseline`,
-            `Stimulation (${duration}s)`,
-            'Subject at rest. No action needed.'
+            `Trial ${patternNumber} of ${totalPatterns} · ${displayPhase}`,
+            baselineNextStep,
+            'Subject at rest. No action needed.',
+            data.progress
         );
+        this.setTesterMetrics({ totalTrials: totalPatterns });
     }
 
     /**
@@ -290,6 +571,7 @@ class TestExecutionOverlay {
     showStimulation(data) {
         this.currentPhase = 'stimulation';
         this.show();
+        this.setTesterPanelVisible(true);
         // Show ABORT button during active phases
         if (this.abortButton) {
             this.abortButton.style.display = 'block';
@@ -315,10 +597,12 @@ class TestExecutionOverlay {
         `;
 
         this.updateTesterBar(
-            `Trial ${patternNumber} of ${totalPatterns} · Stimulation`,
-            'Survey (tag this trial, then Next or Finish)',
-            'Audio playing. No action needed.'
+            `Trial ${patternNumber} of ${totalPatterns} · ${data.progress?.displayPhase || 'Stimulate'}`,
+            data.progress?.nextStepLabel || 'Survey (tag this trial, then Next or Finish)',
+            'Audio playing. No action needed.',
+            data.progress
         );
+        this.setTesterMetrics({ totalTrials: totalPatterns });
     }
 
     // Pattern-complete checkpoint removed - survey now goes directly to next pattern
@@ -361,6 +645,7 @@ class TestExecutionOverlay {
     showSurvey(data) {
         this.currentPhase = 'survey';
         this.show();
+        this.setTesterPanelVisible(true);
         this.stopCountdown();
 
         // Check if this is the last pattern
@@ -395,10 +680,12 @@ class TestExecutionOverlay {
         const totalPatterns = data.totalPatterns || 1;
         const isLast = patternNumber >= totalPatterns;
         this.updateTesterBar(
-            `Trial ${patternNumber} of ${totalPatterns} · Survey`,
-            isLast ? 'Finish session (click Finish)' : 'Next trial (click Next)',
-            'Select tags for this trial, then click Next or Finish.'
+            `Trial ${patternNumber} of ${totalPatterns} · ${data.progress?.displayPhase || 'Survey'}`,
+            data.progress?.nextStepLabel || (isLast ? 'Finish session (click Finish)' : 'Next trial (click Next)'),
+            'Select tags for this trial, then click Next or Finish.',
+            data.progress
         );
+        this.setTesterMetrics({ totalTrials: totalPatterns });
     }
 
     /**
@@ -589,7 +876,8 @@ class TestExecutionOverlay {
             return;
         }
 
-        gateStatusEl.textContent = `${goodChannels}/${requiredChannels} channels are good (need ${requiredGoodChannels}/${requiredChannels})`;
+        const needMore = Math.max(0, requiredGoodChannels - goodChannels);
+        gateStatusEl.textContent = `${goodChannels}/${requiredChannels} channels are good. Need ${needMore} more good channel${needMore === 1 ? '' : 's'} before recommended start.`;
         gateStatusEl.classList.add('test-execution-overlay__calibration-gate--waiting');
     }
 
@@ -628,6 +916,107 @@ class TestExecutionOverlay {
      */
     getSurveyContainer() {
         return document.getElementById('surveyContainer');
+    }
+
+    /**
+     * Get tester telemetry mount container for BCI widget.
+     * @returns {HTMLElement|null}
+     */
+    getTesterTelemetryContainer() {
+        return document.getElementById('testerTelemetryContainer');
+    }
+
+    /**
+     * Append a point to the lightweight live telemetry sparkline.
+     * @param {Object} reading
+     */
+    pushLiveSignalReading(reading) {
+        const value = this.getLiveSignalValue(reading);
+        if (Number.isFinite(value)) {
+            this.liveSignalBuffer.push(value);
+            if (this.liveSignalBuffer.length > this.liveSignalBufferMax) {
+                this.liveSignalBuffer.shift();
+            }
+        }
+        this.drawLiveSignalSparkline();
+    }
+
+    /**
+     * Convert reading object into a single scalar signal for trend drawing.
+     * Uses alpha+beta absolute power when available, otherwise signal_quality.
+     * @param {Object} reading
+     * @returns {number|null}
+     */
+    getLiveSignalValue(reading) {
+        if (!reading || typeof reading !== 'object') return null;
+        const alpha = Number(reading.alpha_abs);
+        const beta = Number(reading.beta_abs);
+        if (Number.isFinite(alpha) && Number.isFinite(beta)) {
+            return alpha + beta;
+        }
+        const signalQuality = Number(reading.signal_quality);
+        if (Number.isFinite(signalQuality)) {
+            return signalQuality;
+        }
+        return null;
+    }
+
+    /**
+     * Draw sparkline inside telemetry canvas.
+     */
+    drawLiveSignalSparkline() {
+        const canvas = this.testerBar ? this.testerBar.querySelector('#testerLiveSignalCanvas') : null;
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        // Keep canvas internal resolution aligned with rendered size.
+        const displayWidth = Math.max(120, Math.floor(canvas.clientWidth || canvas.width));
+        const displayHeight = Math.max(72, Math.floor(canvas.clientHeight || canvas.height));
+        if (canvas.width !== displayWidth || canvas.height !== displayHeight) {
+            canvas.width = displayWidth;
+            canvas.height = displayHeight;
+        }
+
+        const width = canvas.width;
+        const height = canvas.height;
+        ctx.clearRect(0, 0, width, height);
+        ctx.fillStyle = '#fbfdff';
+        ctx.fillRect(0, 0, width, height);
+
+        // Grid baseline for easier trend reading.
+        ctx.strokeStyle = '#e5ebf2';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(0, height - 1);
+        ctx.lineTo(width, height - 1);
+        ctx.stroke();
+
+        if (this.liveSignalBuffer.length < 2) {
+            ctx.fillStyle = '#7a8695';
+            ctx.font = '12px sans-serif';
+            ctx.fillText('Waiting for live telemetry...', 10, Math.floor(height / 2));
+            return;
+        }
+
+        const min = Math.min(...this.liveSignalBuffer);
+        const max = Math.max(...this.liveSignalBuffer);
+        const range = Math.max(1e-6, max - min);
+
+        ctx.strokeStyle = '#2b5f94';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        this.liveSignalBuffer.forEach((value, index) => {
+            const x = (index / (this.liveSignalBuffer.length - 1)) * (width - 1);
+            const normalized = (value - min) / range;
+            const y = (height - 6) - (normalized * (height - 12));
+            if (index === 0) {
+                ctx.moveTo(x, y);
+            } else {
+                ctx.lineTo(x, y);
+            }
+        });
+        ctx.stroke();
     }
 }
 

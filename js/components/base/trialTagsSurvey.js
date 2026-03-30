@@ -37,6 +37,7 @@ class TrialTagsSurvey {
         this.isLoaded = false;
         this.isPlaying = false;
         this.playButton = null;
+        this.feedbackEl = null;
 
         if (!this.container) {
             console.error('TrialTagsSurvey: Container not found');
@@ -172,6 +173,10 @@ class TrialTagsSurvey {
             ? 'Select one or more options from each category. For action tags, choose an intensity before continuing.'
             : 'Select one or more options from each category';
         headerSection.appendChild(instructionsEl);
+        this.feedbackEl = document.createElement('div');
+        this.feedbackEl.className = 'trial-tags-survey__feedback';
+        this.feedbackEl.setAttribute('aria-live', 'polite');
+        headerSection.appendChild(this.feedbackEl);
 
         // Category Tabs (only if more than one category)
         if (this.categories.length > 1) {
@@ -185,6 +190,7 @@ class TrialTagsSurvey {
                 tab.type = 'button';
                 tab.dataset.categoryIndex = index;
                 tab.textContent = category.name;
+                tab.setAttribute('aria-label', `Category ${category.name}`);
 
                 if (index === this.currentCategoryIndex) {
                     tab.classList.add('active');
@@ -192,6 +198,15 @@ class TrialTagsSurvey {
 
                 tab.addEventListener('click', () => {
                     this.switchCategory(index);
+                });
+                tab.addEventListener('keydown', (event) => {
+                    if (event.key === 'ArrowRight') {
+                        event.preventDefault();
+                        this.switchCategory(Math.min(this.categories.length - 1, index + 1));
+                    } else if (event.key === 'ArrowLeft') {
+                        event.preventDefault();
+                        this.switchCategory(Math.max(0, index - 1));
+                    }
                 });
 
                 tabsContainer.appendChild(tab);
@@ -227,7 +242,7 @@ class TrialTagsSurvey {
         const customTagInput = document.createElement('input');
         customTagInput.className = 'trial-tags-survey__custom-input';
         customTagInput.type = 'text';
-        customTagInput.placeholder = 'Enter custom tag...';
+        customTagInput.placeholder = 'Add custom tag...';
         customTagInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && customTagInput.value.trim()) {
                 this.addCustomTag(customTagInput.value.trim());
@@ -349,6 +364,9 @@ class TrialTagsSurvey {
         const tabs = this.container.querySelectorAll('.trial-tags-survey__tab');
         tabs.forEach((tab, i) => {
             tab.classList.toggle('active', i === index);
+            if (i === index) {
+                tab.focus();
+            }
         });
 
         // Render new category
@@ -590,10 +608,20 @@ class TrialTagsSurvey {
 
             if (!hasSelectedTags) {
                 overlayNextBtn.title = 'Select at least one tag.';
+                if (this.feedbackEl) {
+                    this.feedbackEl.textContent = 'Select at least one tag to continue.';
+                }
             } else if (missingIntensityTagIds.length > 0) {
                 overlayNextBtn.title = 'Choose intensity 1-4 for each selected action tag.';
+                if (this.feedbackEl) {
+                    this.feedbackEl.textContent = 'Choose intensity for all selected action tags.';
+                }
             } else {
                 overlayNextBtn.title = '';
+                if (this.feedbackEl) {
+                    const selectedCount = this.selectedTags.size;
+                    this.feedbackEl.textContent = `${selectedCount} tag${selectedCount === 1 ? '' : 's'} selected. Ready to continue.`;
+                }
             }
         }
     }

@@ -2,6 +2,7 @@
   "calibrationDuration": 20,
   "baselineDuration": 30,
   "stimulationDuration": 30,
+  "surveyDurationEstimate": 20,
   "taggingDuration": 10,
-  "_comment": "All durations are in seconds. calibrationDuration is the initial setup time. baselineDuration, stimulationDuration, and taggingDuration are per-pattern timings."
+  "_comment": "All durations are in seconds. calibrationDuration is initial setup. baselineDuration and stimulationDuration are runtime phases. surveyDurationEstimate controls ETA in control-room panel. taggingDuration remains legacy estimate support."
 }
