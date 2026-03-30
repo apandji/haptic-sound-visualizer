@@ -26,15 +26,14 @@
             }
 
             const rms_uV = Number(metric.rms_uV);
-            const p60_rel = Number(metric.p60_rel);
-            if (!Number.isFinite(rms_uV) || !Number.isFinite(p60_rel)) {
+            if (!Number.isFinite(rms_uV)) {
                 return null;
             }
 
-            if ((rms_uV >= 3.0 && rms_uV <= 100.0) && (p60_rel < 0.3)) {
+            if (rms_uV >= 5.0 && rms_uV <= 100.0) {
                 return 'good';
             }
-            if ((rms_uV >= 0.5 && rms_uV <= 300.0) && (p60_rel < 0.6)) {
+            if (rms_uV > 100.0 && rms_uV <= 150.0) {
                 return 'ok';
             }
             return 'poor';

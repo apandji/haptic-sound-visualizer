@@ -151,12 +151,12 @@ signalQuality.stop();  // release
 ### 8. Quality Thresholds ⭐⭐⭐
 **Status**: ✅ **COMPLETE** (Already implemented)
 
-**Verification**: Matches Python exactly:
-- Good: `3.0 ≤ RMS ≤ 100.0 μV` AND `60Hz_rel < 0.3`
-- OK: `0.5 ≤ RMS ≤ 300.0 μV` AND `60Hz_rel < 0.6`
+**Verification**: Matches the current app implementation:
+- Good: `5.0 ≤ RMS ≤ 100.0 μV`
+- OK: `100.0 < RMS ≤ 150.0 μV`
 - Poor: Everything else
 
-**Matches Python**: Lines 68-73
+**Matches App**: `eeg_server.py` and `SignalQualityVisualizer.classifyQuality()`
 
 ---
 

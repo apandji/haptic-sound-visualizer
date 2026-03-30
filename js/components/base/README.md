@@ -204,7 +204,7 @@ const signalQuality = new SignalQualityVisualizer({
     mockDataPath: 'data/ganglion_sample_data.csv',
     onQualityChange: (qualities) => {
         // qualities = [
-        //   { channel: 'CH1', rms_uV: 45.2, p60_rel: 0.12, quality: 'good', ... },
+        //   { channel: 'CH1', rms_uV: 45.2, quality: 'good', ... },
         //   ...
         // ]
     },
@@ -230,14 +230,13 @@ signalQuality.destroy()            // Cleanup
 - Expandable panel with quality table
 - Real-time updates (configurable interval)
 - Mock data support (loads from CSV file)
-- Quality classification: good/ok/poor based on RMS and 60Hz noise
+- Quality classification: good/ok/poor based on RMS thresholds
 
 **Quality Metrics**:
 - **RMS (μV)**: Root mean square amplitude (1-45 Hz band)
-- **60Hz (rel)**: 60Hz noise relative to total power
 - **Quality**: Classification based on thresholds:
-  - **Good**: RMS 3-100 μV, 60Hz < 0.3
-  - **OK**: RMS 0.5-300 μV, 60Hz < 0.6
+  - **Good**: `5.0 <= RMS <= 100.0` μV
+  - **OK**: `100.0 < RMS <= 150.0` μV
   - **Poor**: Everything else
 
 **Example**: `../../dev/components-examples/signal-quality-visualizer.example.html`

@@ -40,7 +40,7 @@ class SignalQualityVisualizer {
         this.isExpanded = false;
         this.isMonitoring = false;
         this.updateTimer = null;
-        this.channelQualities = []; // Array of {channel, rms_uV, p60_rel, quality}
+        this.channelQualities = []; // Array of {channel, rms_uV, quality}
         this.mockData = null; // Loaded CSV data
         this.mockDataIndex = 0; // Current position in mock data
         this.latestReading = null; // Most recent reading pushed from EEGDataCollector
@@ -311,7 +311,6 @@ class SignalQualityVisualizer {
         headerRow.innerHTML = `
             <th>Channel</th>
             <th>RMS (μV)</th>
-            <th>60Hz (rel)</th>
             <th>Quality</th>
         `;
         thead.appendChild(headerRow);
@@ -327,7 +326,6 @@ class SignalQualityVisualizer {
             row.innerHTML = `
                 <td class="signal-quality-visualizer__channel">${this.channelLabels[i]}</td>
                 <td class="signal-quality-visualizer__rms">--</td>
-                <td class="signal-quality-visualizer__p60">--</td>
                 <td class="signal-quality-visualizer__quality">
                     <span class="signal-quality-visualizer__quality-badge">--</span>
                 </td>
@@ -435,26 +433,17 @@ class SignalQualityVisualizer {
         const totalPower = this.getFallbackTotalPower(reading);
         const fallbackRms = Math.max(0.1, Math.sqrt(totalPower));
 
-        const signalQuality = Number(reading.signal_quality);
-        const normalizedQuality = Number.isFinite(signalQuality)
-            ? Math.max(0, Math.min(100, signalQuality))
-            : 60;
-        const fallbackP60 = Math.max(0.05, Math.min(0.95, (100 - normalizedQuality) / 100));
-
         return this.activeChannels.map((activeChannel, idx) => {
             const metric = rawMetrics.find((item) => Number(item.channel_index) === activeChannel) || rawMetrics[idx] || null;
             const metricRms = Number(metric?.rms_uV);
-            const metricP60 = Number(metric?.p60_rel);
 
             const rms_uV = Number.isFinite(metricRms) ? Math.max(0.1, metricRms) : fallbackRms;
-            const p60_rel = Number.isFinite(metricP60) ? Math.max(0, Math.min(1, metricP60)) : fallbackP60;
 
             return {
                 channel: this.channelLabels[idx],
                 channelIndex: idx,
                 rms_uV,
-                p60_rel,
-                quality: this.classifyQuality(rms_uV, p60_rel),
+                quality: this.classifyQuality(rms_uV),
                 timestamp
             };
         });
@@ -470,83 +459,49 @@ class SignalQualityVisualizer {
             return this.generateSimulatedQualities();
         }
         
-        // Get current row (cycle through data)
-        const row = this.mockData[this.mockDataIndex % this.mockData.length];
+        // Advance through the mock rows to preserve a time-like progression.
         this.mockDataIndex++;
         
-        // Extract total power (total_1_45_uV2) - this is aggregate, but we'll vary per channel
-        const totalPower = row.total_1_45_uV2 || 0;
-        const baseRMS = Math.sqrt(totalPower);
-        
-        // Generate independent quality for each channel
-        // Realistic scenarios:
-        // - Some channels have good contact (lower RMS, low noise)
-        // - Some channels have poor contact (higher RMS, high noise)
-        // - Some channels pick up more 60Hz line noise
+        // Generate independent per-channel RMS values while cycling through the mock rows.
         const qualities = [];
         
         for (let i = 0; i < this.channelCount; i++) {
-            // Each channel gets its own quality profile
-            // Use a deterministic seed based on channel index and data index for consistency
-            // but add randomness for variation
             const channelSeed = (this.mockDataIndex * 10 + i) % 100;
-            const randomFactor = (channelSeed / 100) + (Math.random() * 0.3 - 0.15); // ±15% variation
-            
-            // Assign quality state per channel (realistic distribution)
-            // Most channels should be good/ok, occasionally poor
+            const seededFactor = channelSeed / 100;
             let targetQuality;
             const qualityRoll = Math.random();
             if (qualityRoll < 0.6) {
-                // 60% chance: Good quality
                 targetQuality = 'good';
             } else if (qualityRoll < 0.9) {
-                // 30% chance: OK quality
                 targetQuality = 'ok';
             } else {
-                // 10% chance: Poor quality (problem channel)
                 targetQuality = 'poor';
             }
             
-            // Generate RMS and 60Hz values that match the target quality
-            let channelRMS, channelP60;
+            let channelRMS;
             
             if (targetQuality === 'good') {
-                // Good: RMS 3-100 μV, 60Hz < 0.3
-                channelRMS = 20 + (randomFactor * 60); // ~20-80 μV (well within good range)
-                channelP60 = 0.05 + Math.abs(randomFactor) * 0.20; // 0.05-0.25 (low noise)
+                channelRMS = 15 + (seededFactor * 70);
             } else if (targetQuality === 'ok') {
-                // OK: RMS 0.5-300 μV, 60Hz < 0.6
-                channelRMS = 80 + (randomFactor * 150); // ~80-230 μV (OK range)
-                channelP60 = 0.25 + Math.abs(randomFactor) * 0.30; // 0.25-0.55 (moderate noise)
+                channelRMS = 105 + (seededFactor * 40);
             } else {
-                // Poor: Everything else
-                // Could be high RMS OR high 60Hz noise
                 if (Math.random() < 0.5) {
-                    // High RMS scenario (poor contact, high signal)
-                    channelRMS = 250 + (randomFactor * 200); // ~250-450 μV
-                    channelP60 = 0.3 + Math.abs(randomFactor) * 0.3; // 0.3-0.6
+                    channelRMS = 160 + (seededFactor * 220);
                 } else {
-                    // High 60Hz noise scenario (line noise interference)
-                    channelRMS = 50 + (randomFactor * 100); // ~50-150 μV (moderate RMS)
-                    channelP60 = 0.6 + Math.abs(randomFactor) * 0.25; // 0.6-0.85 (high noise)
+                    channelRMS = 0.5 + (seededFactor * 3.0);
                 }
             }
             
-            // Add some natural variation (channels don't stay exactly the same)
-            channelRMS += (Math.random() - 0.5) * 10; // ±5 μV variation
-            channelP60 = Math.max(0, Math.min(1, channelP60 + (Math.random() - 0.5) * 0.05)); // ±2.5% variation
-            
-            // Ensure values are within reasonable bounds
-            channelRMS = Math.max(0.1, channelRMS);
-            
-            // Classify quality based on actual calculated values
-            const quality = this.classifyQuality(channelRMS, channelP60);
+            const jitter = targetQuality === 'poor'
+                ? (Math.random() - 0.5)
+                : (Math.random() - 0.5) * 6;
+            channelRMS = Math.max(0.1, channelRMS + jitter);
+            const quality = this.classifyQuality(channelRMS);
             
             qualities.push({
                 channel: this.channelLabels[i],
                 channelIndex: i,
                 rms_uV: channelRMS,
-                p60_rel: channelP60,
                 quality: quality,
                 timestamp: Date.now()
             });
@@ -585,37 +540,26 @@ class SignalQualityVisualizer {
                 state = 'poor';
             }
             
-            let rms_uV, p60_rel;
+            let rms_uV;
             
             if (state === 'good') {
-                // Good: RMS 3-100 μV, 60Hz < 0.3
-                rms_uV = 20 + Math.random() * 60; // 20-80 μV (well within good range)
-                p60_rel = 0.05 + Math.random() * 0.20; // 0.05-0.25 (low noise)
+                rms_uV = 15 + Math.random() * 75;
             } else if (state === 'ok') {
-                // OK: RMS 0.5-300 μV, 60Hz < 0.6
-                rms_uV = 80 + Math.random() * 150; // 80-230 μV (OK range)
-                p60_rel = 0.25 + Math.random() * 0.30; // 0.25-0.55 (moderate noise)
+                rms_uV = 105 + Math.random() * 40;
             } else {
-                // Poor: Could be high RMS OR high 60Hz noise
                 if (Math.random() < 0.5) {
-                    // High RMS scenario (poor contact)
-                    rms_uV = 250 + Math.random() * 200; // 250-450 μV
-                    p60_rel = 0.3 + Math.random() * 0.3; // 0.3-0.6
+                    rms_uV = 160 + Math.random() * 220;
                 } else {
-                    // High 60Hz noise scenario (line noise)
-                    rms_uV = 50 + Math.random() * 100; // 50-150 μV
-                    p60_rel = 0.6 + Math.random() * 0.25; // 0.6-0.85 (high noise)
+                    rms_uV = 0.5 + Math.random() * 4.0;
                 }
             }
             
-            // Classify to ensure it matches (should match, but verify)
-            const quality = this.classifyQuality(rms_uV, p60_rel);
+            const quality = this.classifyQuality(rms_uV);
             
             qualities.push({
                 channel: this.channelLabels[i],
                 channelIndex: i,
                 rms_uV: rms_uV,
-                p60_rel: p60_rel,
                 quality: quality,
                 timestamp: Date.now()
             });
@@ -624,14 +568,10 @@ class SignalQualityVisualizer {
         return qualities;
     }
     
-    /**
-     * Classify quality based on RMS and 60Hz relative power
-     * Matches Python script thresholds
-     */
-    classifyQuality(rms_uV, p60_rel) {
-        if ((rms_uV >= 3.0 && rms_uV <= 100.0) && (p60_rel < 0.3)) {
+    classifyQuality(rms_uV) {
+        if (rms_uV >= 5.0 && rms_uV <= 100.0) {
             return 'good';
-        } else if ((rms_uV >= 0.5 && rms_uV <= 300.0) && (p60_rel < 0.6)) {
+        } else if (rms_uV > 100.0 && rms_uV <= 150.0) {
             return 'ok';
         } else {
             return 'poor';
@@ -655,12 +595,6 @@ class SignalQualityVisualizer {
             const rmsCell = row.querySelector('.signal-quality-visualizer__rms');
             if (rmsCell) {
                 rmsCell.textContent = q.rms_uV.toFixed(1);
-            }
-            
-            // Update 60Hz relative
-            const p60Cell = row.querySelector('.signal-quality-visualizer__p60');
-            if (p60Cell) {
-                p60Cell.textContent = q.p60_rel.toFixed(2);
             }
             
             // Update quality badge
