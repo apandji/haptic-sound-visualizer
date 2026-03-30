@@ -33,14 +33,13 @@ This document outlines the plan for integrating OpenBCI Ganglion EEG device into
 - Connects to OpenBCI Ganglion via BrainFlow library
 - Computes signal quality metrics per channel:
   - **RMS (μV)**: Root mean square amplitude (1-45 Hz band)
-  - **60Hz relative power**: 60Hz noise relative to total power
   - **Quality rating**: "good", "ok", or "poor" based on thresholds
 - Updates display every 1 second (configurable)
 - Uses 2-second window for PSD (Power Spectral Density) calculation
 
-**Quality Thresholds** (from Python code):
-- **Good**: `3.0 ≤ RMS ≤ 100.0 μV` AND `60Hz_rel < 0.3`
-- **OK**: `0.5 ≤ RMS ≤ 300.0 μV` AND `60Hz_rel < 0.6`
+**Quality Thresholds** (current app):
+- **Good**: `5.0 ≤ RMS ≤ 100.0 μV`
+- **OK**: `100.0 < RMS ≤ 150.0 μV`
 - **Poor**: Everything else
 
 **Technical Details**:
@@ -86,15 +85,15 @@ Display real-time signal quality metrics for each EEG channel, helping researche
 **Option A: Table View (Matches Python Output)** ⭐ **RECOMMENDED**
 ```
 ┌─────────────────────────────────────────┐
-│ Signal Quality                          │
-├──────────┬─────────┬──────────┬────────┤
-│ Channel  │ RMS_μV  │ 60Hz_rel │ Quality│
-├──────────┼─────────┼──────────┼────────┤
-│ CH1      │  45.2   │   0.12   │  good  │
-│ CH2      │  38.7   │   0.18   │  good  │
-│ CH3      │ 125.3   │   0.45   │   ok   │
-│ CH4      │ 350.1   │   0.78   │  poor  │
-└──────────┴─────────┴──────────┴────────┘
+│ Signal Quality                 │
+├──────────┬─────────┬────────┤
+│ Channel  │ RMS_μV  │ Quality│
+├──────────┼─────────┼────────┤
+│ CH1      │  45.2   │  good  │
+│ CH2      │  38.7   │  good  │
+│ CH3      │ 125.3   │   ok   │
+│ CH4      │ 350.1   │  poor  │
+└──────────┴─────────┴────────┘
 ```
 
 **Option B: Card Grid View**
@@ -133,7 +132,7 @@ const signalQuality = new SignalQualityVisualizer({
     windowLength: 2.0,     // seconds for PSD window (default: 2.0)
     onQualityChange: (channelQualities) => {
         // channelQualities = [
-        //   { channel: 'CH1', rms_uV: 45.2, p60_rel: 0.12, quality: 'good' },
+        //   { channel: 'CH1', rms_uV: 45.2, quality: 'good' },
         //   ...
         // ]
     },
@@ -211,7 +210,7 @@ OpenBCI Ganglion
 BrainFlow Library (Python or JS)
     ↓ (Raw EEG data: channels × samples)
 Signal Quality Calculator
-    ↓ (PSD → RMS, 60Hz power → Quality rating)
+    ↓ (PSD → RMS → Quality rating)
 SignalQualityVisualizer Component
     ↓ (Display in UI)
 ```
@@ -227,8 +226,6 @@ SignalQualityVisualizer Component
    - FFT size: Nearest power of 2 (minimum 8)
 3. Calculate band powers:
    - Total power (1-45 Hz): `band_power(1.0, 45.0)`
-   - 60Hz power: `band_power(55.0, 65.0)`
-   - 60Hz relative: `60Hz_power / total_power`
 4. Calculate RMS: `sqrt(total_power)`
 5. Classify quality based on thresholds
 
@@ -311,7 +308,7 @@ SignalQualityVisualizer Component
 - Can we configure which channels to monitor for quality?
 
 **Q5: Signal Quality Algorithm**
-- Are the quality thresholds (RMS, 60Hz) device-specific or universal?
+- Are the RMS-only quality thresholds device-specific or universal?
 - Should these thresholds be configurable?
 - Are there other quality metrics we should consider? (e.g., impedance, signal-to-noise ratio)
 
@@ -398,7 +395,7 @@ SignalQualityVisualizer Component
 
 **Tasks**:
 1. Implement PSD calculation in JavaScript (or connect to backend)
-2. Implement RMS and 60Hz relative power calculation
+2. Implement RMS calculation from total power
 3. Implement quality classification
 4. Connect to real device
 5. Test with actual Ganglion
@@ -460,17 +457,16 @@ SignalQualityVisualizer Component
     channel: 'CH1',           // Channel identifier
     channelIndex: 0,          // 0-based index
     rms_uV: 45.2,             // RMS amplitude in microvolts
-    p60_rel: 0.12,            // 60Hz relative power (0-1)
     quality: 'good',           // 'good' | 'ok' | 'poor'
     timestamp: 1704321000000   // Unix timestamp (ms)
 }
 
 // All channels
 [
-    { channel: 'CH1', rms_uV: 45.2, p60_rel: 0.12, quality: 'good', ... },
-    { channel: 'CH2', rms_uV: 38.7, p60_rel: 0.18, quality: 'good', ... },
-    { channel: 'CH3', rms_uV: 125.3, p60_rel: 0.45, quality: 'ok', ... },
-    { channel: 'CH4', rms_uV: 350.1, p60_rel: 0.78, quality: 'poor', ... }
+    { channel: 'CH1', rms_uV: 45.2, quality: 'good', ... },
+    { channel: 'CH2', rms_uV: 38.7, quality: 'good', ... },
+    { channel: 'CH3', rms_uV: 125.3, quality: 'ok', ... },
+    { channel: 'CH4', rms_uV: 350.1, quality: 'poor', ... }
 ]
 ```
 
@@ -515,7 +511,7 @@ SignalQualityVisualizer Component
 ## Testing Strategy
 
 ### Unit Tests
-- Signal quality calculation (PSD, RMS, 60Hz)
+- Signal quality calculation (PSD, RMS)
 - Quality classification logic
 - Component rendering
 

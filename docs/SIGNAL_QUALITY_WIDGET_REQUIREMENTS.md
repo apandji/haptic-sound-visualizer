@@ -8,7 +8,7 @@
 ## Current Implementation Status
 
 ✅ **Implemented**:
-- Basic signal quality display (RMS, 60Hz, Quality)
+- Basic signal quality display (RMS, Quality)
 - Intercom-style floating widget
 - Mock data integration
 - Real-time updates (1s interval)
@@ -84,7 +84,7 @@
 │ Signal Quality          [×]         │
 │ Trial 1 of 5 - Baseline Phase       │
 ├─────────────────────────────────────┤
-│ Channel | RMS_μV | 60Hz_rel | Quality│
+│ Channel | RMS_μV | Quality│
 │ ...
 ```
 
@@ -166,7 +166,6 @@
 - Timestamp of each reading
 - Quality state per channel
 - RMS values over time
-- 60Hz relative power over time
 
 **Storage**: Keep in-memory buffer (last 60 seconds = 60 readings at 1s interval)
 
@@ -271,7 +270,6 @@
 ```
 EEG Data → Band Powers (delta, theta, alpha, beta, gamma)
          → Calculate RMS from bands
-         → Calculate 60Hz (if available)
          → Display in widget
 ```
 
@@ -284,8 +282,8 @@ EEG Data → Band Powers (delta, theta, alpha, beta, gamma)
 **Requirement**: Allow customization of quality thresholds
 
 **Current Thresholds** (hardcoded):
-- Good: `3.0 ≤ RMS ≤ 100.0 μV` AND `60Hz_rel < 0.3`
-- OK: `0.5 ≤ RMS ≤ 300.0 μV` AND `60Hz_rel < 0.6`
+- Good: `5.0 ≤ RMS ≤ 100.0 μV`
+- OK: `100.0 < RMS ≤ 150.0 μV`
 - Poor: Everything else
 
 **Implementation**:

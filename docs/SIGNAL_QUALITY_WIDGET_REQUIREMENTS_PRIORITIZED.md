@@ -3,11 +3,13 @@
 **Date**: February 3, 2026  
 **Source**: `signal_quality.py` - Python reference implementation
 
+**Note**: The shipped app now uses RMS-only quality classification. The standalone Python script still includes extra line-noise logic, but that is intentionally not part of the app path.
+
 ---
 
 ## ✅ Already Implemented
 
-- Basic signal quality display (RMS, 60Hz, Quality)
+- Basic signal quality display (RMS, Quality)
 - Intercom-style floating widget
 - Mock data integration
 - Real-time updates (1s interval)
@@ -185,8 +187,6 @@ def band_power(f0, f1):
     return val
 
 total_1_45 = band_power(1.0, 45.0)
-p60 = band_power(55.0, 65.0)
-p60_rel = p60 / total_1_45
 rms_uV = float(np.sqrt(total_1_45))
 ```
 
@@ -196,12 +196,10 @@ rms_uV = float(np.sqrt(total_1_45))
 
 **Implementation**:
 - Calculate total power (1-45 Hz) using trapezoidal integration
-- Calculate 60Hz power (55-65 Hz band)
 - Handle edge cases: no data in band, non-finite values
 - Calculate RMS: `sqrt(total_power)`
-- Calculate relative: `60Hz_power / total_power`
 
-**Note**: Current mock implementation is acceptable, but should match algorithm when real data is available.
+**Note**: Current mock implementation is acceptable, but should match this RMS calculation when real data is available.
 
 ---
 
@@ -211,9 +209,9 @@ rms_uV = float(np.sqrt(total_1_45))
 
 **What Python Does**:
 ```python
-if (3.0 <= rms_uV <= 100.0) and (p60_rel < 0.3):
+if 5.0 <= rms_uV <= 100.0:
     quality = "good"
-elif (0.5 <= rms_uV <= 300.0) and (p60_rel < 0.6):
+elif 100.0 < rms_uV <= 150.0:
     quality = "ok"
 else:
     quality = "poor"
@@ -222,8 +220,8 @@ else:
 **Requirement**: ✅ Already implemented correctly
 
 **Verification**: Ensure thresholds match exactly:
-- Good: `3.0 ≤ RMS ≤ 100.0 μV` AND `60Hz_rel < 0.3`
-- OK: `0.5 ≤ RMS ≤ 300.0 μV` AND `60Hz_rel < 0.6`
+- Good: `5.0 ≤ RMS ≤ 100.0 μV`
+- OK: `100.0 < RMS ≤ 150.0 μV`
 - Poor: Everything else
 
 ---

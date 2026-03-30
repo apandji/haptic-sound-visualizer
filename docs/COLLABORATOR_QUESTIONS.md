@@ -58,10 +58,9 @@ We're building a web application (JavaScript/HTML/CSS) and need to connect to th
 
 ### Q5: Signal Quality Algorithm & Thresholds
 **Questions:**
-- Are the quality thresholds (RMS: 3-100 μV for "good", 60Hz_rel < 0.3) device-specific or universal?
+- Are the RMS thresholds (`5-100 μV` for "good", `>100-150 μV` for "ok") device-specific or universal?
 - Should these thresholds be configurable, or are they standard for Ganglion?
-- Are there other quality metrics we should consider? (e.g., impedance, signal-to-noise ratio, line noise at other frequencies)
-- Why 60Hz specifically? (Is this for 60Hz power line noise in North America? Should we also check 50Hz for Europe?)
+- Are there other quality metrics we should consider in addition to RMS? (e.g., impedance, signal-to-noise ratio)
 
 **Context**: We want to ensure our quality classification matches your implementation and understand if thresholds should be adjustable.
 
@@ -166,7 +165,7 @@ Our test flow includes:
 - **Features**: 
   - Connects to Ganglion via serial port
   - Calculates PSD using Welch's method
-  - Computes RMS and 60Hz relative power
+  - Computes RMS from total band power
   - Classifies quality as "good", "ok", or "poor"
   - Updates display every 1 second
 

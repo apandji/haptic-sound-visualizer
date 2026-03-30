@@ -277,8 +277,8 @@ Since we can't use BrainFlow in browser, we need to port PSD calculation:
 2. Apply Hanning window
 3. Calculate FFT
 4. Compute PSD using Welch's method
-5. Calculate band powers (1-45 Hz total, 55-65 Hz for 60Hz noise)
-6. Calculate RMS and relative power
+5. Calculate total band power (1-45 Hz)
+6. Calculate RMS from total power
 7. Classify quality
 
 ---

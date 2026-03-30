@@ -60,16 +60,6 @@ class EEGServerState:
 
 state = EEGServerState()
 
-"""
-def classify_quality(rms_uV: float, p60_rel: float) -> str:
-    """Classify channel quality using the same thresholds as the frontend widget."""
-    if (1.0 <= rms_uV <= 100.0) and (p60_rel < 0.3):
-        return "good"
-    if (100 <= rms_uV <= 150.0) and (p60_rel < 0.6):
-        return "ok"
-    return "poor"
-"""
-
 def classify_quality(rms_uV: float) -> str:
     """Classify channel quality using only RMS thresholds."""
     if 5.0 <= rms_uV <= 100.0:
@@ -166,23 +156,18 @@ def generate_mock_reading():
         quality_roll = np.random.random()
         if quality_roll < 0.6:
             rms_uV = np.random.uniform(10.0, 80.0)
-            # p60_rel = np.random.uniform(0.05, 0.25)
         elif quality_roll < 0.9:
-            rms_uV = np.random.uniform(80.0, 220.0)
-            # p60_rel = np.random.uniform(0.25, 0.55)
+            rms_uV = np.random.uniform(105.0, 145.0)
         else:
             if np.random.random() < 0.5:
-                rms_uV = np.random.uniform(240.0, 420.0)
-                # p60_rel = np.random.uniform(0.30, 0.55)
+                rms_uV = np.random.uniform(160.0, 420.0)
             else:
-                rms_uV = np.random.uniform(40.0, 140.0)
-                # p60_rel = np.random.uniform(0.60, 0.85)
+                rms_uV = np.random.uniform(0.5, 4.5)
 
         quality = classify_quality(float(rms_uV))
         channel_metrics.append({
             "channel_index": channel_index,
             "rms_uV": float(rms_uV),
-            # "p60_rel": float(p60_rel),
             "quality": quality,
         })
 
@@ -239,15 +224,12 @@ def compute_channel_metrics(raw_eeg_uV: np.ndarray, fs: int, board_channel_indic
         if total_1_45 <= 0 or not np.isfinite(total_1_45):
             total_1_45 = 1e-12
 
-        # p60 = band_power(55.0, 65.0)
-        # p60_rel = p60 / total_1_45
         rms_uV = float(np.sqrt(total_1_45))
         quality = classify_quality(rms_uV)
 
         metric = {
             "channel_index": ci,
             "rms_uV": rms_uV,
-            # "p60_rel": p60_rel,
             "quality": quality,
         }
         if board_channel_indices is not None and ci < len(board_channel_indices):
