@@ -406,8 +406,9 @@ class AnalysisDataProcessor {
         const tagMap = {};
 
         for (const trial of trials) {
-            if (!trial.selectedTags) continue;
-            for (const tag of trial.selectedTags) {
+            const tags = this._getTagsForTrial(trial);
+            if (!tags.length) continue;
+            for (const tag of tags) {
                 const id = tag.id;
                 if (!tagMap[id]) {
                     tagMap[id] = { id, label: tag.label, count: 0, isCustom: tag.isCustom || false };
@@ -417,6 +418,76 @@ class AnalysisDataProcessor {
         }
 
         return Object.values(tagMap).sort((a, b) => b.count - a.count);
+    }
+
+    _getTagsForTrial(trial) {
+        if (Array.isArray(trial?.selectedTags) && trial.selectedTags.length > 0) {
+            return trial.selectedTags;
+        }
+        return this._getDerivedTagsFromSurveyResponse(trial?.surveyResponse);
+    }
+
+    _getDerivedTagsFromSurveyResponse(surveyResponse) {
+        if (!surveyResponse) return [];
+
+        const tags = [];
+        const direction = surveyResponse.direction || {};
+        const action = surveyResponse.action || {};
+        const emotion = surveyResponse.emotion || {};
+        const texture = surveyResponse.texture || {};
+
+        const pushTag = (id, label, isCustom = false) => {
+            tags.push({ id, label, isCustom });
+        };
+
+        if (direction.leftRight) {
+            pushTag(`direction:leftRight:${this._slugify(direction.leftRight)}`, `Direction: ${direction.leftRight}`);
+        }
+        if (direction.upDown) {
+            pushTag(`direction:upDown:${this._slugify(direction.upDown)}`, `Direction: ${direction.upDown}`);
+        }
+        if (direction.forwardBackward) {
+            pushTag(`direction:forwardBackward:${this._slugify(direction.forwardBackward)}`, `Direction: ${direction.forwardBackward}`);
+        }
+
+        (action.predefined || []).forEach(value => {
+            pushTag(`action:${this._slugify(value)}`, `Action: ${value}`);
+        });
+
+        if ((action.custom || '').trim()) {
+            const customValue = action.custom.trim();
+            pushTag(`action:custom:${this._slugify(customValue)}`, `Action: ${customValue}`, true);
+        }
+
+        Object.entries(emotion).forEach(([facet, value]) => {
+            if (!value) return;
+            pushTag(`emotion:${facet}:${this._slugify(value)}`, `${this._titleCase(facet)}: ${value}`);
+        });
+
+        if (texture.temperature) {
+            pushTag(`texture:temperature:${this._slugify(texture.temperature)}`, `Temperature: ${texture.temperature}`);
+        }
+        if (texture.hardness) {
+            pushTag(`texture:hardness:${this._slugify(texture.hardness)}`, `Hardness: ${texture.hardness}`);
+        }
+        if (texture.surface) {
+            pushTag(`texture:surface:${this._slugify(texture.surface)}`, `Surface: ${texture.surface}`);
+        }
+
+        return tags;
+    }
+
+    _slugify(value) {
+        return String(value || '')
+            .trim()
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-+|-+$/g, '') || 'unknown';
+    }
+
+    _titleCase(value) {
+        const text = String(value || '');
+        return text.charAt(0).toUpperCase() + text.slice(1);
     }
 }
 

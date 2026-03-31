@@ -81,7 +81,7 @@ async function saveSessionData() {
 
             let detailsText = '';
             if (details && type === 'success') {
-                detailsText = ` | Trials: ${details.trials_saved}, Readings: ${details.readings_saved}, Tags: ${details.tags_saved}`;
+                detailsText = ` | Trials: ${details.trials_saved}, Readings: ${details.readings_saved}, Responses: ${details.tags_saved}`;
             }
 
             msg.textContent = message + detailsText;

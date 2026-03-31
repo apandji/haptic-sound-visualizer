@@ -1,43 +1,56 @@
 /**
  * TrialTagsSurvey Component
  *
- * Multi-select survey for trial tags after each trial.
- * Supports multiple categories displayed as tabs.
- * Loads tags from config file.
+ * Structured 12-step response flow for each trial.
+ * Uses the overlay NEXT/FINISH button when available, with an internal fallback.
  */
 
 class TrialTagsSurvey {
-    /**
-     * Create a TrialTagsSurvey instance
-     * @param {Object} options - Configuration options
-     * @param {string} [options.containerId] - Container ID (optional, can append to existing element)
-     * @param {HTMLElement} [options.container] - Container element (optional)
-     * @param {Function} [options.onComplete] - Callback when survey is completed: (selectedTags) => void
-     * @param {string} [options.configPath='js/modules/trialTagsConfig.json'] - Path to tags config file
-     * @param {Object} [options.pattern] - Pattern file object for audio playback
-     * @param {Function} [options.onPlayAudio] - Callback to play audio: (pattern) => void
-     * @param {Function} [options.onPauseAudio] - Callback to pause/stop audio: () => void
-     */
     constructor(options = {}) {
         this.containerId = options.containerId;
         this.container = options.container || (this.containerId ? document.getElementById(this.containerId) : null);
         this.onComplete = options.onComplete || null;
-        this.configPath = options.configPath || 'js/modules/trialTagsConfig.json';
         this.pattern = options.pattern || null;
         this.onPlayAudio = options.onPlayAudio || null;
         this.onPauseAudio = options.onPauseAudio || null;
 
-        // State
-        this.selectedTags = new Set();
-        this.customTags = new Set();
-        this.tagIntensities = new Map();
-        this.categories = [];
-        this.currentCategoryIndex = 0;
-        this.question = '';
-        this.isLoaded = false;
+        this.steps = [
+            'scales',
+            'direction_action',
+            'emotion_mood',
+            'emotion_anxiety',
+            'emotion_focus',
+            'emotion_body',
+            'emotion_energy',
+            'emotion_clarity',
+            'emotion_social',
+            'emotion_motivation',
+            'texture',
+            'confidence'
+        ];
+
+        this.emotionOptions = {
+            mood: ['Distressed', 'Sad', 'Balanced', 'Happy', 'Ecstatic', 'Unsure'],
+            anxiety: ['Meditative', 'Relaxed', 'Steady', 'Cautious', 'Anxious', 'Unsure'],
+            focus: ['Scattered', 'Distracted', 'Present', 'Engaged', 'Absorbed', 'Unsure'],
+            body: ['Tense', 'Tight', 'Neutral', 'Loose', 'Grounded', 'Unsure'],
+            energy: ['Depleted', 'Tired', 'Neutral', 'Energized', 'Charged', 'Unsure'],
+            clarity: ['Confused', 'Foggy', 'Clear', 'Sharp', 'Lucid', 'Unsure'],
+            social: ['Withdrawn', 'Reserved', 'Open', 'Connected', 'Expansive', 'Unsure'],
+            motivation: ['Resistant', 'Reluctant', 'Willing', 'Driven', 'Compelled', 'Unsure']
+        };
+
+        this.currentStepIndex = 0;
+        this.response = this.createInitialResponse();
+        this.sliderTouched = {
+            urgency: false,
+            intensity: false,
+            confidence: false
+        };
         this.isPlaying = false;
         this.playButton = null;
-        this.feedbackEl = null;
+        this.submitButtonRef = null;
+        this.finalSubmitLabel = 'NEXT';
 
         if (!this.container) {
             console.error('TrialTagsSurvey: Container not found');
@@ -47,364 +60,576 @@ class TrialTagsSurvey {
         this.init();
     }
 
-    /**
-     * Initialize the survey
-     */
-    async init() {
-        await this.loadConfig();
+    createInitialResponse() {
+        return {
+            urgency: 0.5,
+            intensity: 0.5,
+            direction: {
+                leftRight: null,
+                upDown: null,
+                forwardBackward: null
+            },
+            action: {
+                predefined: [],
+                custom: ''
+            },
+            emotion: {
+                mood: null,
+                anxiety: null,
+                focus: null,
+                body: null,
+                energy: null,
+                clarity: null,
+                social: null,
+                motivation: null
+            },
+            texture: {
+                temperature: null,
+                hardness: null,
+                surface: null
+            },
+            confidence: 0.5
+        };
+    }
+
+    init() {
         this.render();
     }
 
-    /**
-     * Load tags configuration from JSON file
-     */
-    async loadConfig() {
-        try {
-            const response = await fetch(this.configPath);
-            if (!response.ok) {
-                throw new Error(`Failed to load config: ${response.statusText}`);
-            }
-            const config = await response.json();
-
-            // Remove comment fields
-            const { _comment, ...cleanConfig } = config;
-
-            this.question = cleanConfig.question || 'What did this pattern feel like?';
-
-            // Support both old format (tags array) and new format (categories array)
-            if (cleanConfig.categories && Array.isArray(cleanConfig.categories)) {
-                this.categories = this.normalizeCategories(cleanConfig.categories);
-            } else if (cleanConfig.tags && Array.isArray(cleanConfig.tags)) {
-                // Legacy format: wrap in single category
-                this.categories = this.normalizeCategories([{
-                    id: 'default',
-                    name: 'Tags',
-                    description: '',
-                    tags: cleanConfig.tags
-                }]);
-            } else {
-                throw new Error('Invalid config format');
-            }
-
-            this.isLoaded = true;
-        } catch (error) {
-            console.error('TrialTagsSurvey: Error loading config:', error);
-            // Fallback to default
-            this.question = 'What did this pattern feel like?';
-            this.categories = this.normalizeCategories([{
-                id: 'default',
-                name: 'Tags',
-                description: '',
-                tags: [
-                    { id: 'A', label: 'A' },
-                    { id: 'B', label: 'B' },
-                    { id: 'C', label: 'C' },
-                    { id: 'D', label: 'D' }
-                ]
-            }]);
-            this.isLoaded = true;
-        }
-    }
-
-    /**
-     * Normalize category config so optional intensity settings are always present.
-     * @param {Array<Object>} categories - Raw category config array
-     * @returns {Array<Object>}
-     */
-    normalizeCategories(categories) {
-        return categories.map(category => ({
-            ...category,
-            requiresIntensity: Boolean(category.requiresIntensity),
-            intensityPrompt: category.intensityPrompt || 'Choose intensity for each selected tag.',
-            intensityScale: Array.isArray(category.intensityScale) && category.intensityScale.length > 0
-                ? category.intensityScale
-                : [1, 2, 3, 4]
-        }));
-    }
-
-    /**
-     * Render the survey
-     */
     render() {
-        if (!this.isLoaded) {
-            this.container.innerHTML = '<div class="loading-state"><div class="loading-spinner" aria-hidden="true"></div><span class="loading-text">Loading survey...</span></div>';
-            return;
-        }
-
         this.container.innerHTML = '';
         this.container.className = 'trial-tags-survey';
 
-        // Header Section: Question + Play Button
-        const headerSection = document.createElement('div');
-        headerSection.className = 'trial-tags-survey__header';
-        this.container.appendChild(headerSection);
+        const header = document.createElement('div');
+        header.className = 'trial-tags-survey__header';
+        this.container.appendChild(header);
 
-        const questionContainer = document.createElement('div');
-        questionContainer.className = 'trial-tags-survey__question-container';
-        headerSection.appendChild(questionContainer);
+        this.stepLabelEl = document.createElement('div');
+        this.stepLabelEl.className = 'trial-tags-survey__step-label';
+        header.appendChild(this.stepLabelEl);
 
-        const questionEl = document.createElement('div');
-        questionEl.className = 'trial-tags-survey__question';
-        questionEl.textContent = this.question;
-        questionContainer.appendChild(questionEl);
+        const headerRow = document.createElement('div');
+        headerRow.className = 'trial-tags-survey__header-row';
+        header.appendChild(headerRow);
 
-        // Play button (if pattern is provided)
+        const instructions = document.createElement('div');
+        instructions.className = 'trial-tags-survey__instructions';
+        instructions.textContent = 'Replay the pattern if needed. Required sections must be completed before you can continue.';
+        headerRow.appendChild(instructions);
+
         if (this.pattern && this.onPlayAudio) {
-            const playButtonContainer = document.createElement('div');
-            playButtonContainer.className = 'trial-tags-survey__play-container';
-            questionContainer.appendChild(playButtonContainer);
-
-            const playButton = document.createElement('button');
-            playButton.className = 'trial-tags-survey__play-btn';
-            playButton.type = 'button';
-            this.playButton = playButton;
-            this.updatePlayButtonUI();
-
-            playButton.addEventListener('click', () => {
+            this.playButton = document.createElement('button');
+            this.playButton.className = 'trial-tags-survey__play-btn';
+            this.playButton.type = 'button';
+            this.playButton.addEventListener('click', () => {
                 this.handlePlayPause();
             });
-            playButtonContainer.appendChild(playButton);
+            headerRow.appendChild(this.playButton);
         }
 
-        // Instructions
-        const instructionsEl = document.createElement('div');
-        instructionsEl.className = 'trial-tags-survey__instructions';
-        instructionsEl.textContent = this.categories.some(category => category.requiresIntensity)
-            ? 'Select one or more options from each category. For action tags, choose an intensity before continuing.'
-            : 'Select one or more options from each category';
-        headerSection.appendChild(instructionsEl);
         this.feedbackEl = document.createElement('div');
         this.feedbackEl.className = 'trial-tags-survey__feedback';
         this.feedbackEl.setAttribute('aria-live', 'polite');
-        headerSection.appendChild(this.feedbackEl);
+        header.appendChild(this.feedbackEl);
 
-        // Category Tabs (only if more than one category)
-        if (this.categories.length > 1) {
-            const tabsContainer = document.createElement('div');
-            tabsContainer.className = 'trial-tags-survey__tabs';
-            this.container.appendChild(tabsContainer);
+        this.contentEl = document.createElement('div');
+        this.contentEl.className = 'trial-tags-survey__content';
+        this.container.appendChild(this.contentEl);
 
-            this.categories.forEach((category, index) => {
-                const tab = document.createElement('button');
-                tab.className = 'trial-tags-survey__tab';
-                tab.type = 'button';
-                tab.dataset.categoryIndex = index;
-                tab.textContent = category.name;
-                tab.setAttribute('aria-label', `Category ${category.name}`);
+        this.footerEl = document.createElement('div');
+        this.footerEl.className = 'trial-tags-survey__footer';
+        this.container.appendChild(this.footerEl);
 
-                if (index === this.currentCategoryIndex) {
-                    tab.classList.add('active');
+        this.backButton = document.createElement('button');
+        this.backButton.className = 'trial-tags-survey__nav-btn trial-tags-survey__nav-btn--secondary';
+        this.backButton.type = 'button';
+        this.backButton.textContent = 'Back';
+        this.backButton.addEventListener('click', () => {
+            this.goBack();
+        });
+        this.footerEl.appendChild(this.backButton);
+
+        this.internalNextButton = document.createElement('button');
+        this.internalNextButton.className = 'trial-tags-survey__nav-btn trial-tags-survey__nav-btn--primary';
+        this.internalNextButton.type = 'button';
+        this.internalNextButton.addEventListener('click', () => {
+            this.submit();
+        });
+        this.footerEl.appendChild(this.internalNextButton);
+
+        this.updatePlayButtonUI();
+        this.renderCurrentStep();
+    }
+
+    renderCurrentStep() {
+        if (!this.contentEl) return;
+
+        this.contentEl.innerHTML = '';
+        this.stepLabelEl.textContent = `Step ${this.currentStepIndex + 1} of ${this.steps.length}`;
+
+        const stepKey = this.steps[this.currentStepIndex];
+
+        if (stepKey === 'scales') {
+            this.renderScaleStep();
+        } else if (stepKey === 'direction_action') {
+            this.renderDirectionActionStep();
+        } else if (stepKey === 'emotion_mood') {
+            this.renderEmotionStep('mood', 'Mood');
+        } else if (stepKey === 'emotion_anxiety') {
+            this.renderEmotionStep('anxiety', 'Anxiety');
+        } else if (stepKey === 'emotion_focus') {
+            this.renderEmotionStep('focus', 'Focus');
+        } else if (stepKey === 'emotion_body') {
+            this.renderEmotionStep('body', 'Body');
+        } else if (stepKey === 'emotion_energy') {
+            this.renderEmotionStep('energy', 'Energy');
+        } else if (stepKey === 'emotion_clarity') {
+            this.renderEmotionStep('clarity', 'Clarity');
+        } else if (stepKey === 'emotion_social') {
+            this.renderEmotionStep('social', 'Social');
+        } else if (stepKey === 'emotion_motivation') {
+            this.renderEmotionStep('motivation', 'Motivation');
+        } else if (stepKey === 'texture') {
+            this.renderTextureStep();
+        } else if (stepKey === 'confidence') {
+            this.renderConfidenceStep();
+        }
+
+        this.updateNavigationState();
+    }
+
+    createSection(title, subtitle) {
+        const section = document.createElement('section');
+        section.className = 'trial-tags-survey__section';
+
+        const titleEl = document.createElement('h2');
+        titleEl.className = 'trial-tags-survey__section-title';
+        titleEl.textContent = title;
+        section.appendChild(titleEl);
+
+        if (subtitle) {
+            const subtitleEl = document.createElement('p');
+            subtitleEl.className = 'trial-tags-survey__section-subtitle';
+            subtitleEl.textContent = subtitle;
+            section.appendChild(subtitleEl);
+        }
+
+        return section;
+    }
+
+    renderScaleStep() {
+        const urgencySection = this.createSection('Urgency', 'How urgent does this pattern feel?');
+        urgencySection.appendChild(this.createSliderField('urgency'));
+        this.contentEl.appendChild(urgencySection);
+
+        const intensitySection = this.createSection('Intensity', 'How intense does this pattern feel?');
+        intensitySection.appendChild(this.createSliderField('intensity'));
+        this.contentEl.appendChild(intensitySection);
+    }
+
+    renderDirectionActionStep() {
+        const directionSection = this.createSection('Direction', 'Does this pattern make you want to go in a certain direction?');
+        directionSection.appendChild(this.createAxisGroup(
+            'Left or Right',
+            ['Left', 'Right'],
+            this.response.direction.leftRight,
+            (value) => {
+                this.response.direction.leftRight = this.response.direction.leftRight === value ? null : value;
+                this.renderCurrentStep();
+            }
+        ));
+        directionSection.appendChild(this.createAxisGroup(
+            'Up or Down',
+            ['Up', 'Down'],
+            this.response.direction.upDown,
+            (value) => {
+                this.response.direction.upDown = this.response.direction.upDown === value ? null : value;
+                this.renderCurrentStep();
+            }
+        ));
+        directionSection.appendChild(this.createAxisGroup(
+            'Forward or Backward',
+            ['Forward', 'Backward'],
+            this.response.direction.forwardBackward,
+            (value) => {
+                this.response.direction.forwardBackward = this.response.direction.forwardBackward === value ? null : value;
+                this.renderCurrentStep();
+            }
+        ));
+        const directionHint = document.createElement('div');
+        directionHint.className = 'trial-tags-survey__hint';
+        directionHint.textContent = 'Direction is optional. Leave all groups blank if none apply.';
+        directionSection.appendChild(directionHint);
+        this.contentEl.appendChild(directionSection);
+
+        const actionSection = this.createSection('Action', 'What action does this pattern suggest?');
+        actionSection.appendChild(this.createMultiSelectButtons(
+            ['Lean', 'Slide', 'Turn', 'Twist', 'Run', 'Jump'],
+            this.response.action.predefined,
+            (value) => {
+                this.togglePredefinedAction(value);
+                this.renderCurrentStep();
+            }
+        ));
+
+        const customLabel = document.createElement('label');
+        customLabel.className = 'trial-tags-survey__field-label';
+        customLabel.textContent = 'Custom action';
+        actionSection.appendChild(customLabel);
+
+        const customInput = document.createElement('input');
+        customInput.className = 'trial-tags-survey__text-input';
+        customInput.type = 'text';
+        customInput.maxLength = 120;
+        customInput.placeholder = 'Type your own action';
+        customInput.value = this.response.action.custom;
+        customInput.addEventListener('input', (event) => {
+            this.response.action.custom = event.target.value;
+            this.updateNavigationState();
+        });
+        actionSection.appendChild(customInput);
+
+        const actionHint = document.createElement('div');
+        actionHint.className = 'trial-tags-survey__hint';
+        actionHint.textContent = 'At least one action response is required.';
+        actionSection.appendChild(actionHint);
+        this.contentEl.appendChild(actionSection);
+    }
+
+    renderEmotionStep(facet, subtitle) {
+        const section = this.createSection('Emotion', subtitle);
+        section.appendChild(this.createSingleSelectButtons(
+            this.emotionOptions[facet],
+            this.response.emotion[facet],
+            (value) => {
+                this.response.emotion[facet] = value;
+                this.renderCurrentStep();
+            }
+        ));
+        this.contentEl.appendChild(section);
+    }
+
+    renderTextureStep() {
+        const section = this.createSection('Texture', 'If this pattern had a textural quality, what would it be?');
+        section.appendChild(this.createAxisGroup(
+            'Hot or Cold',
+            ['Hot', 'Cold'],
+            this.response.texture.temperature,
+            (value) => {
+                this.response.texture.temperature = this.response.texture.temperature === value ? null : value;
+                this.renderCurrentStep();
+            }
+        ));
+        section.appendChild(this.createAxisGroup(
+            'Hard or Soft',
+            ['Hard', 'Soft'],
+            this.response.texture.hardness,
+            (value) => {
+                this.response.texture.hardness = this.response.texture.hardness === value ? null : value;
+                this.renderCurrentStep();
+            }
+        ));
+        section.appendChild(this.createAxisGroup(
+            'Smooth or Rough',
+            ['Smooth', 'Rough'],
+            this.response.texture.surface,
+            (value) => {
+                this.response.texture.surface = this.response.texture.surface === value ? null : value;
+                this.renderCurrentStep();
+            }
+        ));
+        const hint = document.createElement('div');
+        hint.className = 'trial-tags-survey__hint';
+        hint.textContent = 'Texture is optional.';
+        section.appendChild(hint);
+        this.contentEl.appendChild(section);
+    }
+
+    renderConfidenceStep() {
+        const section = this.createSection('Confidence', 'For this pattern, how confident are you in your responses?');
+        section.appendChild(this.createSliderField('confidence'));
+        this.contentEl.appendChild(section);
+    }
+
+    createSliderField(fieldName) {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'trial-tags-survey__slider-field';
+
+        const row = document.createElement('div');
+        row.className = 'trial-tags-survey__slider-row';
+        wrapper.appendChild(row);
+
+        const label = document.createElement('span');
+        label.className = 'trial-tags-survey__field-label';
+        label.textContent = this.formatSliderLabel(fieldName);
+        row.appendChild(label);
+
+        const valueEl = document.createElement('span');
+        valueEl.className = 'trial-tags-survey__slider-value';
+        valueEl.textContent = this.formatFloat(this.response[fieldName]);
+        row.appendChild(valueEl);
+
+        const input = document.createElement('input');
+        input.className = 'trial-tags-survey__slider';
+        input.type = 'range';
+        input.min = '0';
+        input.max = '1';
+        input.step = '0.01';
+        input.value = String(this.response[fieldName]);
+        input.addEventListener('input', (event) => {
+            const nextValue = Number(event.target.value);
+            this.response[fieldName] = nextValue;
+            this.sliderTouched[fieldName] = true;
+            valueEl.textContent = this.formatFloat(nextValue);
+            this.updateNavigationState();
+        });
+        wrapper.appendChild(input);
+
+        const scale = document.createElement('div');
+        scale.className = 'trial-tags-survey__slider-scale';
+        scale.innerHTML = '<span>0.00</span><span>1.00</span>';
+        wrapper.appendChild(scale);
+
+        return wrapper;
+    }
+
+    createAxisGroup(label, options, selectedValue, onSelect) {
+        const group = document.createElement('div');
+        group.className = 'trial-tags-survey__option-group';
+
+        const labelEl = document.createElement('div');
+        labelEl.className = 'trial-tags-survey__group-label';
+        labelEl.textContent = label;
+        group.appendChild(labelEl);
+
+        group.appendChild(this.createSingleSelectButtons(options, selectedValue, onSelect, true));
+        return group;
+    }
+
+    createSingleSelectButtons(options, selectedValue, onSelect, allowToggle = false) {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'trial-tags-survey__button-grid';
+
+        options.forEach((option) => {
+            const button = document.createElement('button');
+            button.className = 'trial-tags-survey__option-btn';
+            button.type = 'button';
+            button.textContent = option;
+            if (selectedValue === option) {
+                button.classList.add('selected');
+            }
+            button.addEventListener('click', () => {
+                if (allowToggle && selectedValue === option) {
+                    onSelect(option);
+                    return;
                 }
-
-                tab.addEventListener('click', () => {
-                    this.switchCategory(index);
-                });
-                tab.addEventListener('keydown', (event) => {
-                    if (event.key === 'ArrowRight') {
-                        event.preventDefault();
-                        this.switchCategory(Math.min(this.categories.length - 1, index + 1));
-                    } else if (event.key === 'ArrowLeft') {
-                        event.preventDefault();
-                        this.switchCategory(Math.max(0, index - 1));
-                    }
-                });
-
-                tabsContainer.appendChild(tab);
+                onSelect(option);
             });
-
-            // Add selection count badges to tabs
-            this.updateTabBadges();
-        }
-
-        // Category content container
-        const categoryContent = document.createElement('div');
-        categoryContent.className = 'trial-tags-survey__category-content';
-        this.container.appendChild(categoryContent);
-        this.categoryContentEl = categoryContent;
-
-        // Render current category
-        this.renderCategory(this.currentCategoryIndex);
-
-        // Custom tag input section (shared across categories)
-        const customTagSection = document.createElement('div');
-        customTagSection.className = 'trial-tags-survey__custom-section';
-        this.container.appendChild(customTagSection);
-
-        const customTagLabel = document.createElement('label');
-        customTagLabel.className = 'trial-tags-survey__custom-label';
-        customTagLabel.textContent = 'Or add your own:';
-        customTagSection.appendChild(customTagLabel);
-
-        const customTagInputContainer = document.createElement('div');
-        customTagInputContainer.className = 'trial-tags-survey__custom-input-container';
-        customTagSection.appendChild(customTagInputContainer);
-
-        const customTagInput = document.createElement('input');
-        customTagInput.className = 'trial-tags-survey__custom-input';
-        customTagInput.type = 'text';
-        customTagInput.placeholder = 'Add custom tag...';
-        customTagInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && customTagInput.value.trim()) {
-                this.addCustomTag(customTagInput.value.trim());
-                customTagInput.value = '';
-            }
+            wrapper.appendChild(button);
         });
-        customTagInputContainer.appendChild(customTagInput);
 
-        const customTagAddBtn = document.createElement('button');
-        customTagAddBtn.className = 'trial-tags-survey__custom-add-btn';
-        customTagAddBtn.type = 'button';
-        customTagAddBtn.textContent = 'Add';
-        customTagAddBtn.addEventListener('click', () => {
-            if (customTagInput.value.trim()) {
-                this.addCustomTag(customTagInput.value.trim());
-                customTagInput.value = '';
-            }
-        });
-        customTagInputContainer.appendChild(customTagAddBtn);
-
-        // Custom tags display area
-        const customTagsDisplay = document.createElement('div');
-        customTagsDisplay.className = 'trial-tags-survey__custom-tags';
-        customTagSection.appendChild(customTagsDisplay);
-        this.customTagsDisplayEl = customTagsDisplay;
-
-        // Update submit button state
-        this.updateSubmitButton();
+        return wrapper;
     }
 
-    /**
-     * Render a specific category's tags
-     * @param {number} index - Category index
-     */
-    renderCategory(index) {
-        if (!this.categoryContentEl) return;
+    createMultiSelectButtons(options, selectedValues, onToggle) {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'trial-tags-survey__button-grid';
 
-        const category = this.categories[index];
-        if (!category) return;
-
-        this.categoryContentEl.innerHTML = '';
-
-        // Category description
-        if (category.description) {
-            const descEl = document.createElement('div');
-            descEl.className = 'trial-tags-survey__category-desc';
-            descEl.textContent = category.description;
-            this.categoryContentEl.appendChild(descEl);
-        }
-
-        if (category.requiresIntensity) {
-            const intensityPromptEl = document.createElement('div');
-            intensityPromptEl.className = 'trial-tags-survey__intensity-prompt';
-            intensityPromptEl.textContent = category.intensityPrompt;
-            this.categoryContentEl.appendChild(intensityPromptEl);
-        }
-
-        // Tags container
-        const tagsContainer = document.createElement('div');
-        tagsContainer.className = 'trial-tags-survey__tags';
-        this.categoryContentEl.appendChild(tagsContainer);
-
-        // Create tag buttons
-        category.tags.forEach(tag => {
-            const isSelected = this.selectedTags.has(tag.id);
-            const tagItem = document.createElement('div');
-            tagItem.className = 'trial-tags-survey__tag-item';
-            if (category.requiresIntensity) {
-                tagItem.classList.add('trial-tags-survey__tag-item--with-intensity');
+        options.forEach((option) => {
+            const button = document.createElement('button');
+            button.className = 'trial-tags-survey__option-btn';
+            button.type = 'button';
+            button.textContent = option;
+            if (selectedValues.includes(option)) {
+                button.classList.add('selected');
             }
-            if (isSelected) {
-                tagItem.classList.add('trial-tags-survey__tag-item--selected');
-            }
-            if (category.requiresIntensity && isSelected && !this.tagIntensities.has(tag.id)) {
-                tagItem.classList.add('trial-tags-survey__tag-item--needs-intensity');
-            }
-
-            const tagButton = document.createElement('button');
-            tagButton.className = 'trial-tags-survey__tag';
-            tagButton.type = 'button';
-            tagButton.dataset.tagId = tag.id;
-            tagButton.dataset.categoryId = category.id;
-            tagButton.textContent = tag.label;
-
-            if (tag.description && tag.description !== tag.label) {
-                tagButton.title = tag.description;
-            }
-
-            // Check if already selected
-            if (isSelected) {
-                tagButton.classList.add('selected');
-            }
-
-            tagButton.addEventListener('click', () => {
-                this.toggleTag(tag.id, category.id);
+            button.addEventListener('click', () => {
+                onToggle(option);
             });
-
-            tagItem.appendChild(tagButton);
-
-            if (category.requiresIntensity && isSelected) {
-                tagItem.appendChild(this.createIntensitySelector(tag.id, category));
-            }
-
-            tagsContainer.appendChild(tagItem);
-        });
-    }
-
-    /**
-     * Switch to a different category
-     * @param {number} index - Category index to switch to
-     */
-    switchCategory(index) {
-        if (index === this.currentCategoryIndex) return;
-        if (index < 0 || index >= this.categories.length) return;
-
-        this.currentCategoryIndex = index;
-
-        // Update tab active states
-        const tabs = this.container.querySelectorAll('.trial-tags-survey__tab');
-        tabs.forEach((tab, i) => {
-            tab.classList.toggle('active', i === index);
-            if (i === index) {
-                tab.focus();
-            }
+            wrapper.appendChild(button);
         });
 
-        // Render new category
-        this.renderCategory(index);
+        return wrapper;
     }
 
-    /**
-     * Update tab badges with selection counts
-     */
-    updateTabBadges() {
-        const tabs = this.container.querySelectorAll('.trial-tags-survey__tab');
+    togglePredefinedAction(value) {
+        if (this.response.action.predefined.includes(value)) {
+            this.response.action.predefined = this.response.action.predefined.filter((item) => item !== value);
+            return;
+        }
+        this.response.action.predefined = [...this.response.action.predefined, value];
+    }
 
-        tabs.forEach((tab, index) => {
-            const category = this.categories[index];
-            if (!category) return;
+    formatSliderLabel(fieldName) {
+        if (fieldName === 'urgency') return 'Urgency value';
+        if (fieldName === 'intensity') return 'Intensity value';
+        if (fieldName === 'confidence') return 'Confidence value';
+        return 'Value';
+    }
 
-            // Count selected tags in this category
-            const count = category.tags.filter(tag => this.selectedTags.has(tag.id)).length;
+    formatFloat(value) {
+        return Number(value).toFixed(2);
+    }
 
-            // Remove existing badge
-            const existingBadge = tab.querySelector('.trial-tags-survey__tab-badge');
-            if (existingBadge) {
-                existingBadge.remove();
+    getValidationMessage() {
+        const stepKey = this.steps[this.currentStepIndex];
+
+        if (stepKey === 'scales') {
+            if (!this.sliderTouched.urgency || !this.sliderTouched.intensity) {
+                return 'Set both Urgency and Intensity before continuing.';
             }
+            return '';
+        }
 
-            // Add badge if count > 0
-            if (count > 0) {
-                const badge = document.createElement('span');
-                badge.className = 'trial-tags-survey__tab-badge';
-                badge.textContent = count;
-                tab.appendChild(badge);
+        if (stepKey === 'direction_action') {
+            const hasAction = this.response.action.predefined.length > 0 || this.response.action.custom.trim() !== '';
+            if (!hasAction) {
+                return 'Choose at least one Action response before continuing.';
             }
+            return '';
+        }
+
+        if (stepKey.startsWith('emotion_')) {
+            const facet = stepKey.replace('emotion_', '');
+            if (!this.response.emotion[facet]) {
+                return `Choose one ${facet} response before continuing.`;
+            }
+            return '';
+        }
+
+        if (stepKey === 'confidence') {
+            if (!this.sliderTouched.confidence) {
+                return 'Set Confidence before finishing this survey.';
+            }
+            return '';
+        }
+
+        return '';
+    }
+
+    updateNavigationState() {
+        const validationMessage = this.getValidationMessage();
+        const isValid = validationMessage === '';
+        const onLastStep = this.currentStepIndex === this.steps.length - 1;
+        const finalLabel = this.submitButtonRef ? this.finalSubmitLabel : 'Submit';
+
+        if (this.feedbackEl) {
+            this.feedbackEl.textContent = validationMessage || (onLastStep ? 'Ready to finish this survey.' : 'Ready to continue.');
+        }
+
+        if (this.backButton) {
+            this.backButton.disabled = this.currentStepIndex === 0;
+        }
+
+        if (this.internalNextButton) {
+            this.internalNextButton.disabled = !isValid;
+            this.internalNextButton.textContent = onLastStep ? finalLabel : 'Next';
+            this.internalNextButton.style.display = this.submitButtonRef ? 'none' : 'inline-flex';
+        }
+
+        if (this.submitButtonRef) {
+            this.submitButtonRef.disabled = !isValid;
+            this.submitButtonRef.title = validationMessage;
+            this.submitButtonRef.textContent = onLastStep ? finalLabel : 'NEXT';
+        }
+    }
+
+    buildSurveyResponse() {
+        return {
+            urgency: this.response.urgency,
+            intensity: this.response.intensity,
+            direction: {
+                leftRight: this.response.direction.leftRight,
+                upDown: this.response.direction.upDown,
+                forwardBackward: this.response.direction.forwardBackward
+            },
+            action: {
+                predefined: [...this.response.action.predefined],
+                custom: this.response.action.custom.trim()
+            },
+            emotion: {
+                mood: this.response.emotion.mood,
+                anxiety: this.response.emotion.anxiety,
+                focus: this.response.emotion.focus,
+                body: this.response.emotion.body,
+                energy: this.response.emotion.energy,
+                clarity: this.response.emotion.clarity,
+                social: this.response.emotion.social,
+                motivation: this.response.emotion.motivation
+            },
+            texture: {
+                temperature: this.response.texture.temperature,
+                hardness: this.response.texture.hardness,
+                surface: this.response.texture.surface
+            },
+            confidence: this.response.confidence
+        };
+    }
+
+    buildSelectedTags(surveyResponse) {
+        const tags = [];
+        const direction = surveyResponse.direction || {};
+        const action = surveyResponse.action || {};
+        const emotion = surveyResponse.emotion || {};
+        const texture = surveyResponse.texture || {};
+
+        const pushTag = (id, label, category, isCustom = false) => {
+            tags.push({ id, label, category, isCustom });
+        };
+
+        if (direction.leftRight) {
+            pushTag(`direction:leftRight:${this.slugify(direction.leftRight)}`, `Direction: ${direction.leftRight}`, 'direction');
+        }
+        if (direction.upDown) {
+            pushTag(`direction:upDown:${this.slugify(direction.upDown)}`, `Direction: ${direction.upDown}`, 'direction');
+        }
+        if (direction.forwardBackward) {
+            pushTag(`direction:forwardBackward:${this.slugify(direction.forwardBackward)}`, `Direction: ${direction.forwardBackward}`, 'direction');
+        }
+
+        (action.predefined || []).forEach((value) => {
+            pushTag(`action:${this.slugify(value)}`, `Action: ${value}`, 'action');
         });
+
+        if ((action.custom || '').trim()) {
+            const customValue = action.custom.trim();
+            pushTag(`action:custom:${this.slugify(customValue)}`, `Action: ${customValue}`, 'action', true);
+        }
+
+        Object.entries(emotion).forEach(([facet, value]) => {
+            if (!value) return;
+            pushTag(`emotion:${facet}:${this.slugify(value)}`, `${this.toTitleCase(facet)}: ${value}`, `emotion:${facet}`);
+        });
+
+        if (texture.temperature) {
+            pushTag(`texture:temperature:${this.slugify(texture.temperature)}`, `Temperature: ${texture.temperature}`, 'texture:temperature');
+        }
+        if (texture.hardness) {
+            pushTag(`texture:hardness:${this.slugify(texture.hardness)}`, `Hardness: ${texture.hardness}`, 'texture:hardness');
+        }
+        if (texture.surface) {
+            pushTag(`texture:surface:${this.slugify(texture.surface)}`, `Surface: ${texture.surface}`, 'texture:surface');
+        }
+
+        return tags;
     }
 
-    /**
-     * Handle play/pause button click
-     */
+    buildSubmissionPayload() {
+        const surveyResponse = this.buildSurveyResponse();
+        return {
+            surveyResponse,
+            selectedTags: this.buildSelectedTags(surveyResponse)
+        };
+    }
+
+    slugify(value) {
+        return String(value).trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'unknown';
+    }
+
+    toTitleCase(value) {
+        return String(value).charAt(0).toUpperCase() + String(value).slice(1);
+    }
+
     handlePlayPause() {
         if (!this.pattern || !this.onPlayAudio) return;
 
@@ -417,323 +642,70 @@ class TrialTagsSurvey {
             this.onPlayAudio(this.pattern);
             this.isPlaying = true;
         }
+
         this.updatePlayButtonUI();
     }
 
-    /**
-     * Update play button state (called externally when audio state changes)
-     * @param {boolean} isPlaying - Whether audio is currently playing
-     */
     setPlayingState(isPlaying) {
         this.isPlaying = isPlaying;
         this.updatePlayButtonUI();
     }
 
-    /**
-     * Update play button UI based on current state
-     */
     updatePlayButtonUI() {
         if (!this.playButton) return;
 
-        if (this.isPlaying) {
-            this.playButton.innerHTML = `
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="heroicon-pause">
-                    <path fill-rule="evenodd" d="M6.75 5.25a.75.75 0 01.75-.75H9a.75.75 0 01.75.75v13.5a.75.75 0 01-.75.75H7.5a.75.75 0 01-.75-.75V5.25zm7.5 0A.75.75 0 0115 4.5h1.5a.75.75 0 01.75.75v13.5a.75.75 0 01-.75.75H15a.75.75 0 01-.75-.75V5.25z" clip-rule="evenodd" />
-                </svg>
-            `;
-            this.playButton.setAttribute('aria-label', 'Pause audio');
-            this.playButton.title = 'Pause';
-        } else {
-            this.playButton.innerHTML = `
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="heroicon-play">
-                    <path fill-rule="evenodd" d="M4.5 5.653c0-1.426 1.529-2.33 2.779-1.643l11.54 6.348c1.295.712 1.295 2.573 0 3.285L7.28 19.991c-1.25.687-2.779-.217-2.779-1.643V5.653z" clip-rule="evenodd" />
-                </svg>
-            `;
-            this.playButton.setAttribute('aria-label', 'Play audio');
-            this.playButton.title = 'Play';
-        }
+        this.playButton.textContent = this.isPlaying ? 'Pause Audio' : 'Play Audio';
+        this.playButton.setAttribute('aria-label', this.isPlaying ? 'Pause audio' : 'Play audio');
     }
 
-    /**
-     * Create intensity selector for a selected tag.
-     * @param {string} tagId - Tag ID
-     * @param {Object} category - Tag category
-     * @returns {HTMLElement}
-     */
-    createIntensitySelector(tagId, category) {
-        const intensityContainer = document.createElement('div');
-        intensityContainer.className = 'trial-tags-survey__tag-intensity';
-
-        const label = document.createElement('div');
-        label.className = 'trial-tags-survey__tag-intensity-label';
-        label.textContent = 'Intensity';
-        intensityContainer.appendChild(label);
-
-        const options = document.createElement('div');
-        options.className = 'trial-tags-survey__tag-intensity-options';
-        intensityContainer.appendChild(options);
-
-        const selectedIntensity = this.tagIntensities.get(tagId);
-        category.intensityScale.forEach(intensity => {
-            const intensityButton = document.createElement('button');
-            intensityButton.className = 'trial-tags-survey__tag-intensity-btn';
-            intensityButton.type = 'button';
-            intensityButton.textContent = String(intensity);
-            if (selectedIntensity === intensity) {
-                intensityButton.classList.add('selected');
-            }
-
-            intensityButton.addEventListener('click', (event) => {
-                event.stopPropagation();
-                this.setTagIntensity(tagId, intensity);
-            });
-
-            options.appendChild(intensityButton);
-        });
-
-        return intensityContainer;
+    goBack() {
+        if (this.currentStepIndex === 0) return;
+        this.currentStepIndex -= 1;
+        this.renderCurrentStep();
     }
 
-    /**
-     * Toggle tag selection
-     * @param {string} tagId - Tag ID
-     * @param {string} categoryId - Category ID
-     * @param {HTMLElement} [button] - Optional tag button element for custom tags
-     */
-    toggleTag(tagId, categoryId, button = null) {
-        if (this.selectedTags.has(tagId)) {
-            this.selectedTags.delete(tagId);
-            this.tagIntensities.delete(tagId);
-            if (button) {
-                button.classList.remove('selected');
-            }
-        } else {
-            this.selectedTags.add(tagId);
-            if (button) {
-                button.classList.add('selected');
-            }
-        }
-
-        const currentCategory = this.categories[this.currentCategoryIndex];
-        if (currentCategory && currentCategory.id === categoryId) {
-            this.renderCategory(this.currentCategoryIndex);
-        }
-
-        this.updateTabBadges();
-        this.updateSubmitButton();
-    }
-
-    /**
-     * Set intensity for a selected tag.
-     * @param {string} tagId - Tag ID
-     * @param {number} intensity - Selected intensity
-     */
-    setTagIntensity(tagId, intensity) {
-        if (!this.selectedTags.has(tagId)) return;
-
-        this.tagIntensities.set(tagId, intensity);
-
-        const currentCategory = this.categories[this.currentCategoryIndex];
-        if (currentCategory && currentCategory.tags.some(tag => tag.id === tagId)) {
-            this.renderCategory(this.currentCategoryIndex);
-        }
-
-        this.updateSubmitButton();
-    }
-
-    /**
-     * Add a custom tag
-     * @param {string} tagText - Custom tag text
-     */
-    addCustomTag(tagText) {
-        if (!tagText || tagText.trim() === '') return;
-
-        const customTagId = `custom_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
-        this.selectedTags.add(customTagId);
-        this.customTags.add(customTagId);
-
-        // Create tag button in custom tags display
-        const tagButton = document.createElement('button');
-        tagButton.className = 'trial-tags-survey__tag trial-tags-survey__tag--custom selected';
-        tagButton.type = 'button';
-        tagButton.dataset.tagId = customTagId;
-        tagButton.dataset.customText = tagText;
-        tagButton.textContent = tagText;
-
-        const removeBtn = document.createElement('span');
-        removeBtn.className = 'trial-tags-survey__tag-remove';
-        removeBtn.innerHTML = '×';
-        removeBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            this.removeCustomTag(customTagId, tagButton);
-        });
-        tagButton.appendChild(removeBtn);
-
-        tagButton.addEventListener('click', () => {
-            this.toggleTag(customTagId, 'custom', tagButton);
-        });
-
-        if (this.customTagsDisplayEl) {
-            this.customTagsDisplayEl.appendChild(tagButton);
-        }
-
-        this.updateSubmitButton();
-    }
-
-    /**
-     * Remove a custom tag
-     * @param {string} tagId - Tag ID to remove
-     * @param {HTMLElement} button - Tag button element
-     */
-    removeCustomTag(tagId, button) {
-        this.selectedTags.delete(tagId);
-        this.customTags.delete(tagId);
-        this.tagIntensities.delete(tagId);
-        if (button && button.parentElement) {
-            button.remove();
-        }
-        this.updateSubmitButton();
-    }
-
-    /**
-     * Update submit button enabled state
-     */
-    updateSubmitButton() {
-        const overlayNextBtn = this.submitButtonRef || document.querySelector('.test-execution-overlay__next-btn');
-        if (overlayNextBtn) {
-            const hasSelectedTags = this.selectedTags.size > 0;
-            const missingIntensityTagIds = this.getMissingIntensityTagIds();
-            overlayNextBtn.disabled = !hasSelectedTags || missingIntensityTagIds.length > 0;
-
-            if (!hasSelectedTags) {
-                overlayNextBtn.title = 'Select at least one tag.';
-                if (this.feedbackEl) {
-                    this.feedbackEl.textContent = 'Select at least one tag to continue.';
-                }
-            } else if (missingIntensityTagIds.length > 0) {
-                overlayNextBtn.title = 'Choose intensity 1-4 for each selected action tag.';
-                if (this.feedbackEl) {
-                    this.feedbackEl.textContent = 'Choose intensity for all selected action tags.';
-                }
-            } else {
-                overlayNextBtn.title = '';
-                if (this.feedbackEl) {
-                    const selectedCount = this.selectedTags.size;
-                    this.feedbackEl.textContent = `${selectedCount} tag${selectedCount === 1 ? '' : 's'} selected. Ready to continue.`;
-                }
-            }
-        }
-    }
-
-    /**
-     * Get selected tags that still need an intensity value.
-     * @returns {string[]} Selected tag IDs missing intensity
-     */
-    getMissingIntensityTagIds() {
-        const missingTagIds = [];
-
-        this.categories.forEach(category => {
-            if (!category.requiresIntensity) return;
-
-            category.tags.forEach(tag => {
-                if (this.selectedTags.has(tag.id) && !this.tagIntensities.has(tag.id)) {
-                    missingTagIds.push(tag.id);
-                }
-            });
-        });
-
-        return missingTagIds;
-    }
-
-    /**
-     * Build the payload for a selected tag.
-     * @param {string} tagId - Tag ID
-     * @returns {Object}
-     */
-    buildSelectedTagPayload(tagId) {
-        const customTagButton = this.container.querySelector(`[data-tag-id="${tagId}"].trial-tags-survey__tag--custom`);
-        if (customTagButton) {
-            return {
-                id: tagId,
-                label: customTagButton.dataset.customText || customTagButton.textContent.replace('×', '').trim(),
-                category: 'custom',
-                isCustom: true
-            };
-        }
-
-        for (const category of this.categories) {
-            const tag = category.tags.find(t => t.id === tagId);
-            if (!tag) continue;
-
-            const selectedTag = {
-                id: tag.id,
-                label: tag.label,
-                category: category.id,
-                isCustom: false
-            };
-
-            if (category.requiresIntensity) {
-                selectedTag.intensity = this.tagIntensities.get(tagId) ?? null;
-            }
-
-            return selectedTag;
-        }
-
-        return { id: tagId, label: tagId, category: 'unknown', isCustom: false };
-    }
-
-    /**
-     * Set reference to overlay's NEXT button for state management
-     * @param {HTMLElement} button - The overlay's NEXT button element
-     */
-    setOverlayNextButton(button) {
-        this.submitButtonRef = button;
-        this.updateSubmitButton();
-    }
-
-    /**
-     * Submit the survey
-     */
     submit() {
-        if (this.selectedTags.size === 0) {
-            console.warn('TrialTagsSurvey: Cannot submit without selecting at least one tag');
+        const validationMessage = this.getValidationMessage();
+        if (validationMessage) {
+            console.warn(`TrialTagsSurvey: ${validationMessage}`);
             return;
         }
 
-        const missingIntensityTagIds = this.getMissingIntensityTagIds();
-        if (missingIntensityTagIds.length > 0) {
-            console.warn('TrialTagsSurvey: Cannot submit until all selected action tags have an intensity');
+        if (this.currentStepIndex < this.steps.length - 1) {
+            this.currentStepIndex += 1;
+            this.renderCurrentStep();
             return;
         }
-
-        const selectedTagsArray = Array.from(this.selectedTags).map(tagId => this.buildSelectedTagPayload(tagId));
 
         if (this.onComplete) {
-            this.onComplete(selectedTagsArray);
+            this.onComplete(this.buildSubmissionPayload());
         }
     }
 
-    /**
-     * Reset the survey
-     */
-    reset() {
-        this.selectedTags.clear();
-        this.customTags.clear();
-        this.tagIntensities.clear();
-        this.currentCategoryIndex = 0;
-        this.isPlaying = false;
-        this.updatePlayButtonUI();
-
-        // Re-render to reset all states
-        this.render();
+    setOverlayNextButton(button) {
+        this.submitButtonRef = button;
+        this.finalSubmitLabel = button?.textContent || 'NEXT';
+        this.updateNavigationState();
     }
 
-    /**
-     * Get selected tags
-     * @returns {Array<Object>} Array of selected tag objects
-     */
+    reset() {
+        this.currentStepIndex = 0;
+        this.response = this.createInitialResponse();
+        this.sliderTouched = {
+            urgency: false,
+            intensity: false,
+            confidence: false
+        };
+        this.isPlaying = false;
+        this.updatePlayButtonUI();
+        this.renderCurrentStep();
+    }
+
     getSelectedTags() {
-        return Array.from(this.selectedTags).map(tagId => this.buildSelectedTagPayload(tagId));
+        return this.buildSelectedTags(this.buildSurveyResponse());
+    }
+
+    getSurveyResponse() {
+        return this.buildSurveyResponse();
     }
 }

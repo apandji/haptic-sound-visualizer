@@ -147,6 +147,7 @@ class TestSession {
             baselineReadings: [],
             stimulationReadings: [],
             audioTimeOffset: null,
+            surveyResponse: null,
             selectedTags: [],
             testerNotes: [],
             testerEvents: [],
@@ -305,14 +306,19 @@ class TestSession {
     /**
      * Complete survey and continue to next pattern (or complete session)
      */
-    completeSurvey(selectedTags) {
+    completeSurvey(surveyData) {
         if (this.currentPhase !== 'survey') {
             console.warn('TestSession: Not in survey phase');
             return;
         }
 
-        // Save selected tags
-        this.currentTrial.selectedTags = selectedTags || [];
+        if (Array.isArray(surveyData)) {
+            this.currentTrial.selectedTags = surveyData;
+            this.currentTrial.surveyResponse = null;
+        } else {
+            this.currentTrial.selectedTags = Array.isArray(surveyData?.selectedTags) ? surveyData.selectedTags : [];
+            this.currentTrial.surveyResponse = surveyData?.surveyResponse || null;
+        }
 
         // Complete current trial
         this.currentTrial.endTime = new Date().toISOString();
