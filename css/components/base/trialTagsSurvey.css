@@ -4,7 +4,7 @@
     gap: 18px;
     max-width: 760px;
     margin: 0 auto;
-    color: #f3f4f6;
+    color: #1f2937;
 }
 
 .trial-tags-survey__header {
@@ -18,7 +18,7 @@
     font-weight: 700;
     letter-spacing: 0.06em;
     text-transform: uppercase;
-    color: #9ca3af;
+    color: #374151;
 }
 
 .trial-tags-survey__header-row {
@@ -31,7 +31,7 @@
 .trial-tags-survey__instructions {
     font-size: 14px;
     line-height: 1.5;
-    color: #d1d5db;
+    color: #475569;
 }
 
 .trial-tags-survey__play-btn {
@@ -53,7 +53,7 @@
 .trial-tags-survey__feedback {
     min-height: 20px;
     font-size: 13px;
-    color: #cbd5e1;
+    color: #334155;
 }
 
 .trial-tags-survey__content {
@@ -202,9 +202,14 @@
 }
 
 .trial-tags-survey__nav-btn--secondary {
-    border: 1px solid #4b5563;
-    background: transparent;
-    color: #e5e7eb;
+    border: 1px solid #cbd5e1;
+    background: #ffffff;
+    color: #1f2937;
+}
+
+.trial-tags-survey__nav-btn--secondary:hover:not(:disabled) {
+    background: #f8fafc;
+    border-color: #94a3b8;
 }
 
 .trial-tags-survey__nav-btn--primary {
