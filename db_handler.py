@@ -13,6 +13,259 @@ from pathlib import Path
 
 DB_PATH = Path(__file__).parent / 'haptic_research.db'
 
+SURVEY_ACTION_OPTIONS = ('Lean', 'Slide', 'Turn', 'Twist', 'Run', 'Jump')
+SURVEY_DIRECTION_AXES = {
+    'left_right': ('Left', 'Right'),
+    'up_down': ('Up', 'Down'),
+    'forward_backward': ('Forward', 'Backward')
+}
+SURVEY_TEXTURE_FACETS = {
+    'temperature': ('Hot', 'Cold'),
+    'hardness': ('Hard', 'Soft'),
+    'surface': ('Smooth', 'Rough')
+}
+SURVEY_EMOTION_OPTIONS = {
+    'mood': ('Distressed', 'Sad', 'Balanced', 'Happy', 'Ecstatic', 'Unsure'),
+    'anxiety': ('Meditative', 'Relaxed', 'Steady', 'Cautious', 'Anxious', 'Unsure'),
+    'focus': ('Scattered', 'Distracted', 'Present', 'Engaged', 'Absorbed', 'Unsure'),
+    'body': ('Tense', 'Tight', 'Neutral', 'Loose', 'Grounded', 'Unsure'),
+    'energy': ('Depleted', 'Tired', 'Neutral', 'Energized', 'Charged', 'Unsure'),
+    'clarity': ('Confused', 'Foggy', 'Clear', 'Sharp', 'Lucid', 'Unsure'),
+    'social': ('Withdrawn', 'Reserved', 'Open', 'Connected', 'Expansive', 'Unsure'),
+    'motivation': ('Resistant', 'Reluctant', 'Willing', 'Driven', 'Compelled', 'Unsure')
+}
+
+
+def _slugify_fragment(value: str) -> str:
+    """Create a stable lowercase slug for synthesized tag IDs."""
+    slug = re.sub(r'[^a-z0-9]+', '-', str(value).strip().lower()).strip('-')
+    return slug or 'unknown'
+
+
+def flatten_survey_response_to_tags(survey_response: Optional[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Derive analysis-friendly flat tags from a structured survey response."""
+    if not survey_response:
+        return []
+
+    derived_tags: List[Dict[str, Any]] = []
+
+    direction = survey_response.get('direction') or {}
+    for axis_key, axis_label in (
+        ('leftRight', 'Direction'),
+        ('upDown', 'Direction'),
+        ('forwardBackward', 'Direction')
+    ):
+        value = direction.get(axis_key)
+        if not value:
+            continue
+        derived_tags.append({
+            'id': f"direction:{axis_key}:{_slugify_fragment(value)}",
+            'label': f"{axis_label}: {value}",
+            'category': 'direction',
+            'isCustom': False
+        })
+
+    action_payload = survey_response.get('action') or {}
+    for value in action_payload.get('predefined', []):
+        if value not in SURVEY_ACTION_OPTIONS:
+            continue
+        derived_tags.append({
+            'id': f"action:{_slugify_fragment(value)}",
+            'label': f"Action: {value}",
+            'category': 'action',
+            'isCustom': False
+        })
+
+    custom_action = str(action_payload.get('custom') or '').strip()
+    if custom_action:
+        derived_tags.append({
+            'id': f"action:custom:{_slugify_fragment(custom_action)}",
+            'label': f"Action: {custom_action}",
+            'category': 'action',
+            'isCustom': True
+        })
+
+    emotion = survey_response.get('emotion') or {}
+    for facet, value in emotion.items():
+        if not value:
+            continue
+        derived_tags.append({
+            'id': f"emotion:{facet}:{_slugify_fragment(value)}",
+            'label': f"{facet.capitalize()}: {value}",
+            'category': f"emotion:{facet}",
+            'isCustom': False
+        })
+
+    texture = survey_response.get('texture') or {}
+    for facet, label in (
+        ('temperature', 'Temperature'),
+        ('hardness', 'Hardness'),
+        ('surface', 'Surface')
+    ):
+        value = texture.get(facet)
+        if not value:
+            continue
+        derived_tags.append({
+            'id': f"texture:{facet}:{_slugify_fragment(value)}",
+            'label': f"{label}: {value}",
+            'category': f"texture:{facet}",
+            'isCustom': False
+        })
+
+    return derived_tags
+
+
+def normalize_bounded_float(value: Any, field_name: str) -> float:
+    """Coerce a required slider value to float in the inclusive 0..1 range."""
+    try:
+        normalized = float(value)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"{field_name} must be a float between 0 and 1") from exc
+
+    if normalized < 0.0 or normalized > 1.0:
+        raise ValueError(f"{field_name} must be between 0 and 1, got {normalized}")
+
+    return normalized
+
+
+def normalize_required_choice(value: Any, allowed_values: tuple, field_name: str) -> str:
+    """Validate a required categorical answer."""
+    normalized = str(value).strip()
+    if normalized not in allowed_values:
+        raise ValueError(f"{field_name} must be one of {allowed_values}, got {value!r}")
+    return normalized
+
+
+def normalize_optional_choice(value: Any, allowed_values: tuple, field_name: str) -> Optional[str]:
+    """Validate an optional categorical answer."""
+    if value is None:
+        return None
+
+    normalized = str(value).strip()
+    if normalized == '':
+        return None
+    if normalized not in allowed_values:
+        raise ValueError(f"{field_name} must be one of {allowed_values}, got {value!r}")
+    return normalized
+
+
+def normalize_action_payload(action_payload: Any) -> Dict[str, Any]:
+    """Validate the action section and require at least one response."""
+    payload = action_payload or {}
+    predefined_values = payload.get('predefined') or []
+    custom_value = str(payload.get('custom') or '').strip()
+
+    if not isinstance(predefined_values, list):
+        raise ValueError("action.predefined must be an array")
+
+    unique_predefined: List[str] = []
+    for value in predefined_values:
+        normalized = str(value).strip()
+        if normalized not in SURVEY_ACTION_OPTIONS:
+            raise ValueError(f"Unsupported action value: {value!r}")
+        if normalized not in unique_predefined:
+            unique_predefined.append(normalized)
+
+    if not unique_predefined and not custom_value:
+        raise ValueError("At least one action response is required")
+
+    return {
+        'predefined': unique_predefined,
+        'custom': custom_value
+    }
+
+
+def create_trial_survey_response(conn, trial_id: int, survey_response: Dict[str, Any]) -> int:
+    """Persist a structured survey response for one trial. Returns number of saved selections."""
+    cursor = conn.cursor()
+
+    urgency = normalize_bounded_float(survey_response.get('urgency'), 'urgency')
+    intensity = normalize_bounded_float(survey_response.get('intensity'), 'intensity')
+    confidence = normalize_bounded_float(survey_response.get('confidence'), 'confidence')
+
+    emotion = survey_response.get('emotion') or {}
+    normalized_emotion = {
+        facet: normalize_required_choice(emotion.get(facet), allowed_values, f"emotion.{facet}")
+        for facet, allowed_values in SURVEY_EMOTION_OPTIONS.items()
+    }
+
+    direction = survey_response.get('direction') or {}
+    normalized_direction = {
+        'left_right': normalize_optional_choice(direction.get('leftRight'), SURVEY_DIRECTION_AXES['left_right'], 'direction.leftRight'),
+        'up_down': normalize_optional_choice(direction.get('upDown'), SURVEY_DIRECTION_AXES['up_down'], 'direction.upDown'),
+        'forward_backward': normalize_optional_choice(direction.get('forwardBackward'), SURVEY_DIRECTION_AXES['forward_backward'], 'direction.forwardBackward')
+    }
+
+    texture = survey_response.get('texture') or {}
+    normalized_texture = {
+        'temperature': normalize_optional_choice(texture.get('temperature'), SURVEY_TEXTURE_FACETS['temperature'], 'texture.temperature'),
+        'hardness': normalize_optional_choice(texture.get('hardness'), SURVEY_TEXTURE_FACETS['hardness'], 'texture.hardness'),
+        'surface': normalize_optional_choice(texture.get('surface'), SURVEY_TEXTURE_FACETS['surface'], 'texture.surface')
+    }
+
+    normalized_action = normalize_action_payload(survey_response.get('action'))
+
+    cursor.execute(
+        """
+        INSERT INTO trial_survey_responses
+        (trial_id, urgency, intensity, mood, anxiety, focus, body, energy, clarity, social, motivation, confidence)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            trial_id,
+            urgency,
+            intensity,
+            normalized_emotion['mood'],
+            normalized_emotion['anxiety'],
+            normalized_emotion['focus'],
+            normalized_emotion['body'],
+            normalized_emotion['energy'],
+            normalized_emotion['clarity'],
+            normalized_emotion['social'],
+            normalized_emotion['motivation'],
+            confidence
+        )
+    )
+    response_id = cursor.lastrowid
+
+    saved_selection_count = 0
+
+    for axis, value in normalized_direction.items():
+        if not value:
+            continue
+        cursor.execute(
+            "INSERT INTO trial_survey_directions (response_id, axis, value) VALUES (?, ?, ?)",
+            (response_id, axis, value)
+        )
+        saved_selection_count += 1
+
+    for value in normalized_action['predefined']:
+        cursor.execute(
+            "INSERT INTO trial_survey_actions (response_id, action_type, action_value) VALUES (?, 'predefined', ?)",
+            (response_id, value)
+        )
+        saved_selection_count += 1
+
+    if normalized_action['custom']:
+        cursor.execute(
+            "INSERT INTO trial_survey_actions (response_id, action_type, action_value) VALUES (?, 'custom', ?)",
+            (response_id, normalized_action['custom'])
+        )
+        saved_selection_count += 1
+
+    for facet, value in normalized_texture.items():
+        if not value:
+            continue
+        cursor.execute(
+            "INSERT INTO trial_survey_textures (response_id, facet, value) VALUES (?, ?, ?)",
+            (response_id, facet, value)
+        )
+        saved_selection_count += 1
+
+    saved_selection_count += len(normalized_emotion)
+
+    return saved_selection_count
+
 
 def get_connection():
     """Get database connection with foreign keys enabled."""
@@ -93,25 +346,6 @@ def ensure_pattern(conn, pattern_name: str, file_path: str, duration_ms: int = N
     return cursor.lastrowid
 
 
-def ensure_tag(conn, tag_name: str, category: str = None) -> int:
-    """Get or create a tag. Returns tag_id."""
-    cursor = conn.cursor()
-
-    # Check if exists
-    cursor.execute("SELECT tag_id FROM tags WHERE tag_name = ?", (tag_name,))
-    row = cursor.fetchone()
-
-    if row:
-        return row['tag_id']
-
-    # Create new tag
-    cursor.execute(
-        "INSERT INTO tags (tag_name, category) VALUES (?, ?)",
-        (tag_name, category)
-    )
-    return cursor.lastrowid
-
-
 def map_phase_to_db(phase: str) -> str:
     """Validate brainwave phase names before persisting them."""
     if phase not in ('baseline', 'stimulation'):
@@ -141,28 +375,6 @@ def create_trial(conn, session_id: int, pattern_id: int, trial_order: int,
         (session_id, pattern_id, trial_order, start_time, end_time, notes)
     )
     return cursor.lastrowid
-
-
-def add_trial_tag(conn, trial_id: int, tag_id: int, intensity: int = None, selected_at: str = None):
-    """Add a tag to a trial."""
-    cursor = conn.cursor()
-    if selected_at is None:
-        selected_at = datetime.now().isoformat()
-    if intensity is not None:
-        intensity = int(intensity)
-        if intensity < 1 or intensity > 4:
-            raise ValueError(f"Tag intensity must be between 1 and 4, got {intensity}")
-
-    try:
-        cursor.execute(
-            "INSERT OR IGNORE INTO trial_tags (trial_id, tag_id, intensity, selected_at) VALUES (?, ?, ?, ?)",
-            (trial_id, tag_id, intensity, selected_at)
-        )
-    except sqlite3.IntegrityError as exc:
-        if 'PRIMARY KEY' in str(exc) or 'UNIQUE constraint failed' in str(exc):
-            pass  # Already exists
-        else:
-            raise
 
 
 def add_trial_event(conn, trial_id: int, event_type: str, phase: str = None,
@@ -225,10 +437,36 @@ def save_session_data(session_data: Dict[str, Any]) -> Dict[str, Any]:
                 "endTime": "...",
                 "baselineReadings": [...],
                 "stimulationReadings": [...],
-                "selectedTags": [
-                    { "id": "calm", "label": "Calm", "category": "feeling", "isCustom": false },
-                    { "id": "forward", "label": "Forward", "category": "action", "intensity": 3, "isCustom": false }
-                ]
+                "surveyResponse": {
+                    "urgency": 0.72,
+                    "intensity": 0.61,
+                    "direction": {
+                        "leftRight": "Left",
+                        "upDown": null,
+                        "forwardBackward": "Forward"
+                    },
+                    "action": {
+                        "predefined": ["Lean"],
+                        "custom": ""
+                    },
+                    "emotion": {
+                        "mood": "Happy",
+                        "anxiety": "Relaxed",
+                        "focus": "Present",
+                        "body": "Grounded",
+                        "energy": "Energized",
+                        "clarity": "Clear",
+                        "social": "Open",
+                        "motivation": "Driven"
+                    },
+                    "texture": {
+                        "temperature": "Hot",
+                        "hardness": null,
+                        "surface": "Smooth"
+                    },
+                    "confidence": 0.88
+                },
+                "selectedTags": [...]
             }
         ]
     }
@@ -353,14 +591,9 @@ def save_session_data(session_data: Dict[str, Any]) -> Dict[str, Any]:
                 )
                 result['readings_saved'] += 1
 
-            # Save selected tags
-            for tag_data in trial_data.get('selectedTags', []):
-                tag_name = tag_data.get('label', tag_data.get('id', 'unknown'))
-                tag_category = tag_data.get('category', 'custom' if tag_data.get('isCustom') else None)
-                tag_intensity = tag_data.get('intensity')
-                tag_id = ensure_tag(conn, tag_name, tag_category)
-                add_trial_tag(conn, trial_id, tag_id, intensity=tag_intensity)
-                result['tags_saved'] += 1
+            survey_response = trial_data.get('surveyResponse')
+            if survey_response:
+                result['tags_saved'] += create_trial_survey_response(conn, trial_id, survey_response)
 
             # Save tester events
             for event_data in trial_data.get('testerEvents', []):
@@ -491,7 +724,10 @@ def get_analysis_sessions(limit: Optional[int] = None) -> List[Dict[str, Any]]:
             trial_ids.append(row['trial_id'])
 
         readings_by_trial: Dict[int, Dict[str, List[Dict[str, Any]]]] = {}
-        tags_by_trial: Dict[int, List[Dict[str, Any]]] = {}
+        survey_rows_by_trial: Dict[int, Dict[str, Any]] = {}
+        directions_by_response: Dict[int, Dict[str, str]] = {}
+        actions_by_response: Dict[int, Dict[str, Any]] = {}
+        textures_by_response: Dict[int, Dict[str, str]] = {}
         events_by_trial: Dict[int, List[Dict[str, Any]]] = {}
 
         if trial_ids:
@@ -538,33 +774,81 @@ def get_analysis_sessions(limit: Optional[int] = None) -> List[Dict[str, Any]]:
             cursor.execute(
                 f"""
                 SELECT
-                    tt.trial_id,
-                    tags.tag_id,
-                    tags.tag_name,
-                    tags.category,
-                    tt.intensity
-                FROM trial_tags tt
-                INNER JOIN tags ON tt.tag_id = tags.tag_id
-                WHERE tt.trial_id IN ({trial_placeholders})
-                ORDER BY tt.trial_id, tt.selected_at, tags.tag_name
+                    response_id,
+                    trial_id,
+                    urgency,
+                    intensity,
+                    mood,
+                    anxiety,
+                    focus,
+                    body,
+                    energy,
+                    clarity,
+                    social,
+                    motivation,
+                    confidence
+                FROM trial_survey_responses
+                WHERE trial_id IN ({trial_placeholders})
+                ORDER BY trial_id
                 """,
                 trial_ids
             )
 
             for row in cursor.fetchall():
-                trial_id = row['trial_id']
-                tag_id = row['tag_id']
-                tag_name = row['tag_name']
-                tag_category = row['category']
-                tag_intensity = row['intensity']
+                survey_rows_by_trial[row['trial_id']] = dict(row)
 
-                tags_by_trial.setdefault(trial_id, []).append({
-                    'id': f"tag_{tag_id}",
-                    'label': tag_name,
-                    'category': tag_category,
-                    'intensity': tag_intensity,
-                    'isCustom': tag_category == 'custom'
-                })
+            response_ids = [row['response_id'] for row in survey_rows_by_trial.values()]
+            if response_ids:
+                response_placeholders = ','.join('?' for _ in response_ids)
+
+                cursor.execute(
+                    f"""
+                    SELECT response_id, axis, value
+                    FROM trial_survey_directions
+                    WHERE response_id IN ({response_placeholders})
+                    ORDER BY response_id, axis
+                    """,
+                    response_ids
+                )
+
+                for row in cursor.fetchall():
+                    directions_by_response.setdefault(row['response_id'], {})[row['axis']] = row['value']
+
+                cursor.execute(
+                    f"""
+                    SELECT response_id, action_type, action_value
+                    FROM trial_survey_actions
+                    WHERE response_id IN ({response_placeholders})
+                    ORDER BY response_id, action_type, action_value
+                    """,
+                    response_ids
+                )
+
+                for row in cursor.fetchall():
+                    action_bucket = actions_by_response.setdefault(
+                        row['response_id'],
+                        {'predefined': [], 'custom': ''}
+                    )
+                    if row['action_type'] == 'predefined':
+                        action_bucket['predefined'].append(row['action_value'])
+                    else:
+                        if action_bucket['custom']:
+                            action_bucket['custom'] = f"{action_bucket['custom']}; {row['action_value']}"
+                        else:
+                            action_bucket['custom'] = row['action_value']
+
+                cursor.execute(
+                    f"""
+                    SELECT response_id, facet, value
+                    FROM trial_survey_textures
+                    WHERE response_id IN ({response_placeholders})
+                    ORDER BY response_id, facet
+                    """,
+                    response_ids
+                )
+
+                for row in cursor.fetchall():
+                    textures_by_response.setdefault(row['response_id'], {})[row['facet']] = row['value']
 
             cursor.execute(
                 f"""
@@ -633,6 +917,45 @@ def get_analysis_sessions(limit: Optional[int] = None) -> List[Dict[str, Any]]:
                 trial_id = trial_row['trial_id']
                 baseline_phase_readings = readings_by_trial.get(trial_id, {}).get('baseline', [])
                 stimulation_phase_readings = readings_by_trial.get(trial_id, {}).get('stimulation', [])
+                survey_row = survey_rows_by_trial.get(trial_id)
+                survey_response = None
+                selected_tags: List[Dict[str, Any]] = []
+
+                if survey_row:
+                    response_id = survey_row['response_id']
+                    direction = directions_by_response.get(response_id, {})
+                    action = actions_by_response.get(response_id, {'predefined': [], 'custom': ''})
+                    texture = textures_by_response.get(response_id, {})
+                    survey_response = {
+                        'urgency': survey_row['urgency'],
+                        'intensity': survey_row['intensity'],
+                        'direction': {
+                            'leftRight': direction.get('left_right'),
+                            'upDown': direction.get('up_down'),
+                            'forwardBackward': direction.get('forward_backward')
+                        },
+                        'action': {
+                            'predefined': list(action.get('predefined', [])),
+                            'custom': action.get('custom', '')
+                        },
+                        'emotion': {
+                            'mood': survey_row['mood'],
+                            'anxiety': survey_row['anxiety'],
+                            'focus': survey_row['focus'],
+                            'body': survey_row['body'],
+                            'energy': survey_row['energy'],
+                            'clarity': survey_row['clarity'],
+                            'social': survey_row['social'],
+                            'motivation': survey_row['motivation']
+                        },
+                        'texture': {
+                            'temperature': texture.get('temperature'),
+                            'hardness': texture.get('hardness'),
+                            'surface': texture.get('surface')
+                        },
+                        'confidence': survey_row['confidence']
+                    }
+                    selected_tags = flatten_survey_response_to_tags(survey_response)
 
                 trial_payload = {
                     'trialId': f"{session_id}_trial_{trial_row['trial_order']}",
@@ -645,7 +968,8 @@ def get_analysis_sessions(limit: Optional[int] = None) -> List[Dict[str, Any]]:
                     'endTime': trial_row['end_time'],
                     'baselineReadings': list(baseline_phase_readings),
                     'stimulationReadings': stimulation_phase_readings,
-                    'selectedTags': tags_by_trial.get(trial_id, []),
+                    'surveyResponse': survey_response,
+                    'selectedTags': selected_tags,
                     'testerNotes': [],
                     'testerEvents': events_by_trial.get(trial_id, []),
                     'status': _extract_trial_status(trial_row['trial_notes'], trial_row['end_time'])
@@ -678,13 +1002,45 @@ def get_analysis_sessions(limit: Optional[int] = None) -> List[Dict[str, Any]]:
 
 
 def get_all_tags() -> List[Dict[str, Any]]:
-    """Get all tags from database."""
-    conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT tag_id, tag_name, category, description FROM tags ORDER BY category, tag_name")
-    rows = cursor.fetchall()
-    conn.close()
-    return [dict(row) for row in rows]
+    """Return the available structured survey taxonomy as a flat tag catalog."""
+    tags: List[Dict[str, Any]] = []
+
+    for action in SURVEY_ACTION_OPTIONS:
+        tags.append({
+            'tag_id': f"action:{_slugify_fragment(action)}",
+            'tag_name': action,
+            'category': 'action',
+            'description': 'Predefined action response'
+        })
+
+    for axis_values in SURVEY_DIRECTION_AXES.values():
+        for value in axis_values:
+            tags.append({
+                'tag_id': f"direction:{_slugify_fragment(value)}",
+                'tag_name': value,
+                'category': 'direction',
+                'description': 'Optional directional response'
+            })
+
+    for facet, values in SURVEY_EMOTION_OPTIONS.items():
+        for value in values:
+            tags.append({
+                'tag_id': f"emotion:{facet}:{_slugify_fragment(value)}",
+                'tag_name': value,
+                'category': f"emotion:{facet}",
+                'description': f"{facet.capitalize()} response"
+            })
+
+    for facet, values in SURVEY_TEXTURE_FACETS.items():
+        for value in values:
+            tags.append({
+                'tag_id': f"texture:{facet}:{_slugify_fragment(value)}",
+                'tag_name': value,
+                'category': f"texture:{facet}",
+                'description': 'Optional texture response'
+            })
+
+    return tags
 
 
 def get_all_locations() -> List[Dict[str, Any]]:

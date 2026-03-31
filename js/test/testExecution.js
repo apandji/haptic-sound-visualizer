@@ -422,12 +422,12 @@
                                     testAudioPlayer.stop();
                                 }
                             },
-                            onComplete: (selectedTags) => {
+                            onComplete: (surveyData) => {
                                 // Stop audio when survey is completed
                                 if (testAudioPlayer && testAudioPlayer.isPlaying()) {
                                     testAudioPlayer.stop();
                                 }
-                                testSession.completeSurvey(selectedTags);
+                                testSession.completeSurvey(surveyData);
                                 // Clear survey reference after completion
                                 window.currentTrialTagsSurvey = null;
                             }

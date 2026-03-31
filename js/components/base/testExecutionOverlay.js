@@ -682,7 +682,7 @@ class TestExecutionOverlay {
         this.updateTesterBar(
             `Trial ${patternNumber} of ${totalPatterns} · ${data.progress?.displayPhase || 'Survey'}`,
             data.progress?.nextStepLabel || (isLast ? 'Finish session (click Finish)' : 'Next trial (click Next)'),
-            'Select tags for this trial, then click Next or Finish.',
+            'Complete the survey for this trial, then click Next or Finish.',
             data.progress
         );
         this.setTesterMetrics({ totalTrials: totalPatterns });
