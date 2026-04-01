@@ -54,6 +54,30 @@ function handlePatternSelect(patternName) {
     tagWordCloud.update(analysis.tagFrequency);
 }
 
+/**
+ * Start HTMLAudioElement playback; handles Promise rejection from Audio.play() (autoplay / decode errors).
+ * @param {HTMLAudioElement} audio
+ * @param {Function} onSettled - called with true on success, false on failure
+ */
+function playPreviewWithHandling(audio, onSettled) {
+    try {
+        const result = audio.play();
+        if (result !== undefined && typeof result.then === 'function') {
+            result
+                .then(() => onSettled(true))
+                .catch((err) => {
+                    console.warn('Audio preview playback failed:', err);
+                    onSettled(false);
+                });
+        } else {
+            onSettled(true);
+        }
+    } catch (err) {
+        console.warn('Audio preview playback failed:', err);
+        onSettled(false);
+    }
+}
+
 function handleComparisonChange(patternNames) {
     if (patternNames.length < 2) {
         if (patternNames.length === 1) {
@@ -76,8 +100,9 @@ function handleFilePreview(file) {
     if (previewAudio && previewingFilePath === file.path) {
         // Toggle pause/play
         if (previewAudio.paused) {
-            previewAudio.play();
-            sidebar.setPlayingState(file.path, true);
+            playPreviewWithHandling(previewAudio, (ok) => {
+                sidebar.setPlayingState(file.path, ok);
+            });
         } else {
             previewAudio.pause();
             sidebar.setPlayingState(file.path, false);
@@ -93,12 +118,17 @@ function handleFilePreview(file) {
 
     previewingFilePath = file.path;
     previewAudio = new Audio(file.path);
-    previewAudio.play();
-    sidebar.setPlayingState(file.path, true);
-
     previewAudio.addEventListener('ended', () => {
         sidebar.setPlayingState(file.path, false);
         previewingFilePath = null;
+    });
+
+    playPreviewWithHandling(previewAudio, (ok) => {
+        sidebar.setPlayingState(file.path, ok);
+        if (!ok) {
+            previewAudio = null;
+            previewingFilePath = null;
+        }
     });
 }
 
