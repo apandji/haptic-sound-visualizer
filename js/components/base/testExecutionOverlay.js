@@ -118,11 +118,6 @@ class TestExecutionOverlay {
             this.drawLiveSignalSparkline();
         });
 
-        // Create top-right button container
-        this.topRightButtons = document.createElement('div');
-        this.topRightButtons.className = 'test-execution-overlay__top-right-buttons';
-        this.container.appendChild(this.topRightButtons);
-
         // Create abort button (now in tester panel footer)
         this.abortButton = document.createElement('button');
         this.abortButton.className = 'test-execution-overlay__abort-btn';
@@ -137,15 +132,16 @@ class TestExecutionOverlay {
             testerFooterActions.appendChild(this.abortButton);
         }
 
-        // Create NEXT button (shown conditionally) - on RIGHT
+        // Next/Finish is reparented into TrialTagsSurvey footer during survey (see setOverlayNextButton)
         this.nextButton = document.createElement('button');
         this.nextButton.className = 'test-execution-overlay__next-btn';
-        this.nextButton.textContent = 'NEXT';
-        this.nextButton.style.display = 'none'; // Hidden by default
+        this.nextButton.type = 'button';
+        this.nextButton.textContent = 'Next';
+        this.nextButton.style.display = 'none';
         this.nextButton.addEventListener('click', () => {
             this.handleNext();
         });
-        this.topRightButtons.appendChild(this.nextButton);
+        this.container.appendChild(this.nextButton);
 
         // Initially hidden
         this.hide();
@@ -448,6 +444,7 @@ class TestExecutionOverlay {
 
         const goodN = this.calibrationRequiredGoodChannels;
         const totalN = this.calibrationRequiredChannels;
+        this.reparentNextControl();
         this.contentContainer.innerHTML = `
             <div class="test-execution-overlay__phase test-execution-overlay__phase--calibration">
                 <div class="test-execution-overlay__calibration-flightlist" aria-label="Pre-flight checklist">
@@ -537,6 +534,7 @@ class TestExecutionOverlay {
         const patternName = data.pattern ? data.pattern.name : 'Unknown';
         const phaseLabel = data.collectingData === false ? 'REST' : 'BASELINE';
 
+        this.reparentNextControl();
         this.contentContainer.innerHTML = `
             <div class="test-execution-overlay__phase test-execution-overlay__phase--baseline">
                 <div class="test-execution-overlay__phase-label">${phaseLabel}</div>
@@ -579,12 +577,14 @@ class TestExecutionOverlay {
         this.startCountdown(data.duration, () => {
             // Countdown complete - stimulation done
         });
+        this.showNextButton(false);
 
         // Ensure we have valid data
         const patternNumber = data.patternNumber || (data.patternIndex !== undefined ? data.patternIndex + 1 : 1);
         const totalPatterns = data.totalPatterns || (data.trials ? data.trials.length : 1);
         const patternName = data.pattern ? data.pattern.name : 'Unknown';
 
+        this.reparentNextControl();
         this.contentContainer.innerHTML = `
             <div class="test-execution-overlay__phase test-execution-overlay__phase--stimulation">
                 <div class="test-execution-overlay__phase-label">STIMULATION</div>
@@ -608,14 +608,23 @@ class TestExecutionOverlay {
     // Pattern-complete checkpoint removed - survey now goes directly to next pattern
 
     /**
-     * Show/hide NEXT button
+     * Attach Next/Finish to overlay root before replacing main content (avoids losing the node when it was in a survey footer).
+     */
+    reparentNextControl() {
+        if (this.nextButton && this.nextButton.parentNode) {
+            this.container.appendChild(this.nextButton);
+        }
+    }
+
+    /**
+     * Show/hide Next/Finish control (survey footer when wired)
      * @param {boolean} show - Whether to show the button
-     * @param {boolean} isLastPattern - Whether this is the last pattern (shows "FINISH" instead)
+     * @param {boolean} isLastPattern - Last pattern uses label "Finish"
      */
     showNextButton(show, isLastPattern = false) {
         if (this.nextButton) {
-            this.nextButton.style.display = show ? 'block' : 'none';
-            this.nextButton.textContent = isLastPattern ? 'FINISH' : 'NEXT';
+            this.nextButton.style.display = show ? 'inline-flex' : 'none';
+            this.nextButton.textContent = isLastPattern ? 'Finish' : 'Next';
             this.isLastPattern = isLastPattern;
         }
     }
@@ -648,10 +657,6 @@ class TestExecutionOverlay {
         this.setTesterPanelVisible(true);
         this.stopCountdown();
 
-        // Check if this is the last pattern
-        const isLastPattern = data.patternNumber >= data.totalPatterns;
-        this.showNextButton(true, isLastPattern); // Show NEXT or FINISH button
-
         // Show ABORT button during active phases
         if (this.abortButton) {
             this.abortButton.style.display = 'block';
@@ -665,6 +670,8 @@ class TestExecutionOverlay {
                 // Ignore errors
             }
         }
+
+        this.reparentNextControl();
 
         // Survey will be rendered by TrialTagsSurvey component
         // This overlay just provides the container
@@ -696,12 +703,13 @@ class TestExecutionOverlay {
         this.show();
         this.stopCountdown();
         this.hideTesterBar();
-        this.showNextButton(false); // Hide NEXT on complete screen
+        this.showNextButton(false);
         // Hide ABORT button on complete screen
         if (this.abortButton) {
             this.abortButton.style.display = 'none';
         }
 
+        this.reparentNextControl();
         this.contentContainer.innerHTML = `
             <div class="test-execution-overlay__phase test-execution-overlay__phase--complete">
                 <div class="test-execution-overlay__complete-content">
@@ -734,7 +742,7 @@ class TestExecutionOverlay {
         this.show();
         this.stopCountdown();
         this.hideTesterBar();
-        this.showNextButton(false); // Hide NEXT button
+        this.showNextButton(false);
         // Hide ABORT button on aborted screen
         if (this.abortButton) {
             this.abortButton.style.display = 'none';
@@ -744,6 +752,7 @@ class TestExecutionOverlay {
             ? `The session has been aborted. ${reason}`
             : 'The session has been aborted. Partial data may have been saved.';
 
+        this.reparentNextControl();
         this.contentContainer.innerHTML = `
             <div class="test-execution-overlay__phase test-execution-overlay__phase--aborted">
                 <div class="test-execution-overlay__aborted-content">

@@ -2,7 +2,7 @@
  * TrialTagsSurvey Component
  *
  * Structured 12-step response flow for each trial.
- * Uses the overlay NEXT/FINISH button when available, with an internal fallback.
+ * Uses the overlay Next/Finish control when available, with an internal fallback.
  */
 
 class TrialTagsSurvey {
@@ -50,7 +50,7 @@ class TrialTagsSurvey {
         this.isPlaying = false;
         this.playButton = null;
         this.submitButtonRef = null;
-        this.finalSubmitLabel = 'NEXT';
+        this.finalSubmitLabel = 'Next';
 
         if (!this.container) {
             console.error('TrialTagsSurvey: Container not found');
@@ -530,7 +530,7 @@ class TrialTagsSurvey {
         if (this.submitButtonRef) {
             this.submitButtonRef.disabled = !isValid;
             this.submitButtonRef.title = validationMessage;
-            this.submitButtonRef.textContent = onLastStep ? finalLabel : 'NEXT';
+            this.submitButtonRef.textContent = onLastStep ? finalLabel : 'Next';
         }
     }
 
@@ -684,7 +684,11 @@ class TrialTagsSurvey {
 
     setOverlayNextButton(button) {
         this.submitButtonRef = button;
-        this.finalSubmitLabel = button?.textContent || 'NEXT';
+        this.finalSubmitLabel = (button?.textContent && button.textContent.trim()) || 'Next';
+        if (button && this.footerEl) {
+            button.classList.add('trial-tags-survey__nav-btn', 'trial-tags-survey__nav-btn--primary');
+            this.footerEl.appendChild(button);
+        }
         this.updateNavigationState();
     }
 

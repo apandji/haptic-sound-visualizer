@@ -437,9 +437,12 @@
                             window.currentTrialTagsSurvey.setPlayingState(true);
                         }
                         
-                        // Connect survey to overlay's NEXT button
+                        // Connect overlay Next/Finish to survey footer (after mount, avoids misplaced flex flash)
                         const overlayNextBtn = document.querySelector('.test-execution-overlay__next-btn');
                         if (overlayNextBtn && window.currentTrialTagsSurvey) {
+                            const isLastPattern =
+                                (data.patternNumber || 1) >= (data.totalPatterns || 1);
+                            testExecutionOverlay.showNextButton(true, isLastPattern);
                             window.currentTrialTagsSurvey.setOverlayNextButton(overlayNextBtn);
                         }
                         

@@ -190,7 +190,35 @@
 .trial-tags-survey__footer {
     display: flex;
     justify-content: space-between;
+    align-items: center;
     gap: 12px;
+}
+
+/* Overlay Next/Finish shares footer with Back — match primary nav, not header accent */
+.trial-tags-survey__footer .test-execution-overlay__next-btn {
+    text-transform: none;
+    letter-spacing: normal;
+    align-items: center;
+    justify-content: center;
+    min-height: unset;
+}
+
+.trial-tags-survey__footer .test-execution-overlay__next-btn:hover:not(:disabled) {
+    background: #1d4ed8;
+    border-color: #1d4ed8;
+}
+
+.trial-tags-survey__footer .test-execution-overlay__next-btn:active:not(:disabled) {
+    background: #1e40af;
+    border-color: #1e40af;
+}
+
+.trial-tags-survey__footer .test-execution-overlay__next-btn:disabled {
+    background: #2563eb;
+    border-color: #2563eb;
+    color: #eff6ff;
+    opacity: 0.45;
+    cursor: not-allowed;
 }
 
 .trial-tags-survey__nav-btn {
