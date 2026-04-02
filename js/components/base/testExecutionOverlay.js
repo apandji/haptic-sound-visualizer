@@ -519,6 +519,7 @@ class TestExecutionOverlay {
         this.currentPhase = 'baseline';
         this.show();
         this.setTesterPanelVisible(true);
+        this.setTesterPanelCollapsed(false);
         this.showNextButton(false); // Hide NEXT during countdown phases
         // Show ABORT button during active phases
         if (this.abortButton) {
@@ -570,6 +571,7 @@ class TestExecutionOverlay {
         this.currentPhase = 'stimulation';
         this.show();
         this.setTesterPanelVisible(true);
+        this.setTesterPanelCollapsed(false);
         // Show ABORT button during active phases
         if (this.abortButton) {
             this.abortButton.style.display = 'block';
@@ -689,10 +691,12 @@ class TestExecutionOverlay {
         this.updateTesterBar(
             `Trial ${patternNumber} of ${totalPatterns} · ${data.progress?.displayPhase || 'Survey'}`,
             data.progress?.nextStepLabel || (isLast ? 'Finish session (click Finish)' : 'Next trial (click Next)'),
-            'Complete the survey for this trial, then click Next or Finish.',
+            'Complete the survey for this trial, then click Next or Finish. Panel is minimized for the participant view — expand the left tab (❮) for ABORT, notes, or telemetry.',
             data.progress
         );
         this.setTesterMetrics({ totalTrials: totalPatterns });
+        // Maximize survey area; tester can expand the panel with the edge toggle if needed
+        this.setTesterPanelCollapsed(true);
     }
 
     /**
