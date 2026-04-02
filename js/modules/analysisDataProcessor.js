@@ -454,10 +454,9 @@ class AnalysisDataProcessor {
             pushTag(`action:${this._slugify(value)}`, `Action: ${value}`);
         });
 
-        if ((action.custom || '').trim()) {
-            const customValue = action.custom.trim();
+        this._getCustomActionValues(action).forEach(customValue => {
             pushTag(`action:custom:${this._slugify(customValue)}`, `Action: ${customValue}`, true);
-        }
+        });
 
         Object.entries(emotion).forEach(([facet, value]) => {
             if (!value) return;
@@ -483,6 +482,25 @@ class AnalysisDataProcessor {
             .toLowerCase()
             .replace(/[^a-z0-9]+/g, '-')
             .replace(/^-+|-+$/g, '') || 'unknown';
+    }
+
+    _getCustomActionValues(action) {
+        const rawCustom = action?.custom;
+        const values = Array.isArray(rawCustom) ? rawCustom : [rawCustom];
+        const normalizedValues = [];
+        const seenValues = new Set();
+
+        values.forEach(value => {
+            const normalized = String(value || '').trim();
+            const dedupeKey = normalized.toLowerCase();
+            if (!normalized || seenValues.has(dedupeKey)) {
+                return;
+            }
+            seenValues.add(dedupeKey);
+            normalizedValues.push(normalized);
+        });
+
+        return normalizedValues;
     }
 
     _titleCase(value) {
