@@ -76,8 +76,7 @@ def flatten_survey_response_to_tags(survey_response: Optional[Dict[str, Any]]) -
             'isCustom': False
         })
 
-    custom_action = str(action_payload.get('custom') or '').strip()
-    if custom_action:
+    for custom_action in normalize_custom_action_values(action_payload.get('custom')):
         derived_tags.append({
             'id': f"action:custom:{_slugify_fragment(custom_action)}",
             'label': f"Action: {custom_action}",
@@ -153,7 +152,7 @@ def normalize_action_payload(action_payload: Any) -> Dict[str, Any]:
     """Validate the action section and require at least one response."""
     payload = action_payload or {}
     predefined_values = payload.get('predefined') or []
-    custom_value = str(payload.get('custom') or '').strip()
+    custom_values = normalize_custom_action_values(payload.get('custom'))
 
     if not isinstance(predefined_values, list):
         raise ValueError("action.predefined must be an array")
@@ -166,13 +165,38 @@ def normalize_action_payload(action_payload: Any) -> Dict[str, Any]:
         if normalized not in unique_predefined:
             unique_predefined.append(normalized)
 
-    if not unique_predefined and not custom_value:
+    if not unique_predefined and not custom_values:
         raise ValueError("At least one action response is required")
 
     return {
         'predefined': unique_predefined,
-        'custom': custom_value
+        'custom': custom_values
     }
+
+
+def normalize_custom_action_values(value: Any) -> List[str]:
+    """Accept either the legacy single-string custom action or the new array format."""
+    if value is None:
+        raw_values = []
+    elif isinstance(value, list):
+        raw_values = value
+    elif isinstance(value, str):
+        raw_values = [value]
+    else:
+        raise ValueError("action.custom must be a string or an array")
+
+    normalized_values: List[str] = []
+    seen_values = set()
+
+    for item in raw_values:
+        normalized = str(item).strip()
+        dedupe_key = normalized.lower()
+        if not normalized or dedupe_key in seen_values:
+            continue
+        seen_values.add(dedupe_key)
+        normalized_values.append(normalized)
+
+    return normalized_values
 
 
 def create_trial_survey_response(conn, trial_id: int, survey_response: Dict[str, Any]) -> int:
@@ -246,10 +270,10 @@ def create_trial_survey_response(conn, trial_id: int, survey_response: Dict[str,
         )
         saved_selection_count += 1
 
-    if normalized_action['custom']:
+    for custom_value in normalized_action['custom']:
         cursor.execute(
             "INSERT INTO trial_survey_actions (response_id, action_type, action_value) VALUES (?, 'custom', ?)",
-            (response_id, normalized_action['custom'])
+            (response_id, custom_value)
         )
         saved_selection_count += 1
 
@@ -447,7 +471,7 @@ def save_session_data(session_data: Dict[str, Any]) -> Dict[str, Any]:
                     },
                     "action": {
                         "predefined": ["Lean"],
-                        "custom": ""
+                        "custom": []
                     },
                     "emotion": {
                         "mood": "Happy",
@@ -827,15 +851,12 @@ def get_analysis_sessions(limit: Optional[int] = None) -> List[Dict[str, Any]]:
                 for row in cursor.fetchall():
                     action_bucket = actions_by_response.setdefault(
                         row['response_id'],
-                        {'predefined': [], 'custom': ''}
+                        {'predefined': [], 'custom': []}
                     )
                     if row['action_type'] == 'predefined':
                         action_bucket['predefined'].append(row['action_value'])
                     else:
-                        if action_bucket['custom']:
-                            action_bucket['custom'] = f"{action_bucket['custom']}; {row['action_value']}"
-                        else:
-                            action_bucket['custom'] = row['action_value']
+                        action_bucket['custom'].append(row['action_value'])
 
                 cursor.execute(
                     f"""
@@ -924,7 +945,7 @@ def get_analysis_sessions(limit: Optional[int] = None) -> List[Dict[str, Any]]:
                 if survey_row:
                     response_id = survey_row['response_id']
                     direction = directions_by_response.get(response_id, {})
-                    action = actions_by_response.get(response_id, {'predefined': [], 'custom': ''})
+                    action = actions_by_response.get(response_id, {'predefined': [], 'custom': []})
                     texture = textures_by_response.get(response_id, {})
                     survey_response = {
                         'urgency': survey_row['urgency'],
@@ -936,7 +957,7 @@ def get_analysis_sessions(limit: Optional[int] = None) -> List[Dict[str, Any]]:
                         },
                         'action': {
                             'predefined': list(action.get('predefined', [])),
-                            'custom': action.get('custom', '')
+                            'custom': list(action.get('custom', []))
                         },
                         'emotion': {
                             'mood': survey_row['mood'],
