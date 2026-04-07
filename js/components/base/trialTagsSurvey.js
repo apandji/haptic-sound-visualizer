@@ -39,6 +39,7 @@ class TrialTagsSurvey {
             social: ['Withdrawn', 'Reserved', 'Open', 'Connected', 'Expansive', 'Unsure'],
             motivation: ['Resistant', 'Reluctant', 'Willing', 'Driven', 'Compelled', 'Unsure']
         };
+        this.actionOptions = ['Lean', 'Slide', 'Turn', 'Twist', 'Run', 'Jump'];
 
         this.currentStepIndex = 0;
         this.response = this.createInitialResponse();
@@ -71,7 +72,8 @@ class TrialTagsSurvey {
             },
             action: {
                 predefined: [],
-                custom: ''
+                custom: [],
+                customDraft: ''
             },
             emotion: {
                 mood: null,
@@ -263,11 +265,16 @@ class TrialTagsSurvey {
         this.contentEl.appendChild(directionSection);
 
         const actionSection = this.createSection('Action', 'What action does this pattern suggest?');
-        actionSection.appendChild(this.createMultiSelectButtons(
-            ['Lean', 'Slide', 'Turn', 'Twist', 'Run', 'Jump'],
+        actionSection.appendChild(this.createActionButtons(
+            this.actionOptions,
             this.response.action.predefined,
+            this.getCustomActionValues(),
             (value) => {
                 this.togglePredefinedAction(value);
+                this.renderCurrentStep();
+            },
+            (value) => {
+                this.removeCustomAction(value);
                 this.renderCurrentStep();
             }
         ));
@@ -277,21 +284,49 @@ class TrialTagsSurvey {
         customLabel.textContent = 'Custom action';
         actionSection.appendChild(customLabel);
 
+        const customRow = document.createElement('div');
+        customRow.className = 'trial-tags-survey__input-row';
+        actionSection.appendChild(customRow);
+
         const customInput = document.createElement('input');
         customInput.className = 'trial-tags-survey__text-input';
         customInput.type = 'text';
         customInput.maxLength = 120;
         customInput.placeholder = 'Type your own action';
-        customInput.value = this.response.action.custom;
+        customInput.value = this.response.action.customDraft || '';
+
+        const syncAddButtonState = () => {
+            addButton.disabled = !this.canAddCustomActionValue(this.response.action.customDraft);
+        };
+
         customInput.addEventListener('input', (event) => {
-            this.response.action.custom = event.target.value;
-            this.updateNavigationState();
+            this.response.action.customDraft = event.target.value;
+            syncAddButtonState();
         });
-        actionSection.appendChild(customInput);
+        customInput.addEventListener('keydown', (event) => {
+            if (event.key !== 'Enter') return;
+            event.preventDefault();
+            if (this.addCustomAction()) {
+                this.renderCurrentStep();
+            }
+        });
+        customRow.appendChild(customInput);
+
+        const addButton = document.createElement('button');
+        addButton.className = 'trial-tags-survey__add-btn';
+        addButton.type = 'button';
+        addButton.textContent = 'Add';
+        addButton.addEventListener('click', () => {
+            if (this.addCustomAction()) {
+                this.renderCurrentStep();
+            }
+        });
+        customRow.appendChild(addButton);
+        syncAddButtonState();
 
         const actionHint = document.createElement('div');
         actionHint.className = 'trial-tags-survey__hint';
-        actionHint.textContent = 'At least one action response is required.';
+        actionHint.textContent = 'At least one action response is required. Use Add to include custom actions.';
         actionSection.appendChild(actionHint);
         this.contentEl.appendChild(actionSection);
     }
@@ -486,12 +521,96 @@ class TrialTagsSurvey {
         return wrapper;
     }
 
+    createActionButtons(options, selectedValues, customValues, onToggle, onRemoveCustom) {
+        const wrapper = this.createMultiSelectButtons(options, selectedValues, onToggle);
+
+        customValues.forEach((value) => {
+            const customTag = document.createElement('div');
+            customTag.className = 'trial-tags-survey__option-btn trial-tags-survey__option-btn--custom selected';
+
+            const label = document.createElement('span');
+            label.className = 'trial-tags-survey__option-btn-label';
+            label.textContent = value;
+            customTag.appendChild(label);
+
+            const removeButton = document.createElement('button');
+            removeButton.className = 'trial-tags-survey__option-btn-remove';
+            removeButton.type = 'button';
+            removeButton.textContent = 'x';
+            removeButton.setAttribute('aria-label', `Remove custom action ${value}`);
+            removeButton.addEventListener('click', () => {
+                onRemoveCustom(value);
+            });
+            customTag.appendChild(removeButton);
+
+            wrapper.appendChild(customTag);
+        });
+
+        return wrapper;
+    }
+
     togglePredefinedAction(value) {
         if (this.response.action.predefined.includes(value)) {
             this.response.action.predefined = this.response.action.predefined.filter((item) => item !== value);
             return;
         }
         this.response.action.predefined = [...this.response.action.predefined, value];
+    }
+
+    addCustomAction() {
+        const nextValue = this.normalizeCustomActionValue(this.response.action.customDraft);
+        if (!this.canAddCustomActionValue(nextValue)) {
+            return false;
+        }
+
+        this.response.action.custom = [...this.getCustomActionValues(), nextValue];
+        this.response.action.customDraft = '';
+        this.updateNavigationState();
+        return true;
+    }
+
+    removeCustomAction(valueToRemove) {
+        this.response.action.custom = this.getCustomActionValues().filter((value) => value !== valueToRemove);
+        this.updateNavigationState();
+    }
+
+    normalizeCustomActionValue(value) {
+        return String(value || '').trim();
+    }
+
+    canAddCustomActionValue(value) {
+        const normalizedValue = this.normalizeCustomActionValue(value);
+        if (!normalizedValue) {
+            return false;
+        }
+
+        const normalizedKey = normalizedValue.toLowerCase();
+        const existingPredefined = this.actionOptions.some((option) => option.toLowerCase() === normalizedKey);
+        const existingCustom = this.getCustomActionValues().some((option) => option.toLowerCase() === normalizedKey);
+
+        return !existingPredefined && !existingCustom;
+    }
+
+    getCustomActionValues(actionPayload = this.response.action) {
+        const rawCustom = actionPayload?.custom;
+        const values = Array.isArray(rawCustom)
+            ? rawCustom
+            : [rawCustom];
+
+        const normalizedValues = [];
+        const seenValues = new Set();
+
+        values.forEach((value) => {
+            const normalized = this.normalizeCustomActionValue(value);
+            const dedupeKey = normalized.toLowerCase();
+            if (!normalized || seenValues.has(dedupeKey)) {
+                return;
+            }
+            seenValues.add(dedupeKey);
+            normalizedValues.push(normalized);
+        });
+
+        return normalizedValues;
     }
 
     formatSliderLabel(fieldName) {
@@ -516,7 +635,7 @@ class TrialTagsSurvey {
         }
 
         if (stepKey === 'direction_action') {
-            const hasAction = this.response.action.predefined.length > 0 || this.response.action.custom.trim() !== '';
+            const hasAction = this.response.action.predefined.length > 0 || this.getCustomActionValues().length > 0;
             if (!hasAction) {
                 return 'Choose at least one Action response before continuing.';
             }
@@ -579,7 +698,7 @@ class TrialTagsSurvey {
             },
             action: {
                 predefined: [...this.response.action.predefined],
-                custom: this.response.action.custom.trim()
+                custom: [...this.getCustomActionValues()]
             },
             emotion: {
                 mood: this.response.emotion.mood,
@@ -625,10 +744,9 @@ class TrialTagsSurvey {
             pushTag(`action:${this.slugify(value)}`, `Action: ${value}`, 'action');
         });
 
-        if ((action.custom || '').trim()) {
-            const customValue = action.custom.trim();
+        this.getCustomActionValues(action).forEach((customValue) => {
             pushTag(`action:custom:${this.slugify(customValue)}`, `Action: ${customValue}`, 'action', true);
-        }
+        });
 
         Object.entries(emotion).forEach(([facet, value]) => {
             if (!value) return;
