@@ -2,7 +2,7 @@
  * TrialTagsSurvey Component
  *
  * Structured 12-step response flow for each trial.
- * Uses the overlay NEXT/FINISH button when available, with an internal fallback.
+ * Uses the overlay Next/Finish control when available, with an internal fallback.
  */
 
 class TrialTagsSurvey {
@@ -51,7 +51,7 @@ class TrialTagsSurvey {
         this.isPlaying = false;
         this.playButton = null;
         this.submitButtonRef = null;
-        this.finalSubmitLabel = 'NEXT';
+        this.finalSubmitLabel = 'Next';
 
         if (!this.container) {
             console.error('TrialTagsSurvey: Container not found');
@@ -333,7 +333,7 @@ class TrialTagsSurvey {
 
     renderEmotionStep(facet, subtitle) {
         const section = this.createSection('Emotion', subtitle);
-        section.appendChild(this.createSingleSelectButtons(
+        section.appendChild(this.createEmotionScaleButtons(
             this.emotionOptions[facet],
             this.response.emotion[facet],
             (value) => {
@@ -446,24 +446,58 @@ class TrialTagsSurvey {
         wrapper.className = 'trial-tags-survey__button-grid';
 
         options.forEach((option) => {
-            const button = document.createElement('button');
-            button.className = 'trial-tags-survey__option-btn';
-            button.type = 'button';
-            button.textContent = option;
-            if (selectedValue === option) {
-                button.classList.add('selected');
-            }
-            button.addEventListener('click', () => {
-                if (allowToggle && selectedValue === option) {
-                    onSelect(option);
-                    return;
-                }
-                onSelect(option);
-            });
-            wrapper.appendChild(button);
+            wrapper.appendChild(
+                this.createOptionButton(option, selectedValue, onSelect, allowToggle)
+            );
         });
 
         return wrapper;
+    }
+
+    /**
+     * Emotion facets: five scale choices + trailing "Unsure" on one row, with a divider before Unsure.
+     */
+    createEmotionScaleButtons(options, selectedValue, onSelect) {
+        const wrapper = document.createElement('div');
+        wrapper.className =
+            'trial-tags-survey__button-grid trial-tags-survey__button-grid--emotion-scale';
+
+        const last = options[options.length - 1];
+        const splitUnsure = last === 'Unsure' && options.length >= 2;
+        const scaleOptions = splitUnsure ? options.slice(0, -1) : [...options];
+
+        scaleOptions.forEach((option) => {
+            wrapper.appendChild(this.createOptionButton(option, selectedValue, onSelect, false));
+        });
+
+        if (splitUnsure) {
+            const divider = document.createElement('span');
+            divider.className = 'trial-tags-survey__emotion-divider';
+            divider.setAttribute('role', 'presentation');
+            divider.setAttribute('aria-hidden', 'true');
+            wrapper.appendChild(divider);
+            wrapper.appendChild(this.createOptionButton(last, selectedValue, onSelect, false));
+        }
+
+        return wrapper;
+    }
+
+    createOptionButton(option, selectedValue, onSelect, allowToggle) {
+        const button = document.createElement('button');
+        button.className = 'trial-tags-survey__option-btn';
+        button.type = 'button';
+        button.textContent = option;
+        if (selectedValue === option) {
+            button.classList.add('selected');
+        }
+        button.addEventListener('click', () => {
+            if (allowToggle && selectedValue === option) {
+                onSelect(option);
+                return;
+            }
+            onSelect(option);
+        });
+        return button;
     }
 
     createMultiSelectButtons(options, selectedValues, onToggle) {
@@ -649,7 +683,7 @@ class TrialTagsSurvey {
         if (this.submitButtonRef) {
             this.submitButtonRef.disabled = !isValid;
             this.submitButtonRef.title = validationMessage;
-            this.submitButtonRef.textContent = onLastStep ? finalLabel : 'NEXT';
+            this.submitButtonRef.textContent = onLastStep ? finalLabel : 'Next';
         }
     }
 
@@ -802,7 +836,11 @@ class TrialTagsSurvey {
 
     setOverlayNextButton(button) {
         this.submitButtonRef = button;
-        this.finalSubmitLabel = button?.textContent || 'NEXT';
+        this.finalSubmitLabel = (button?.textContent && button.textContent.trim()) || 'Next';
+        if (button && this.footerEl) {
+            button.classList.add('trial-tags-survey__nav-btn', 'trial-tags-survey__nav-btn--primary');
+            this.footerEl.appendChild(button);
+        }
         this.updateNavigationState();
     }
 

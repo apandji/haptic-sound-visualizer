@@ -139,6 +139,43 @@
     gap: 10px;
 }
 
+/* Emotion steps: one row, scale choices + divider + Unsure */
+.trial-tags-survey__button-grid--emotion-scale {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    gap: 10px;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: visible;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-gutter: stable;
+    padding-bottom: 2px;
+}
+
+.trial-tags-survey__button-grid--emotion-scale .trial-tags-survey__option-btn {
+    flex: 1 1 0;
+    min-width: 4.5rem;
+    white-space: nowrap;
+}
+
+.trial-tags-survey__emotion-divider {
+    flex: 0 0 1px;
+    width: 1px;
+    min-height: 2.75rem;
+    align-self: center;
+    margin: 0 2px;
+    background: linear-gradient(
+        180deg,
+        transparent 0%,
+        rgba(148, 163, 184, 0.55) 15%,
+        rgba(148, 163, 184, 0.55) 85%,
+        transparent 100%
+    );
+}
+
 .trial-tags-survey__option-btn {
     border: 1px solid #4b5563;
     background: #0f172a;
@@ -253,7 +290,35 @@
 .trial-tags-survey__footer {
     display: flex;
     justify-content: space-between;
+    align-items: center;
     gap: 12px;
+}
+
+/* Overlay Next/Finish shares footer with Back — match primary nav, not header accent */
+.trial-tags-survey__footer .test-execution-overlay__next-btn {
+    text-transform: none;
+    letter-spacing: normal;
+    align-items: center;
+    justify-content: center;
+    min-height: unset;
+}
+
+.trial-tags-survey__footer .test-execution-overlay__next-btn:hover:not(:disabled) {
+    background: #1d4ed8;
+    border-color: #1d4ed8;
+}
+
+.trial-tags-survey__footer .test-execution-overlay__next-btn:active:not(:disabled) {
+    background: #1e40af;
+    border-color: #1e40af;
+}
+
+.trial-tags-survey__footer .test-execution-overlay__next-btn:disabled {
+    background: #2563eb;
+    border-color: #2563eb;
+    color: #eff6ff;
+    opacity: 0.45;
+    cursor: not-allowed;
 }
 
 .trial-tags-survey__nav-btn {
@@ -293,10 +358,12 @@
         align-items: stretch;
     }
 
-    .trial-tags-survey__button-grid {
+    .trial-tags-survey__button-grid:not(.trial-tags-survey__button-grid--emotion-scale) {
         grid-template-columns: 1fr 1fr;
     }
 
+    .trial-tags-survey__button-grid--emotion-scale .trial-tags-survey__option-btn {
+        min-width: 5rem;
     .trial-tags-survey__input-row {
         flex-direction: column;
     }

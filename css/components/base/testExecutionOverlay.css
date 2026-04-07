@@ -461,24 +461,7 @@
     display: block;
 }
 
-/* Top Buttons Container */
-.test-execution-overlay__top-right-buttons {
-    position: fixed;
-    top: var(--spacing-lg);
-    left: var(--spacing-lg);
-    right: var(--spacing-lg);
-    display: flex;
-    justify-content: flex-end;
-    z-index: 10001;
-    align-items: center;
-    pointer-events: none; /* Allow clicks to pass through container */
-}
-
-.test-execution-overlay__top-right-buttons > * {
-    pointer-events: auto; /* Re-enable clicks on buttons */
-}
-
-/* NEXT Button - Primary Action */
+/* Next/Finish (survey phase — reparented into trial footer; hidden when unused) */
 .test-execution-overlay__next-btn {
     padding: var(--spacing-sm) var(--spacing-md);
     min-height: 2.25rem;
