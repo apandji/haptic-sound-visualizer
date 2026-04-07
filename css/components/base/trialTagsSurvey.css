@@ -248,19 +248,25 @@
 }
 
 .trial-tags-survey__option-btn--custom {
+    position: relative;
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 8px;
+    justify-content: center;
+    padding: 12px 40px;
     cursor: default;
 }
 
 .trial-tags-survey__option-btn-label {
+    width: 100%;
     min-width: 0;
+    text-align: center;
     overflow-wrap: anywhere;
 }
 
 .trial-tags-survey__option-btn-remove {
+    position: absolute;
+    top: 50%;
+    right: 12px;
     border: 1px solid rgba(255, 255, 255, 0.4);
     background: rgba(15, 23, 42, 0.22);
     color: #eff6ff;
@@ -274,6 +280,7 @@
     font-size: 13px;
     font-weight: 700;
     line-height: 1;
+    transform: translateY(-50%);
     cursor: pointer;
     flex-shrink: 0;
 }
