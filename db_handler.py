@@ -401,6 +401,29 @@ def create_trial(conn, session_id: int, pattern_id: int, trial_order: int,
     return cursor.lastrowid
 
 
+def _is_persistable_trial(trial_data: Any) -> bool:
+    """Accept only fully completed trials with participant feedback."""
+    if not isinstance(trial_data, dict):
+        return False
+
+    return (
+        trial_data.get('status') == 'completed' and
+        bool(trial_data.get('startTime')) and
+        bool(trial_data.get('endTime')) and
+        isinstance(trial_data.get('surveyResponse'), dict) and
+        bool(trial_data.get('surveyResponse'))
+    )
+
+
+def _get_persistable_trials(session_data: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """Filter out calibration, incomplete, aborted, and not-started trials."""
+    return [
+        trial_data
+        for trial_data in session_data.get('trials', [])
+        if _is_persistable_trial(trial_data)
+    ]
+
+
 def add_trial_event(conn, trial_id: int, event_type: str, phase: str = None,
                     timestamp_ms: int = None, created_at: str = None, details: Dict[str, Any] = None):
     """Add a tester event marker to a trial."""
@@ -507,6 +530,11 @@ def save_session_data(session_data: Dict[str, Any]) -> Dict[str, Any]:
     }
 
     try:
+        trials = _get_persistable_trials(session_data)
+        if not trials:
+            result['errors'].append('No completed trials with participant feedback to save')
+            return result
+
         # Get or create participant with full details
         participant_code = session_data.get('participant_code') or session_data.get('participant_id', 'Unknown')
         if isinstance(participant_code, int):
@@ -552,8 +580,6 @@ def save_session_data(session_data: Dict[str, Any]) -> Dict[str, Any]:
         result['session_id'] = db_session_id
 
         # Process trials
-        trials = session_data.get('trials', [])
-
         for trial_data in trials:
             # Get or create pattern
             pattern_info = trial_data.get('pattern', {})

@@ -753,8 +753,8 @@ class TestExecutionOverlay {
         }
 
         const abortMessage = reason
-            ? `The session has been aborted. ${reason}`
-            : 'The session has been aborted. Partial data may have been saved.';
+            ? `The session has been aborted. ${reason} Completed trials with participant feedback may have been saved.`
+            : 'The session has been aborted. Completed trials with participant feedback may have been saved.';
 
         this.reparentNextControl();
         this.contentContainer.innerHTML = `

@@ -649,7 +649,7 @@
                 ? `trial ${testSession.currentTrialIndex + 1}`
                 : 'calibration';
             const confirmed = await showCustomConfirm(
-                `Abort now during ${currentPhase} (${trialLabel})? Partial data will be saved.`,
+                `Abort now during ${currentPhase} (${trialLabel})? Completed trials with participant feedback will be saved.`,
                 'Abort Session',
                 'Abort',
                 'Cancel'
