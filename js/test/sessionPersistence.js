@@ -1,19 +1,56 @@
-async function saveSessionData() {
-            if (!testSession) return;
+function isPersistableTrial(trial) {
+            return Boolean(
+                trial &&
+                trial.status === 'completed' &&
+                trial.startTime &&
+                trial.endTime &&
+                trial.surveyResponse &&
+                typeof trial.surveyResponse === 'object'
+            );
+        }
 
-            const sessionData = testSession.getSessionData();
+        function getLatestPersistedTrialEndTime(trials) {
+            const completedEndTimes = (trials || [])
+                .map(trial => trial?.endTime)
+                .filter(Boolean)
+                .sort();
 
-            // Prepare full session data
-            const fullSessionData = {
-                ...sessionData.sessionData,
+            return completedEndTimes.length > 0 ? completedEndTimes[completedEndTimes.length - 1] : null;
+        }
+
+        function buildPersistableSessionData(sessionData) {
+            if (!sessionData) return null;
+
+            const validTrials = (sessionData.trials || []).filter(isPersistableTrial);
+            if (validTrials.length === 0) {
+                return null;
+            }
+
+            return {
+                ...(sessionData.sessionData || {}),
                 sessionId: sessionData.sessionId,
-                trials: sessionData.trials,
+                trials: validTrials,
                 calibrationReadings: [],
                 isAborted: sessionData.isAborted,
                 abortReason: sessionData.abortReason,
-                completedAt: sessionData.completedAt,
-                startedAt: sessionData.sessionData.startedAt || new Date().toISOString()
+                completedAt: sessionData.completedAt || getLatestPersistedTrialEndTime(validTrials),
+                startedAt: sessionData.sessionData?.startedAt || new Date().toISOString()
             };
+        }
+
+        async function saveSessionData() {
+            if (!testSession) return;
+
+            const sessionData = testSession.getSessionData();
+            const fullSessionData = buildPersistableSessionData(sessionData);
+
+            if (!fullSessionData) {
+                showDatabaseSaveMessage(
+                    'No completed trials with participant feedback to save.',
+                    'warning'
+                );
+                return;
+            }
 
             // Save to localStorage (backup)
             try {
