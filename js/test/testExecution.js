@@ -172,7 +172,6 @@
         function startEegDeviceMonitoring() {
             stopEegDeviceMonitoring();
             eegCollectionStartedAt = Date.now();
-            lastEegReadingAt = null;
             hasSeenLiveEegReadingInCurrentPhase = false;
             updateTesterDeviceStatus();
             eegDisconnectMonitorTimer = setInterval(() => {
@@ -186,16 +185,28 @@
                 eegDisconnectMonitorTimer = null;
             }
             eegCollectionStartedAt = null;
-            lastEegReadingAt = null;
             hasSeenLiveEegReadingInCurrentPhase = false;
             hideTesterDeviceStatus();
         }
 
-        function noteEegReadingHeartbeat() {
-            lastEegReadingAt = Date.now();
-            hasSeenLiveEegReadingInCurrentPhase = true;
-            hasSeenLiveEegReadingThisSession = true;
+        function noteEegReadingHeartbeat(readingMeta = {}) {
+            if (readingMeta.didAdvance !== false) {
+                lastEegReadingAt = Number.isFinite(readingMeta.advancedAt)
+                    ? readingMeta.advancedAt
+                    : Date.now();
+                hasSeenLiveEegReadingInCurrentPhase = true;
+                hasSeenLiveEegReadingThisSession = true;
+            }
             updateTesterDeviceStatus();
+        }
+
+        function startSignalQualityMonitoringIfConnected() {
+            if (!signalQualityVisualizer || !eegDataCollector) {
+                return;
+            }
+            if (eegDataCollector.getConnectionState() === 'connected') {
+                signalQualityVisualizer.start();
+            }
         }
 
         function updateTesterDeviceStatus() {
@@ -244,17 +255,20 @@
             const elapsedSinceStartMs = Number.isFinite(eegCollectionStartedAt)
                 ? now - eegCollectionStartedAt
                 : 0;
-            const lastReadingAgeMs = Number.isFinite(lastEegReadingAt)
-                ? now - lastEegReadingAt
+            const effectiveLastReadingAt = Number.isFinite(lastEegReadingAt)
+                ? Math.max(lastEegReadingAt, Number.isFinite(eegCollectionStartedAt) ? eegCollectionStartedAt : 0)
+                : null;
+            const lastReadingAgeMs = Number.isFinite(effectiveLastReadingAt)
+                ? now - effectiveLastReadingAt
                 : null;
 
             if (Number.isFinite(lastReadingAgeMs) && lastReadingAgeMs > eegDisconnectMonitorConfig.staleThresholdMs) {
                 const staleSeconds = Math.max(1, Math.round(lastReadingAgeMs / 1000));
                 testExecutionOverlay.setTesterDeviceStatus({
                     visible: true,
-                    tone: 'warning',
-                    title: 'Searching for EEG device',
-                    detail: `Live EEG stopped ${staleSeconds}s ago. The test is still running; abort manually if needed.`
+                    tone: 'error',
+                    title: 'EEG device disconnected',
+                    detail: `No new EEG samples have arrived for ${staleSeconds}s. The last reading is frozen; use ABORT below if you want to end the run manually.`
                 });
                 return;
             }
@@ -321,6 +335,7 @@
         function initializeTestExecution(sessionData, queueItems) {
             abortInProgress = false;
             hasSeenLiveEegReadingThisSession = false;
+            lastEegReadingAt = null;
             // Get participant and location details from sessionInfo
             const participant = sessionInfo.participants.find(p => p.participant_id === sessionData.data.participant_id);
             const location = sessionInfo.locations.find(l => l.location_id === sessionData.data.location_id);
@@ -400,26 +415,29 @@
             // Create EEGDataCollector
             eegDataCollector = new EEGDataCollector({
                 wsUrl: 'ws://localhost:8765',
-                onReading: (reading) => {
-                    if (testSession) {
+                onReading: (reading, readingMeta = {}) => {
+                    const didAdvance = readingMeta.didAdvance !== false;
+                    if (didAdvance && testSession) {
                         testSession.addReading(reading);
                     }
-                    if (testExecutionOverlay) {
+                    if (didAdvance && testExecutionOverlay) {
                         testExecutionOverlay.pushLiveSignalReading(reading);
                     }
                     if (signalQualityVisualizer) {
-                        signalQualityVisualizer.ingestReading(reading);
+                        signalQualityVisualizer.ingestReading(reading, readingMeta);
                     }
-                    noteEegReadingHeartbeat();
-                    updateCalibrationGateFromReading(reading);
-                    updateTesterSignalFromReading(reading);
+                    noteEegReadingHeartbeat(readingMeta);
+                    if (didAdvance) {
+                        updateCalibrationGateFromReading(reading);
+                        updateTesterSignalFromReading(reading);
+                    }
                 },
                 onConnectionChange: (state, previousState) => {
                     console.log('EEG connection:', previousState, '→', state);
                     updateTesterDeviceStatus();
                     if (signalQualityVisualizer) {
                         if (state === 'connected') {
-                            if (signalQualityVisualizer.getConnectionState() !== 'streaming') {
+                            if (eegDataCollector && eegDataCollector.isActive()) {
                                 signalQualityVisualizer.start();
                             }
                         } else {
@@ -471,6 +489,10 @@
             if (eegDataCollector && eegDataCollector.isActive()) {
                 eegDataCollector.stop();
             }
+            if (signalQualityVisualizer) {
+                signalQualityVisualizer.clearLiveReading();
+                signalQualityVisualizer.stopStream();
+            }
 
             if (phase !== 'calibration') {
                 undockSignalQualityWidget();
@@ -488,6 +510,7 @@
                     dockSignalQualityWidgetInCalibration();
                     startEegDeviceMonitoring();
                     eegDataCollector.start();
+                    startSignalQualityMonitoringIfConnected();
                     break;
 
                 case 'baseline':
@@ -500,6 +523,7 @@
                     });
                     startEegDeviceMonitoring();
                     eegDataCollector.start();
+                    startSignalQualityMonitoringIfConnected();
                     // Start baseline timer
                     baselineTimer = setTimeout(() => {
                         testSession.completeBaseline();
@@ -516,6 +540,7 @@
                     });
                     startEegDeviceMonitoring();
                     eegDataCollector.start();
+                    startSignalQualityMonitoringIfConnected();
                     // Load and play audio
                     playTestAudio(data.pattern, () => {
                         // Audio started - record offset
