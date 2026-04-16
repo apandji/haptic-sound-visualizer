@@ -11,9 +11,19 @@
         let completedTrialCount = 0;
         let testerMarkerCount = 0;
         let abortInProgress = false;
+        let eegDisconnectMonitorTimer = null;
+        let eegCollectionStartedAt = null;
+        let lastEegReadingAt = null;
+        let hasSeenLiveEegReadingInCurrentPhase = false;
+        let hasSeenLiveEegReadingThisSession = false;
         const calibrationGateConfig = {
             requiredChannels: 4,
             requiredGoodChannels: 3
+        };
+        const eegDisconnectMonitorConfig = {
+            staleThresholdMs: 4000,
+            initialGraceMs: 8000,
+            pollIntervalMs: 1000
         };
 
         function getChannelQuality(metric) {
@@ -147,6 +157,132 @@
             );
         }
 
+        function hideTesterDeviceStatus() {
+            if (!testExecutionOverlay) {
+                return;
+            }
+            testExecutionOverlay.setTesterDeviceStatus({
+                visible: false,
+                tone: 'info',
+                title: '',
+                detail: ''
+            });
+        }
+
+        function startEegDeviceMonitoring() {
+            stopEegDeviceMonitoring();
+            eegCollectionStartedAt = Date.now();
+            lastEegReadingAt = null;
+            hasSeenLiveEegReadingInCurrentPhase = false;
+            updateTesterDeviceStatus();
+            eegDisconnectMonitorTimer = setInterval(() => {
+                updateTesterDeviceStatus();
+            }, eegDisconnectMonitorConfig.pollIntervalMs);
+        }
+
+        function stopEegDeviceMonitoring() {
+            if (eegDisconnectMonitorTimer) {
+                clearInterval(eegDisconnectMonitorTimer);
+                eegDisconnectMonitorTimer = null;
+            }
+            eegCollectionStartedAt = null;
+            lastEegReadingAt = null;
+            hasSeenLiveEegReadingInCurrentPhase = false;
+            hideTesterDeviceStatus();
+        }
+
+        function noteEegReadingHeartbeat() {
+            lastEegReadingAt = Date.now();
+            hasSeenLiveEegReadingInCurrentPhase = true;
+            hasSeenLiveEegReadingThisSession = true;
+            updateTesterDeviceStatus();
+        }
+
+        function updateTesterDeviceStatus() {
+            if (!testExecutionOverlay) {
+                return;
+            }
+
+            const isCollecting = Boolean(eegDataCollector && eegDataCollector.isActive());
+            if (!isCollecting) {
+                hideTesterDeviceStatus();
+                return;
+            }
+
+            const connectionState = eegDataCollector ? eegDataCollector.getConnectionState() : 'disconnected';
+            if (connectionState === 'connecting') {
+                testExecutionOverlay.setTesterDeviceStatus({
+                    visible: true,
+                    tone: 'info',
+                    title: 'Connecting to EEG stream',
+                    detail: 'Waiting for the frontend EEG connection to open.'
+                });
+                return;
+            }
+
+            if (connectionState === 'disconnected') {
+                testExecutionOverlay.setTesterDeviceStatus({
+                    visible: true,
+                    tone: 'error',
+                    title: 'EEG stream disconnected',
+                    detail: 'The test is still running. Use ABORT below if you want to end the run manually.'
+                });
+                return;
+            }
+
+            if (connectionState === 'error') {
+                testExecutionOverlay.setTesterDeviceStatus({
+                    visible: true,
+                    tone: 'error',
+                    title: 'EEG stream error',
+                    detail: 'The test is still running. Use ABORT below if you want to end the run manually.'
+                });
+                return;
+            }
+
+            const now = Date.now();
+            const elapsedSinceStartMs = Number.isFinite(eegCollectionStartedAt)
+                ? now - eegCollectionStartedAt
+                : 0;
+            const lastReadingAgeMs = Number.isFinite(lastEegReadingAt)
+                ? now - lastEegReadingAt
+                : null;
+
+            if (Number.isFinite(lastReadingAgeMs) && lastReadingAgeMs > eegDisconnectMonitorConfig.staleThresholdMs) {
+                const staleSeconds = Math.max(1, Math.round(lastReadingAgeMs / 1000));
+                testExecutionOverlay.setTesterDeviceStatus({
+                    visible: true,
+                    tone: 'warning',
+                    title: 'Searching for EEG device',
+                    detail: `Live EEG stopped ${staleSeconds}s ago. The test is still running; abort manually if needed.`
+                });
+                return;
+            }
+
+            if (!hasSeenLiveEegReadingInCurrentPhase) {
+                const waitingGraceMs = hasSeenLiveEegReadingThisSession
+                    ? eegDisconnectMonitorConfig.staleThresholdMs
+                    : eegDisconnectMonitorConfig.initialGraceMs;
+                const waitingTooLong = elapsedSinceStartMs > waitingGraceMs;
+                testExecutionOverlay.setTesterDeviceStatus({
+                    visible: true,
+                    tone: waitingTooLong ? 'warning' : 'info',
+                    title: waitingTooLong ? 'Searching for EEG device' : 'Waiting for live EEG data',
+                    detail: waitingTooLong
+                        ? 'No EEG readings have arrived yet. Check the device if this persists.'
+                        : 'The EEG stream is connected, but readings have not arrived yet.'
+                });
+                return;
+            }
+
+            testExecutionOverlay.setTesterDeviceStatus({
+                visible: true,
+                tone: 'connected',
+                title: 'Live EEG connected',
+                detail: 'Readings are arriving normally.'
+            });
+        }
+
         function handleManualCalibrationStart() {
             if (!testSession || testSession.currentPhase !== 'calibration' || calibrationPhaseCompleted) {
                 return;
@@ -184,6 +320,7 @@
          */
         function initializeTestExecution(sessionData, queueItems) {
             abortInProgress = false;
+            hasSeenLiveEegReadingThisSession = false;
             // Get participant and location details from sessionInfo
             const participant = sessionInfo.participants.find(p => p.participant_id === sessionData.data.participant_id);
             const location = sessionInfo.locations.find(l => l.location_id === sessionData.data.location_id);
@@ -273,21 +410,22 @@
                     if (signalQualityVisualizer) {
                         signalQualityVisualizer.ingestReading(reading);
                     }
+                    noteEegReadingHeartbeat();
                     updateCalibrationGateFromReading(reading);
                     updateTesterSignalFromReading(reading);
                 },
                 onConnectionChange: (state, previousState) => {
                     console.log('EEG connection:', previousState, '→', state);
-                    if (!signalQualityVisualizer) {
-                        return;
-                    }
-                    if (state === 'connected') {
-                        if (signalQualityVisualizer.getConnectionState() !== 'streaming') {
-                            signalQualityVisualizer.start();
+                    updateTesterDeviceStatus();
+                    if (signalQualityVisualizer) {
+                        if (state === 'connected') {
+                            if (signalQualityVisualizer.getConnectionState() !== 'streaming') {
+                                signalQualityVisualizer.start();
+                            }
+                        } else {
+                            signalQualityVisualizer.clearLiveReading();
+                            signalQualityVisualizer.stop();
                         }
-                    } else {
-                        signalQualityVisualizer.clearLiveReading();
-                        signalQualityVisualizer.stop();
                     }
                 }
             });
@@ -322,6 +460,7 @@
 
             // Stop any existing timers
             clearTimers();
+            stopEegDeviceMonitoring();
 
             // Stop audio if needed
             if (phase !== 'survey' && testAudioPlayer && testAudioPlayer.isPlaying()) {
@@ -347,6 +486,7 @@
                         totalPatterns: testSession && testSession.trials ? testSession.trials.length : 0
                     });
                     dockSignalQualityWidgetInCalibration();
+                    startEegDeviceMonitoring();
                     eegDataCollector.start();
                     break;
 
@@ -358,6 +498,7 @@
                         totalTrials: data.totalPatterns || 0,
                         markerCount: testerMarkerCount
                     });
+                    startEegDeviceMonitoring();
                     eegDataCollector.start();
                     // Start baseline timer
                     baselineTimer = setTimeout(() => {
@@ -373,6 +514,7 @@
                         totalTrials: data.totalPatterns || 0,
                         markerCount: testerMarkerCount
                     });
+                    startEegDeviceMonitoring();
                     eegDataCollector.start();
                     // Load and play audio
                     playTestAudio(data.pattern, () => {

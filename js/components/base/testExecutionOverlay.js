@@ -30,6 +30,7 @@ class TestExecutionOverlay {
         this.countdownInterval = null;
         this.testerSignal = { label: 'Signal: --', tone: 'neutral' };
         this.testerMetrics = { completedTrials: 0, totalTrials: 0, markerCount: 0 };
+        this.testerDeviceStatus = { visible: false, tone: 'info', title: '', detail: '' };
         this.testerPanelCollapsed = false;
         this.liveSignalBuffer = [];
         this.liveSignalBufferMax = 80;
@@ -95,6 +96,11 @@ class TestExecutionOverlay {
 
             <div class="test-execution-overlay__tester-section">
                 <div class="test-execution-overlay__tester-section-title">BCI Telemetry</div>
+                <div class="test-execution-overlay__tester-device-status" id="testerDeviceStatus" hidden>
+                    <div class="test-execution-overlay__tester-device-status-label">EEG Device</div>
+                    <div class="test-execution-overlay__tester-device-status-title" id="testerDeviceStatusTitle"></div>
+                    <div class="test-execution-overlay__tester-device-status-detail" id="testerDeviceStatusDetail"></div>
+                </div>
                 <div class="test-execution-overlay__tester-signal" id="testerSignalBadge">Signal: --</div>
                 <div class="test-execution-overlay__tester-metrics" id="testerMetrics"></div>
                 <canvas class="test-execution-overlay__tester-live-canvas" id="testerLiveSignalCanvas" width="360" height="96" aria-label="Live BCI trend"></canvas>
@@ -281,6 +287,46 @@ class TestExecutionOverlay {
         const { completedTrials, totalTrials, markerCount } = this.testerMetrics;
         const markerLabel = this.lastMarkerLabel ? ` | Last marker: ${this.lastMarkerLabel}` : '';
         metricsEl.textContent = `Completed: ${completedTrials}/${totalTrials || 0} | Markers: ${markerCount || 0}${markerLabel}`;
+    }
+
+    /**
+     * Update tester panel EEG device status card.
+     * @param {Object} status
+     * @param {boolean} [status.visible=false]
+     * @param {string} [status.tone='info']
+     * @param {string} [status.title='']
+     * @param {string} [status.detail='']
+     */
+    setTesterDeviceStatus(status = {}) {
+        this.testerDeviceStatus = {
+            ...this.testerDeviceStatus,
+            ...status
+        };
+
+        const statusEl = this.testerBar ? this.testerBar.querySelector('#testerDeviceStatus') : null;
+        const titleEl = this.testerBar ? this.testerBar.querySelector('#testerDeviceStatusTitle') : null;
+        const detailEl = this.testerBar ? this.testerBar.querySelector('#testerDeviceStatusDetail') : null;
+        if (!statusEl || !titleEl || !detailEl) {
+            return;
+        }
+
+        const { visible, tone, title, detail } = this.testerDeviceStatus;
+        statusEl.hidden = !visible;
+        statusEl.classList.remove(
+            'test-execution-overlay__tester-device-status--info',
+            'test-execution-overlay__tester-device-status--connected',
+            'test-execution-overlay__tester-device-status--warning',
+            'test-execution-overlay__tester-device-status--error'
+        );
+        if (!visible) {
+            titleEl.textContent = '';
+            detailEl.textContent = '';
+            return;
+        }
+
+        statusEl.classList.add(`test-execution-overlay__tester-device-status--${tone || 'info'}`);
+        titleEl.textContent = title || '';
+        detailEl.textContent = detail || '';
     }
 
     /**

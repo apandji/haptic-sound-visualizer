@@ -265,6 +265,84 @@
     display: inline-block;
 }
 
+.test-execution-overlay__tester-device-status {
+    margin-top: var(--spacing-sm);
+    padding: 10px 12px;
+    border-radius: var(--radius-sm);
+    border: 1px solid #d7e1eb;
+    background: #f7fafc;
+}
+
+.test-execution-overlay__tester-device-status[hidden] {
+    display: none;
+}
+
+.test-execution-overlay__tester-device-status-label {
+    font-size: var(--text-3xs, 0.625rem);
+    font-weight: var(--font-weight-semibold);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #647689;
+}
+
+.test-execution-overlay__tester-device-status-title {
+    margin-top: 4px;
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
+    color: #20384f;
+}
+
+.test-execution-overlay__tester-device-status-detail {
+    margin-top: 4px;
+    font-size: var(--font-size-xs);
+    line-height: 1.45;
+    color: #536578;
+}
+
+.test-execution-overlay__tester-device-status--info {
+    background: #edf4fb;
+    border-color: #bfd2e5;
+}
+
+.test-execution-overlay__tester-device-status--info .test-execution-overlay__tester-device-status-label,
+.test-execution-overlay__tester-device-status--info .test-execution-overlay__tester-device-status-title,
+.test-execution-overlay__tester-device-status--info .test-execution-overlay__tester-device-status-detail {
+    color: #24496c;
+}
+
+.test-execution-overlay__tester-device-status--connected {
+    background: #e9f7ef;
+    border-color: #9fd0ae;
+}
+
+.test-execution-overlay__tester-device-status--connected .test-execution-overlay__tester-device-status-label,
+.test-execution-overlay__tester-device-status--connected .test-execution-overlay__tester-device-status-title,
+.test-execution-overlay__tester-device-status--connected .test-execution-overlay__tester-device-status-detail {
+    color: #1f5d34;
+}
+
+.test-execution-overlay__tester-device-status--warning {
+    background: #fff5df;
+    border-color: #e5c06c;
+}
+
+.test-execution-overlay__tester-device-status--warning .test-execution-overlay__tester-device-status-label,
+.test-execution-overlay__tester-device-status--warning .test-execution-overlay__tester-device-status-title,
+.test-execution-overlay__tester-device-status--warning .test-execution-overlay__tester-device-status-detail {
+    color: #73530e;
+}
+
+.test-execution-overlay__tester-device-status--error {
+    background: #fdecec;
+    border-color: #d7a0a0;
+}
+
+.test-execution-overlay__tester-device-status--error .test-execution-overlay__tester-device-status-label,
+.test-execution-overlay__tester-device-status--error .test-execution-overlay__tester-device-status-title,
+.test-execution-overlay__tester-device-status--error .test-execution-overlay__tester-device-status-detail {
+    color: #8a2e2e;
+}
+
 .test-execution-overlay__tester-signal--good {
     background: #e7f6ea;
     border-color: #8ac79a;
