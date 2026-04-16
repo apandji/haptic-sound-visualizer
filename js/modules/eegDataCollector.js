@@ -10,7 +10,7 @@ class EEGDataCollector {
     /**
      * Create an EEGDataCollector instance
      * @param {Object} options - Configuration options
-     * @param {Function} [options.onReading] - Callback when reading is collected: (reading) => void
+     * @param {Function} [options.onReading] - Callback when reading is collected: (reading, meta) => void
      * @param {Function} [options.onConnectionChange] - Callback when connection state changes: (state) => void
      * @param {Function} [options.onError] - Callback when error occurs: (error) => void
      * @param {string} [options.wsUrl='ws://localhost:8765'] - WebSocket server URL for real EEG
@@ -30,6 +30,9 @@ class EEGDataCollector {
         // State
         this.isCollecting = false;
         this.readingCount = 0;
+        this.lastPacketReceivedAt = null;
+        this.lastAdvancedReadingAt = null;
+        this.lastReadingProgressMarker = null;
 
         // WebSocket state
         this.ws = null;
@@ -178,6 +181,7 @@ class EEGDataCollector {
         }
 
         this.setConnectionState('disconnected');
+        this.resetReadingProgress();
     }
 
     /**
@@ -213,6 +217,76 @@ class EEGDataCollector {
     }
 
     /**
+     * Clear reading progress markers for a new collection run.
+     */
+    resetReadingProgress() {
+        this.lastPacketReceivedAt = null;
+        this.lastAdvancedReadingAt = null;
+        this.lastReadingProgressMarker = null;
+    }
+
+    /**
+     * Derive a monotonic progress marker for a reading.
+     * Prefer board-side timestamps so repeated frozen packets are ignored.
+     * @param {Object} reading
+     * @returns {{type: string, value: number|string}|null}
+     */
+    getReadingProgressMarker(reading) {
+        const boardTime = Number(reading?.bf_time);
+        if (Number.isFinite(boardTime)) {
+            return { type: 'bf_time', value: boardTime };
+        }
+
+        const readingTimestampMs = Number(reading?.timestamp_ms);
+        if (Number.isFinite(readingTimestampMs)) {
+            return { type: 'timestamp_ms', value: readingTimestampMs };
+        }
+
+        try {
+            return { type: 'fingerprint', value: JSON.stringify(reading || {}) };
+        } catch (_) {
+            return null;
+        }
+    }
+
+    /**
+     * Track whether an incoming reading actually advanced the live EEG stream.
+     * @param {Object} reading
+     * @returns {{didAdvance: boolean, receivedAt: number, advancedAt: number|null}}
+     */
+    recordReadingProgress(reading) {
+        const receivedAt = Date.now();
+        const marker = this.getReadingProgressMarker(reading);
+        const previousMarker = this.lastReadingProgressMarker;
+
+        this.lastPacketReceivedAt = receivedAt;
+
+        let didAdvance = true;
+        if (marker && previousMarker) {
+            if (
+                marker.type === previousMarker.type &&
+                typeof marker.value === 'number' &&
+                typeof previousMarker.value === 'number'
+            ) {
+                didAdvance = marker.value > previousMarker.value;
+            } else {
+                didAdvance = marker.type !== previousMarker.type || marker.value !== previousMarker.value;
+            }
+        }
+
+        if (didAdvance) {
+            this.lastAdvancedReadingAt = receivedAt;
+            this.lastReadingProgressMarker = marker;
+        }
+
+        return {
+            didAdvance,
+            receivedAt,
+            advancedAt: this.lastAdvancedReadingAt
+        };
+    }
+
+    /**
      * Handle incoming WebSocket message
      * @param {string} data - Raw message data
      */
@@ -223,9 +297,14 @@ class EEGDataCollector {
             switch (message.type) {
                 case 'reading':
                     // Process EEG reading
-                    if (this.isCollecting && this.onReading) {
-                        this.onReading(message.data);
-                        this.readingCount++;
+                    if (this.isCollecting) {
+                        const readingMeta = this.recordReadingProgress(message.data);
+                        if (this.onReading) {
+                            this.onReading(message.data, readingMeta);
+                        }
+                        if (readingMeta.didAdvance) {
+                            this.readingCount++;
+                        }
                     }
                     break;
 
@@ -310,6 +389,7 @@ class EEGDataCollector {
 
         this.isCollecting = true;
         this.readingCount = 0;
+        this.resetReadingProgress();
 
         // Connect to WebSocket server and start streaming
         try {
@@ -341,6 +421,8 @@ class EEGDataCollector {
         if (this.ws && this.connectionState === 'connected') {
             this.sendCommand('stop');
         }
+
+        this.resetReadingProgress();
     }
 
     /**

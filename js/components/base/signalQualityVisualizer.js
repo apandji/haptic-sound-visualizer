@@ -385,8 +385,11 @@ class SignalQualityVisualizer {
      * Push one live EEG reading into the visualizer.
      * @param {Object} reading - Reading from EEGDataCollector/eeg_server.py
      */
-    ingestReading(reading) {
+    ingestReading(reading, readingMeta = {}) {
         if (!reading || typeof reading !== 'object') {
+            return;
+        }
+        if (readingMeta.didAdvance === false) {
             return;
         }
         this.latestReading = reading;
@@ -399,6 +402,8 @@ class SignalQualityVisualizer {
     clearLiveReading() {
         this.latestReading = null;
         this.latestReadingTimestamp = null;
+        this.lastUpdateTime = null;
+        this.channelQualities = [];
     }
 
     /**
@@ -672,7 +677,7 @@ class SignalQualityVisualizer {
      * Includes data validation (from Python lines 138-144)
      */
     updateQuality() {
-        if (!this.isMonitoring || this.connectionState !== 'streaming') return;
+        if (!this.isMonitoring) return;
         
         try {
             let qualities = [];
@@ -708,6 +713,13 @@ class SignalQualityVisualizer {
 
                 if (!readingIsFresh) {
                     this.errorCount++;
+                    if (
+                        this.latestReadingTimestamp &&
+                        (now - this.latestReadingTimestamp) > this.liveDataTimeoutMs &&
+                        this.connectionState !== 'error'
+                    ) {
+                        this.setConnectionState('error', 'Live EEG disconnected');
+                    }
                     this.updateLastUpdateTime(false);
                     return;
                 }
@@ -718,6 +730,10 @@ class SignalQualityVisualizer {
                     this.updateLastUpdateTime(false);
                     return;
                 }
+            }
+
+            if (this.connectionState !== 'streaming') {
+                this.setConnectionState('streaming');
             }
 
             // Reset error count on successful update
@@ -850,16 +866,17 @@ class SignalQualityVisualizer {
         
         // Map state to status
         let status = 'disconnected';
+        const hasLiveQualities = state === 'streaming' && this.channelQualities.length > 0;
         if (state === 'streaming') {
             // Use worst quality if available
-            if (this.channelQualities.length > 0) {
+            if (hasLiveQualities) {
                 const worstQuality = this.channelQualities.reduce((worst, q) => {
                     const order = { 'good': 0, 'ok': 1, 'poor': 2 };
                     return order[q.quality] > order[worst] ? q.quality : worst;
                 }, 'good');
                 status = worstQuality;
             } else {
-                status = 'good'; // Default when streaming but no data yet
+                status = 'disconnected';
             }
         } else if (state === 'error') {
             status = 'poor';
@@ -880,6 +897,9 @@ class SignalQualityVisualizer {
                         if (state === 'disconnected' || state === 'released') {
                             statusEl.setAttribute('data-status', 'disconnected');
                             valueEl.textContent = '--';
+                        } else if (state === 'streaming' && !hasLiveQualities) {
+                            statusEl.setAttribute('data-status', 'waiting');
+                            valueEl.textContent = '...';
                         } else if (state === 'preparing' || state === 'stopped') {
                             statusEl.setAttribute('data-status', 'waiting');
                             valueEl.textContent = '...';
@@ -888,7 +908,7 @@ class SignalQualityVisualizer {
                             valueEl.textContent = '!';
                         }
                     }
-                    indicator.setAttribute('data-status', state);
+                    indicator.setAttribute('data-status', state === 'streaming' && !hasLiveQualities ? 'waiting' : state);
                 }
             });
         }
@@ -897,6 +917,8 @@ class SignalQualityVisualizer {
         if (this.summaryEl) {
             if (state === 'disconnected' || state === 'released') {
                 this.summaryEl.textContent = 'Disconnected';
+            } else if (state === 'streaming' && !hasLiveQualities) {
+                this.summaryEl.textContent = 'Waiting for data';
             } else if (state === 'preparing') {
                 this.summaryEl.textContent = 'Preparing...';
             } else if (state === 'stopped') {
@@ -932,7 +954,7 @@ class SignalQualityVisualizer {
      * Start streaming (from Python: board.start_stream())
      */
     startStream() {
-        if (this.connectionState === 'streaming') {
+        if (this.isMonitoring) {
             console.warn('SignalQualityVisualizer: Already streaming');
             return;
         }
@@ -953,6 +975,10 @@ class SignalQualityVisualizer {
      * Internal: Actually start streaming
      */
     doStartStream() {
+        if (this.updateTimer) {
+            clearInterval(this.updateTimer);
+            this.updateTimer = null;
+        }
         this.isMonitoring = true;
         this.setConnectionState('streaming');
         
@@ -980,7 +1006,7 @@ class SignalQualityVisualizer {
      * Stop streaming (from Python: board.stop_stream())
      */
     stopStream() {
-        if (this.connectionState !== 'streaming') {
+        if (!this.isMonitoring && !this.updateTimer) {
             return;
         }
         
@@ -999,7 +1025,7 @@ class SignalQualityVisualizer {
      */
     release() {
         // Stop streaming first if needed
-        if (this.connectionState === 'streaming') {
+        if (this.isMonitoring || this.updateTimer) {
             this.stopStream();
         }
         

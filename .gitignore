@@ -33,4 +33,4 @@ dist/
 build/
 
 # AI tools
-.codex/
+.codex
