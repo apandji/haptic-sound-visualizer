@@ -158,7 +158,7 @@ queue.destroy()             // Cleanup
 ### SessionInfo
 **File**: `sessionInfo.js`  
 **CSS**: `../../css/components/base/sessionInfo.css`  
-**Purpose**: Form component for collecting session metadata (participant, location, date, equipment, experimenter, notes).
+**Purpose**: Form component for collecting session metadata, including distinct participant notes and session notes.
 
 **API**:
 ```javascript
