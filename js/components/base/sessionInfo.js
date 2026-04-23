@@ -1,6 +1,6 @@
 /**
  * SessionInfo Component
- * Form for collecting session metadata (participant, location, date, equipment, experimenter, notes)
+ * Form for collecting session metadata, including distinct participant notes and session notes.
  */
 class SessionInfo {
     constructor(options = {}) {
@@ -490,12 +490,12 @@ class SessionInfo {
         });
         participantForm.appendChild(handednessField);
         
-        // Notes (optional)
+        // Participant notes (optional)
         const notesField = this.createTextareaField({
             id: 'new_participant_notes',
-            label: 'Notes',
+            label: 'Participant Notes',
             required: false,
-            placeholder: 'Additional notes about participant',
+            placeholder: 'Additional notes about this participant',
             value: ''
         });
         participantForm.appendChild(notesField);
@@ -562,12 +562,12 @@ class SessionInfo {
             maxLength: 255
         });
         
-        // Notes field
+        // Session notes field
         const sessionNotesField = this.createTextareaField({
             id: 'notes',
-            label: 'Notes',
+            label: 'Session Notes',
             required: false,
-            placeholder: 'Additional notes',
+            placeholder: 'Additional notes about this session',
             value: this.data.notes
         });
         
