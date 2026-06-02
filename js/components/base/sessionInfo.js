@@ -542,7 +542,9 @@ class SessionInfo {
             { value: 'Jonathan', text: 'Jonathan' },
             { value: 'Long', text: 'Long' },
             { value: 'Noah', text: 'Noah' },
-            { value: 'Pandji', text: 'Pandji' }
+            { value: 'Pandji', text: 'Pandji' },
+            { value: 'Eileen', text: 'Eileen' },
+            { value: 'Bradley', text: 'Bradley' }
         ];
         const experimenterField = this.createSelectField({
             id: 'experimenter',
