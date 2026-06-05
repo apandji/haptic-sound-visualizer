@@ -22,9 +22,12 @@ try:
     from db_handler import (
         save_session_data,
         get_analysis_sessions,
+        get_pattern_metadata_catalog,
+        set_trial_exclude_from_analysis,
         get_all_tags,
         get_all_locations,
-        get_all_participants
+        get_all_participants,
+        get_known_custom_actions
     )
     DB_AVAILABLE = True
 except ImportError as e:
@@ -91,6 +94,18 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             else:
                 self.send_json_response({'error': 'Database not available'}, 500)
 
+        elif path == '/api/survey/custom-actions':
+            if DB_AVAILABLE:
+                self.send_json_response({'actions': get_known_custom_actions()})
+            else:
+                self.send_json_response({'error': 'Database not available'}, 500)
+
+        elif path == '/api/analysis/pattern-metadata':
+            if DB_AVAILABLE:
+                self.send_json_response(get_pattern_metadata_catalog())
+            else:
+                self.send_json_response({'error': 'Database not available'}, 500)
+
         elif path == '/api/analysis/sessions':
             if DB_AVAILABLE:
                 query_params = parse_qs(parsed_path.query)
@@ -150,6 +165,27 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                     'traceback': traceback.format_exc()
                 }, 500)
 
+        elif path == '/api/analysis/trials/exclude':
+            if not DB_AVAILABLE:
+                self.send_json_response({'error': 'Database not available'}, 500)
+                return
+
+            trial_id = data.get('trialId')
+            excluded = data.get('excludeFromAnalysis')
+            if trial_id is None or excluded is None:
+                self.send_json_response({'error': 'trialId and excludeFromAnalysis are required'}, 400)
+                return
+
+            try:
+                trial_id_int = int(trial_id)
+            except (TypeError, ValueError):
+                self.send_json_response({'error': 'Invalid trialId'}, 400)
+                return
+
+            result = set_trial_exclude_from_analysis(trial_id_int, bool(excluded))
+            status = 200 if result.get('success') else 404
+            self.send_json_response(result, status)
+
         elif path == '/api/sessions/bulk':
             # Save multiple sessions (for syncing localStorage data)
             if not DB_AVAILABLE:
@@ -200,7 +236,10 @@ if __name__ == '__main__':
         print(f"  GET  /api/tags              - Get all tags")
         print(f"  GET  /api/locations         - Get all locations")
         print(f"  GET  /api/participants      - Get all participants")
+        print(f"  GET  /api/survey/custom-actions - Known custom survey actions")
+        print(f"  GET  /api/analysis/pattern-metadata - Pattern audio metadata for Analyze")
         print(f"  GET  /api/analysis/sessions - Get sessions for Analyze page")
+        print(f"  POST /api/analysis/trials/exclude - Exclude/include trial in analysis")
         print(f"  GET  /api/status            - Server status")
         print(f"  POST /api/session           - Save session data")
         print(f"  POST /api/sessions/bulk     - Save multiple sessions")

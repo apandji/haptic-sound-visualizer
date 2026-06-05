@@ -46,6 +46,7 @@ CREATE TABLE trials (
     start_time     DATETIME NOT NULL,
     end_time       DATETIME,
     notes          TEXT,
+    exclude_from_analysis INTEGER NOT NULL DEFAULT 0,
     UNIQUE (session_id, trial_order),
     FOREIGN KEY (session_id) REFERENCES sessions(session_id),
     FOREIGN KEY (pattern_id) REFERENCES patterns(pattern_id)

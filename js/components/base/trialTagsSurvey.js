@@ -13,6 +13,7 @@ class TrialTagsSurvey {
         this.pattern = options.pattern || null;
         this.onPlayAudio = options.onPlayAudio || null;
         this.onPauseAudio = options.onPauseAudio || null;
+        this.knownCustomActions = Array.isArray(options.knownCustomActions) ? options.knownCustomActions : [];
 
         this.steps = [
             'scales',
@@ -265,10 +266,15 @@ class TrialTagsSurvey {
         this.contentEl.appendChild(directionSection);
 
         const actionSection = this.createSection('Action', 'What action does this pattern suggest?');
+        const selectedCustomValues = this.getCustomActionValues();
+        const adHocCustomValues = selectedCustomValues.filter(
+            (value) => !this.knownCustomActions.some((option) => option.toLowerCase() === value.toLowerCase())
+        );
+
         actionSection.appendChild(this.createActionButtons(
             this.actionOptions,
             this.response.action.predefined,
-            this.getCustomActionValues(),
+            adHocCustomValues,
             (value) => {
                 this.togglePredefinedAction(value);
                 this.renderCurrentStep();
@@ -278,6 +284,14 @@ class TrialTagsSurvey {
                 this.renderCurrentStep();
             }
         ));
+
+        if (this.knownCustomActions.length > 0) {
+            const knownLabel = document.createElement('label');
+            knownLabel.className = 'trial-tags-survey__field-label';
+            knownLabel.textContent = 'Previously used';
+            actionSection.appendChild(knownLabel);
+            actionSection.appendChild(this.createKnownCustomActionButtons());
+        }
 
         const customLabel = document.createElement('label');
         customLabel.className = 'trial-tags-survey__field-label';
@@ -521,6 +535,28 @@ class TrialTagsSurvey {
         return wrapper;
     }
 
+    createKnownCustomActionButtons() {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'trial-tags-survey__button-grid';
+
+        this.knownCustomActions.forEach((option) => {
+            const button = document.createElement('button');
+            button.className = 'trial-tags-survey__option-btn trial-tags-survey__option-btn--known';
+            button.type = 'button';
+            button.textContent = option;
+            if (this.isCustomActionSelected(option)) {
+                button.classList.add('selected');
+            }
+            button.addEventListener('click', () => {
+                this.toggleKnownCustomAction(option);
+                this.renderCurrentStep();
+            });
+            wrapper.appendChild(button);
+        });
+
+        return wrapper;
+    }
+
     createActionButtons(options, selectedValues, customValues, onToggle, onRemoveCustom) {
         const wrapper = this.createMultiSelectButtons(options, selectedValues, onToggle);
 
@@ -558,7 +594,11 @@ class TrialTagsSurvey {
     }
 
     addCustomAction() {
-        const nextValue = this.normalizeCustomActionValue(this.response.action.customDraft);
+        const draftKey = this.normalizeCustomActionValue(this.response.action.customDraft).toLowerCase();
+        const knownMatch = this.knownCustomActions.find(
+            (option) => option.toLowerCase() === draftKey
+        );
+        let nextValue = knownMatch || this.normalizeCustomActionValue(this.response.action.customDraft);
         if (!this.canAddCustomActionValue(nextValue)) {
             return false;
         }
@@ -574,8 +614,32 @@ class TrialTagsSurvey {
         this.updateNavigationState();
     }
 
+    isCustomActionSelected(value) {
+        const key = String(value || '').trim().toLowerCase();
+        return this.getCustomActionValues().some((option) => option.toLowerCase() === key);
+    }
+
+    toggleKnownCustomAction(value) {
+        const key = String(value || '').trim().toLowerCase();
+        if (this.isCustomActionSelected(value)) {
+            this.response.action.custom = this.getCustomActionValues().filter(
+                (option) => option.toLowerCase() !== key
+            );
+            return;
+        }
+        this.response.action.custom = [...this.getCustomActionValues(), value];
+    }
+
     normalizeCustomActionValue(value) {
-        return String(value || '').trim();
+        const collapsed = String(value || '').trim().replace(/\s+/g, ' ');
+        if (!collapsed) {
+            return '';
+        }
+        return collapsed
+            .split(' ')
+            .filter(Boolean)
+            .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+            .join(' ');
     }
 
     canAddCustomActionValue(value) {

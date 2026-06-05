@@ -189,7 +189,7 @@ def normalize_custom_action_values(value: Any) -> List[str]:
     seen_values = set()
 
     for item in raw_values:
-        normalized = str(item).strip()
+        normalized = title_case_action(str(item).strip())
         dedupe_key = normalized.lower()
         if not normalized or dedupe_key in seen_values:
             continue
@@ -197,6 +197,53 @@ def normalize_custom_action_values(value: Any) -> List[str]:
         normalized_values.append(normalized)
 
     return normalized_values
+
+
+def title_case_action(value: str) -> str:
+    """Normalize free-text custom actions to Title Case."""
+    collapsed = ' '.join(str(value or '').split())
+    if not collapsed:
+        return ''
+    return ' '.join(
+        word[:1].upper() + word[1:].lower()
+        for word in collapsed.split(' ')
+        if word
+    )
+
+
+def get_known_custom_actions() -> List[str]:
+    """Return custom actions from past surveys, deduplicated case-insensitively."""
+    if not DB_PATH.exists():
+        return []
+
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    try:
+        cursor = conn.execute(
+            """
+            SELECT action_value
+            FROM trial_survey_actions
+            WHERE action_type = 'custom' AND TRIM(action_value) != ''
+            """
+        )
+        spellings: Dict[str, Dict[str, int]] = {}
+        predefined_lower = {option.lower() for option in SURVEY_ACTION_OPTIONS}
+
+        for row in cursor.fetchall():
+            for value in normalize_custom_action_values(row['action_value']):
+                key = value.lower()
+                if key in predefined_lower:
+                    continue
+                bucket = spellings.setdefault(key, {})
+                bucket[value] = bucket.get(value, 0) + 1
+
+        labels = [
+            max(bucket.items(), key=lambda item: item[1])[0]
+            for bucket in spellings.values()
+        ]
+        return sorted(labels, key=str.lower)
+    finally:
+        conn.close()
 
 
 def create_trial_survey_response(conn, trial_id: int, survey_response: Dict[str, Any]) -> int:
@@ -291,12 +338,79 @@ def create_trial_survey_response(conn, trial_id: int, survey_response: Dict[str,
     return saved_selection_count
 
 
+PATTERN_METADATA_PATH = Path(__file__).parent / 'pattern_metadata.json'
+
+
 def get_connection():
     """Get database connection with foreign keys enabled."""
     conn = sqlite3.connect(str(DB_PATH))
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
+    ensure_analysis_schema(conn)
     return conn
+
+
+def ensure_analysis_schema(conn: sqlite3.Connection) -> None:
+    """Apply lightweight schema updates for analysis features."""
+    cursor = conn.cursor()
+    cursor.execute("PRAGMA table_info(trials)")
+    columns = {row[1] for row in cursor.fetchall()}
+    if 'exclude_from_analysis' not in columns:
+        cursor.execute(
+            "ALTER TABLE trials ADD COLUMN exclude_from_analysis INTEGER NOT NULL DEFAULT 0"
+        )
+        conn.commit()
+
+
+def get_pattern_metadata_catalog() -> Dict[str, Dict[str, Any]]:
+    """Load audio pattern metadata keyed by filename."""
+    if not PATTERN_METADATA_PATH.exists():
+        return {}
+
+    try:
+        payload = json.loads(PATTERN_METADATA_PATH.read_text(encoding='utf-8'))
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+    catalog: Dict[str, Dict[str, Any]] = {}
+    for entry in payload.get('patterns', []):
+        filename = entry.get('filename')
+        if not filename:
+            continue
+        catalog[filename] = {
+            'filename': filename,
+            'path': entry.get('path') or f"audio_files/{filename}",
+            'rmsMean': entry.get('rms_mean'),
+            'durationSec': entry.get('duration'),
+            'stereoBalance': entry.get('stereo_balance'),
+            'stereoMovement': entry.get('stereo_movement')
+        }
+    return catalog
+
+
+def set_trial_exclude_from_analysis(trial_id: int, excluded: bool) -> Dict[str, Any]:
+    """Persist whether a trial is excluded from collective analysis."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            "UPDATE trials SET exclude_from_analysis = ? WHERE trial_id = ?",
+            (1 if excluded else 0, trial_id)
+        )
+        if cursor.rowcount == 0:
+            conn.rollback()
+            return {'success': False, 'error': f'Trial {trial_id} not found'}
+        conn.commit()
+        return {
+            'success': True,
+            'trialId': trial_id,
+            'excludeFromAnalysis': bool(excluded)
+        }
+    except Exception as exc:
+        conn.rollback()
+        return {'success': False, 'error': str(exc)}
+    finally:
+        conn.close()
 
 
 def ensure_participant(conn, participant_code: str, age: int = None, gender: str = None,
@@ -756,6 +870,7 @@ def get_analysis_sessions(limit: Optional[int] = None) -> List[Dict[str, Any]]:
                 t.start_time,
                 t.end_time,
                 t.notes AS trial_notes,
+                t.exclude_from_analysis,
                 p.name AS pattern_name,
                 p.file_path AS pattern_path
             FROM trials t
@@ -940,6 +1055,7 @@ def get_analysis_sessions(limit: Optional[int] = None) -> List[Dict[str, Any]]:
 
             session_payload = {
                 'sessionId': session_id,
+                'dbSessionId': db_session_id,
                 'participant_id': session_row['participant_id'],
                 'location_id': session_row['location_id'],
                 'equipment_info': session_row['equipment_info'] or '',
@@ -983,7 +1099,7 @@ def get_analysis_sessions(limit: Optional[int] = None) -> List[Dict[str, Any]]:
                         },
                         'action': {
                             'predefined': list(action.get('predefined', [])),
-                            'custom': list(action.get('custom', []))
+                            'custom': normalize_custom_action_values(action.get('custom', []))
                         },
                         'emotion': {
                             'mood': survey_row['mood'],
@@ -1004,8 +1120,12 @@ def get_analysis_sessions(limit: Optional[int] = None) -> List[Dict[str, Any]]:
                     }
                     selected_tags = flatten_survey_response_to_tags(survey_response)
 
+                trial_notes_blob = trial_row['trial_notes'] or ''
                 trial_payload = {
                     'trialId': f"{session_id}_trial_{trial_row['trial_order']}",
+                    'dbTrialId': trial_id,
+                    'excludeFromAnalysis': bool(trial_row['exclude_from_analysis']),
+                    'notesRaw': trial_notes_blob,
                     'pattern': {
                         'name': trial_row['pattern_name'],
                         'path': trial_row['pattern_path']
@@ -1022,7 +1142,6 @@ def get_analysis_sessions(limit: Optional[int] = None) -> List[Dict[str, Any]]:
                     'status': _extract_trial_status(trial_row['trial_notes'], trial_row['end_time'])
                 }
 
-                trial_notes_blob = trial_row['trial_notes'] or ''
                 notes_match = re.search(r'Tester notes:\s*(\[.*\])', trial_notes_blob)
                 if notes_match:
                     try:

@@ -4,24 +4,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SAIL Pattern Library - Analyze</title>
-    <!-- Design tokens (load first) -->
-    <link rel="stylesheet" href="css/design-tokens.css?v=2026-03-17.1">
-    <!-- Page CSS -->
-    <link rel="stylesheet" href="css/pages/analyze.css?v=2026-03-17.1">
-
-    <!-- Component CSS -->
-    <link rel="stylesheet" href="css/components/base/patternExplorer.css?v=2026-02-26.1">
-    <link rel="stylesheet" href="css/components/base/analysisDataLoader.css?v=2026-02-26.1">
-    <link rel="stylesheet" href="css/components/variants/patternExplorerForAnalysis.css?v=2026-02-26.1">
-    <link rel="stylesheet" href="css/components/base/summaryStats.css?v=2026-02-26.1">
-    <link rel="stylesheet" href="css/components/base/radarChart.css?v=2026-02-26.1">
-    <link rel="stylesheet" href="css/components/base/boxPlotChart.css?v=2026-02-26.1">
-    <link rel="stylesheet" href="css/components/base/timeSeriesChart.css?v=2026-02-26.1">
-    <link rel="stylesheet" href="css/components/base/tagFrequencyChart.css?v=2026-02-26.1">
-    <link rel="stylesheet" href="css/components/base/tagWordCloud.css?v=2026-02-26.1">
+    <link rel="stylesheet" href="css/design-tokens.css?v=2026-06-05.3">
+    <link rel="stylesheet" href="css/pages/analyze.css?v=2026-06-06.5">
+    <link rel="stylesheet" href="css/components/base/patternExplorer.css?v=2026-06-05.3">
+    <link rel="stylesheet" href="css/components/variants/patternExplorerForAnalysis.css?v=2026-06-05.3">
+    <link rel="stylesheet" href="css/components/base/summaryStats.css?v=2026-06-06.1">
+    <link rel="stylesheet" href="css/components/base/radarChart.css?v=2026-06-05.3">
+    <link rel="stylesheet" href="css/components/base/boxPlotChart.css?v=2026-06-05.3">
+    <link rel="stylesheet" href="css/components/base/timeSeriesChart.css?v=2026-06-05.3">
+    <link rel="stylesheet" href="css/components/base/analyzeSidebarNav.css?v=2026-06-05.3">
+    <link rel="stylesheet" href="css/components/base/analyzeToolbar.css?v=2026-06-05.6">
+    <link rel="stylesheet" href="css/components/base/actionFrequencyChart.css?v=2026-06-05.3">
+    <link rel="stylesheet" href="css/components/base/trialsSidebarList.css?v=2026-06-05.3">
+    <link rel="stylesheet" href="css/components/base/trialsListView.css?v=2026-06-05.3">
+    <link rel="stylesheet" href="css/components/base/trialDetailView.css?v=2026-06-05.3">
+    <link rel="stylesheet" href="css/components/base/subjectiveProfile.css?v=2026-06-06.8">
 </head>
 <body>
-    <!-- Top Navigation Header -->
     <div class="top-header">
         <a href="index.html" class="nav-link">Explore</a>
         <span class="nav-separator">|</span>
@@ -30,86 +29,148 @@
         <a href="analyze.html" class="nav-link active">Analyze</a>
     </div>
 
-    <!-- Page Title Header -->
-    <div class="page-title-header">
-        <h1 class="page-title">Analyze Results</h1>
-    </div>
+    <div id="analyzeToolbar"></div>
 
-    <!-- Main Layout -->
     <div class="layout">
-        <!-- Left Sidebar -->
-        <div class="analyze-sidebar">
-            <div id="dataLoader"></div>
-            <div id="patternList"></div>
-        </div>
-
-        <!-- Main Content Area -->
-        <div class="analyze-main">
-            <div class="analyze-main__placeholder" id="analyzePlaceholder">
-                <span class="analyze-main__placeholder-icon" aria-hidden="true">
-                    <svg width="64" height="48" viewBox="0 0 64 48" fill="none" xmlns="http://www.w3.org/2000/svg" focusable="false">
-                        <path d="M8 40V24h6v16H8zm14 0V16h6v24h-6zm14 0V8h6v32h-6zm14 0V20h6v20h-6zm14 0V28h6v12h-6z" fill="currentColor" opacity="0.9"/>
-                        <path d="M6 42h52" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.3"/>
-                    </svg>
-                </span>
-                <span class="analyze-main__placeholder-text">Load session data to begin analysis.</span>
-                <span class="analyze-main__placeholder-hint">Load from database or browser storage to see charts and stats.</span>
+        <aside class="analyze-sidebar">
+            <div id="analyzeSidebarNav"></div>
+            <div id="patternSidebarPanel" class="analyze-sidebar__panel analyze-sidebar__panel--active">
+                <div id="patternList"></div>
             </div>
+            <div id="trialSidebarPanel" class="analyze-sidebar__panel">
+                <div id="trialSidebarList"></div>
+            </div>
+        </aside>
+
+        <main class="analyze-main">
+            <div class="analyze-main__placeholder" id="analyzePlaceholder">
+                <span class="analyze-main__placeholder-text">Loading session data…</span>
+            </div>
+
             <div class="analyze-main__content" id="analyzeContent">
-                <div id="summaryStats"></div>
-                <div class="analyze-main__charts-grid">
-                    <div class="analyze-main__chart-row">
-                        <div class="analyze-main__chart-card analyze-main__chart-full">
-                            <h3 class="analyze-main__chart-card-title">Band power over time</h3>
-                            <div id="timeSeriesChart"></div>
+                <div id="patternView" class="analyze-view active">
+                    <header class="pattern-detail-header" id="patternDetailHeader" hidden>
+                        <h2 class="pattern-detail-header__title" id="patternDetailTitle"></h2>
+                        <div class="pattern-detail-header__meta" id="patternDetailMeta"></div>
+                    </header>
+
+                    <div id="summaryStats"></div>
+
+                    <div class="analyze-sample-note" id="analyzeSampleNote" hidden></div>
+
+                    <div class="analyze-pattern-tabs" id="analyzePatternTabs" role="tablist" aria-label="Pattern feedback">
+                        <button type="button" class="analyze-pattern-tabs__btn analyze-pattern-tabs__btn--active" data-analyze-tab="physiological" role="tab" aria-selected="true">Physiological</button>
+                        <button type="button" class="analyze-pattern-tabs__btn" data-analyze-tab="subjective" role="tab" aria-selected="false">Subjective</button>
+                    </div>
+
+                    <div id="analyzePhysioPanel" class="analyze-pattern-tab-panel">
+                        <section class="analyze-panel">
+                            <div class="analyze-panel__title-row">
+                                <h3 class="analyze-panel__title">Brain response</h3>
+                                <span class="analyze-panel__meta" id="physioPanelMeta"></span>
+                            </div>
+                            <div class="analyze-panel__chart analyze-panel__chart--full">
+                                <div id="timeSeriesChart"></div>
+                            </div>
+                            <div class="analyze-panel__grid">
+                                <div class="analyze-panel__chart">
+                                    <div id="radarChart"></div>
+                                </div>
+                                <div class="analyze-panel__chart">
+                                    <div id="boxPlotChart"></div>
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+
+                    <div id="analyzeSubjectivePanel" class="analyze-pattern-tab-panel" hidden>
+                        <div class="subjective-grid" id="subjectiveGrid">
+                            <section class="analyze-panel analyze-panel--primary subjective-grid__actions">
+                                <div class="analyze-panel__title-row">
+                                    <h3 class="analyze-panel__title">Reported actions</h3>
+                                    <span class="analyze-panel__meta" id="actionsPanelMeta"></span>
+                                </div>
+                                <div id="actionFrequencyChart"></div>
+                            </section>
+
+                            <section class="analyze-panel analyze-panel--primary subjective-grid__scales">
+                                <div class="analyze-panel__title-row">
+                                    <h3 class="analyze-panel__title">Motivation scales</h3>
+                                    <span class="analyze-panel__meta" id="scalesPanelMeta"></span>
+                                </div>
+                                <div id="subjectiveScales" class="subjective-scales"></div>
+                            </section>
+
+                            <p class="survey-heatmap__hint subjective-grid__span" id="subjectiveBentoHint" hidden>Percentages show the share of responses within each row — among participants who answered that question.</p>
+                            <div id="subjectiveBentoLegend" class="subjective-grid__legend subjective-grid__span" hidden></div>
+
+                            <section class="analyze-panel analyze-panel--bento subjective-grid__direction" id="subjectiveDirectionSection" hidden>
+                                <div class="analyze-panel__title-row">
+                                    <h3 class="analyze-panel__title">Perceived direction</h3>
+                                    <span class="analyze-panel__meta" id="directionPanelMeta"></span>
+                                </div>
+                                <div id="subjectiveDirection" class="subjective-grid__heatmap"></div>
+                            </section>
+
+                            <section class="analyze-panel analyze-panel--bento subjective-grid__texture" id="subjectiveTextureSection" hidden>
+                                <div class="analyze-panel__title-row">
+                                    <h3 class="analyze-panel__title">Texture</h3>
+                                    <span class="analyze-panel__meta" id="texturePanelMeta"></span>
+                                </div>
+                                <div id="subjectiveTexture" class="subjective-grid__heatmap"></div>
+                            </section>
+
+                            <section class="analyze-panel analyze-panel--bento subjective-grid__emotion subjective-grid__span" id="subjectiveEmotionSection" hidden>
+                                <div class="analyze-panel__title-row">
+                                    <h3 class="analyze-panel__title">Emotion profile</h3>
+                                    <span class="analyze-panel__meta" id="emotionPanelMeta"></span>
+                                </div>
+                                <div id="subjectiveEmotion" class="subjective-grid__heatmap"></div>
+                            </section>
                         </div>
                     </div>
-                    <div class="analyze-main__chart-row">
-                        <div class="analyze-main__chart-card">
-                            <h3 class="analyze-main__chart-card-title">Band comparison</h3>
-                            <div id="radarChart"></div>
-                        </div>
-                        <div class="analyze-main__chart-card">
-                            <h3 class="analyze-main__chart-card-title">Change from baseline</h3>
-                            <div id="boxPlotChart"></div>
-                        </div>
+
+                    <details class="analyze-panel analyze-panel--collapsible" id="patternTrialsPanel">
+                        <summary class="analyze-panel__title analyze-panel__summary" id="patternTrialsSummary">Trials</summary>
+                        <div id="patternTrialsListView"></div>
+                    </details>
+                </div>
+
+                <div id="trialsView" class="analyze-view">
+                    <div id="trialDetailPanel" hidden>
+                        <div id="trialDetailView"></div>
                     </div>
-                    <div class="analyze-main__chart-row">
-                        <div class="analyze-main__chart-card">
-                            <h3 class="analyze-main__chart-card-title">Tag frequency</h3>
-                            <div id="tagFrequencyChart"></div>
-                        </div>
-                        <div class="analyze-main__chart-card">
-                            <h3 class="analyze-main__chart-card-title">Tag word cloud</h3>
-                            <div id="tagWordCloud"></div>
-                        </div>
+                    <div id="trialsEmptyState" class="analyze-main__empty-state">
+                        Select a trial from the list to inspect notes, survey, and EEG context.
                     </div>
                 </div>
             </div>
-        </div>
+        </main>
     </div>
 
-    <!-- Plotly.js CDN -->
     <script src="https://cdn.plot.ly/plotly-2.35.2.min.js" charset="utf-8"></script>
-
-    <!-- Module -->
-    <script src="js/modules/analysisDataProcessor.js?v=2026-02-26.1"></script>
-
-    <!-- Components -->
-    <script src="js/components/base/patternExplorer.js?v=2026-02-26.1"></script>
-    <script src="js/components/base/analysisDataLoader.js?v=2026-02-26.1"></script>
-    <script src="js/components/variants/patternExplorerForAnalysis.js?v=2026-02-26.1"></script>
-    <script src="js/components/base/summaryStats.js?v=2026-02-26.1"></script>
-    <script src="js/components/base/radarChart.js?v=2026-02-26.1"></script>
-    <script src="js/components/base/boxPlotChart.js?v=2026-02-26.1"></script>
-    <script src="js/components/base/timeSeriesChart.js?v=2026-02-26.1"></script>
-    <script src="js/components/base/tagFrequencyChart.js?v=2026-02-26.1"></script>
-    <script src="js/components/base/tagWordCloud.js?v=2026-02-26.1"></script>
-    <!-- Page Script -->
-    <script src="js/analyze/config.js?v=2026-02-26.1"></script>
-    <script src="js/analyze/mockDashboardData.js?v=2026-03-17.1"></script>
-    <script src="js/analyze/state.js?v=2026-02-26.1"></script>
-    <script src="js/analyze/app.js?v=2026-02-26.1"></script>
-    <script src="js/analyze/bootstrap.js?v=2026-02-26.1"></script>
+    <script src="js/analyze/constants.js?v=2026-06-06.2"></script>
+    <script src="js/analyze/storage.js?v=2026-06-05.3"></script>
+    <script src="js/modules/analysisDataProcessor.js?v=2026-06-06.2"></script>
+    <script src="js/components/base/patternExplorer.js?v=2026-06-05.3"></script>
+    <script src="js/components/base/analysisDataLoader.js?v=2026-06-05.3"></script>
+    <script src="js/components/base/analyzeSidebarNav.js?v=2026-06-05.3"></script>
+    <script src="js/components/base/analyzeDateRangeCalendar.js?v=2026-06-05.6"></script>
+    <script src="js/components/base/analyzeToolbar.js?v=2026-06-05.10"></script>
+    <script src="js/components/variants/patternExplorerForAnalysis.js?v=2026-06-05.10"></script>
+    <script src="js/components/base/summaryStats.js?v=2026-06-06.1"></script>
+    <script src="js/components/base/actionFrequencyChart.js?v=2026-06-05.10"></script>
+    <script src="js/components/base/analyzePatternTabs.js?v=2026-06-06.1"></script>
+    <script src="js/components/base/subjectiveProfilePanel.js?v=2026-06-06.8"></script>
+    <script src="js/components/base/trialsSidebarList.js?v=2026-06-05.3"></script>
+    <script src="js/components/base/trialsListView.js?v=2026-06-06.1"></script>
+    <script src="js/components/base/trialDetailView.js?v=2026-06-05.3"></script>
+    <script src="js/components/base/radarChart.js?v=2026-06-05.3"></script>
+    <script src="js/components/base/boxPlotChart.js?v=2026-06-05.3"></script>
+    <script src="js/components/base/timeSeriesChart.js?v=2026-06-05.3"></script>
+    <script src="js/analyze/config.js?v=2026-06-05.3"></script>
+    <script src="js/analyze/state.js?v=2026-06-05.3"></script>
+    <script src="js/analyze/app.js?v=2026-06-06.7"></script>
+    <script src="js/analyze/bootstrap.js?v=2026-06-05.3"></script>
 </body>
 </html>

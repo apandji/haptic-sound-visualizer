@@ -16,6 +16,41 @@
         let lastEegReadingAt = null;
         let hasSeenLiveEegReadingInCurrentPhase = false;
         let hasSeenLiveEegReadingThisSession = false;
+        let knownCustomActions = null;
+
+        async function getKnownCustomActions() {
+            if (!knownCustomActions) {
+                try {
+                    const response = await fetch('/api/survey/custom-actions');
+                    const data = response.ok ? await response.json() : { actions: [] };
+                    knownCustomActions = [...(data.actions || [])];
+                } catch (error) {
+                    knownCustomActions = [];
+                }
+            }
+            return knownCustomActions;
+        }
+
+        function rememberCustomActions(values = []) {
+            if (!knownCustomActions) {
+                knownCustomActions = [];
+            }
+            values.forEach((value) => {
+                const collapsed = String(value || '').trim().replace(/\s+/g, ' ');
+                const normalized = collapsed
+                    ? collapsed.split(' ').filter(Boolean)
+                        .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                        .join(' ')
+                    : '';
+                const key = normalized.toLowerCase();
+                if (!normalized || knownCustomActions.some((option) => option.toLowerCase() === key)) {
+                    return;
+                }
+                knownCustomActions.push(normalized);
+                knownCustomActions.sort((a, b) => a.localeCompare(b));
+            });
+        }
+
         const calibrationGateConfig = {
             requiredChannels: 4,
             requiredGoodChannels: 3
@@ -27,19 +62,19 @@
         };
 
         function getChannelQuality(metric) {
+            if (typeof EEGQuality !== 'undefined') {
+                return EEGQuality.getChannelQuality(metric);
+            }
             if (!metric || typeof metric !== 'object') {
                 return null;
             }
-
             if (typeof metric.quality === 'string') {
                 return metric.quality.toLowerCase();
             }
-
             const rms_uV = Number(metric.rms_uV);
             if (!Number.isFinite(rms_uV)) {
                 return null;
             }
-
             if (rms_uV >= 5.0 && rms_uV <= 100.0) {
                 return 'good';
             }
@@ -50,12 +85,22 @@
         }
 
         function evaluateCalibrationReading(reading) {
+            if (signalQualityVisualizer && typeof signalQualityVisualizer.getCalibrationEvaluation === 'function') {
+                return signalQualityVisualizer.getCalibrationEvaluation(
+                    calibrationGateConfig.requiredChannels,
+                    calibrationGateConfig.requiredGoodChannels
+                );
+            }
+
             const evaluation = {
                 pass: false,
+                stable: false,
                 goodChannels: 0,
                 totalChannels: 0,
                 requiredGoodChannels: calibrationGateConfig.requiredGoodChannels,
-                requiredChannels: calibrationGateConfig.requiredChannels
+                requiredChannels: calibrationGateConfig.requiredChannels,
+                stableMs: 0,
+                requiredStableMs: 2000
             };
 
             if (!reading || typeof reading !== 'object') {
@@ -135,24 +180,33 @@
             if (!testExecutionOverlay) {
                 return;
             }
-            const channelMetrics = Array.isArray(reading?.channel_metrics) ? reading.channel_metrics : [];
-            const normalizedChannels = channelMetrics
-                .filter((metric) => metric && typeof metric === 'object')
-                .sort((a, b) => Number(a.channel_index) - Number(b.channel_index))
-                .slice(0, calibrationGateConfig.requiredChannels);
 
-            if (normalizedChannels.length === 0) {
+            const smoothed = signalQualityVisualizer && Array.isArray(signalQualityVisualizer.channelQualities)
+                ? signalQualityVisualizer.channelQualities
+                : [];
+            const goodChannels = smoothed.length > 0
+                ? smoothed.filter((q) => q.quality === 'good').length
+                : (() => {
+                    const channelMetrics = Array.isArray(reading?.channel_metrics) ? reading.channel_metrics : [];
+                    return channelMetrics
+                        .filter((metric) => metric && typeof metric === 'object')
+                        .slice(0, calibrationGateConfig.requiredChannels)
+                        .reduce((count, metric) => (getChannelQuality(metric) === 'good' ? count + 1 : count), 0);
+                })();
+
+            if (smoothed.length === 0 && goodChannels === 0 && !reading?.channel_metrics?.length) {
                 testExecutionOverlay.setTesterSignal('Signal: waiting for channels', 'neutral');
                 return;
             }
 
-            const goodChannels = normalizedChannels.reduce((count, metric) => {
-                return getChannelQuality(metric) === 'good' ? count + 1 : count;
-            }, 0);
             const ratio = goodChannels / calibrationGateConfig.requiredChannels;
             const tone = ratio >= 0.75 ? 'good' : ratio >= 0.5 ? 'ok' : 'poor';
+            const stability = signalQualityVisualizer && typeof signalQualityVisualizer.getStabilityStatus === 'function'
+                ? signalQualityVisualizer.getStabilityStatus()
+                : null;
+            const stableSuffix = stability && stability.stable ? ' · stable' : '';
             testExecutionOverlay.setTesterSignal(
-                `Signal: ${goodChannels}/${calibrationGateConfig.requiredChannels} channels good`,
+                `Signal: ${goodChannels}/${calibrationGateConfig.requiredChannels} GOOD${stableSuffix}`,
                 tone
             );
         }
@@ -563,10 +617,11 @@
                     // Initialize survey component
                     const surveyContainer = testExecutionOverlay.getSurveyContainer();
                     if (surveyContainer) {
-                        // Store reference globally so we can clear it later
+                        getKnownCustomActions().then((actions) => {
                         window.currentTrialTagsSurvey = new TrialTagsSurvey({
                             container: surveyContainer,
                             pattern: data.pattern,
+                            knownCustomActions: actions,
                             onPlayAudio: (pattern) => {
                                 // Stop any currently playing audio first
                                 if (testAudioPlayer && testAudioPlayer.isPlaying()) {
@@ -594,6 +649,7 @@
                                 if (testAudioPlayer && testAudioPlayer.isPlaying()) {
                                     testAudioPlayer.stop();
                                 }
+                                rememberCustomActions(surveyData?.action?.custom || []);
                                 testSession.completeSurvey(surveyData);
                                 // Clear survey reference after completion
                                 window.currentTrialTagsSurvey = null;
@@ -624,6 +680,7 @@
                                 }
                             };
                         }
+                        });
                     }
                     break;
 

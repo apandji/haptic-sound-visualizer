@@ -1,161 +1,34 @@
 /**
- * AnalysisDataLoader Component
- * Provides UI to load session data from database (primary) or localStorage (fallback).
+ * AnalysisDataLoader
+ * Loads session data from the database. UI is a single refresh control in the page header.
  */
 class AnalysisDataLoader {
     constructor(options = {}) {
-        this.containerId = options.containerId || 'dataLoader';
-        this.container = document.getElementById(this.containerId);
         this.onSessionsLoaded = options.onSessionsLoaded || null;
+        this.refreshButton = options.refreshButton || null;
         this.sessions = [];
         this.isLoading = false;
-
-        if (!this.container) {
-            console.error(`AnalysisDataLoader: Container #${this.containerId} not found`);
-            return;
-        }
-
-        this.boundHandlers = {};
-        this.render();
-    }
-
-    render() {
-        this.container.classList.add('analysis-data-loader');
-
-        const header = document.createElement('div');
-        header.className = 'analysis-data-loader__header';
-        header.textContent = 'DATA SOURCE';
-
-        const actions = document.createElement('div');
-        actions.className = 'analysis-data-loader__actions';
-
-        // Load from database button (primary)
-        const dbBtn = document.createElement('button');
-        dbBtn.className = 'analysis-data-loader__button';
-        dbBtn.textContent = 'LOAD DATABASE';
-        this.boundHandlers.dbClick = () => this.loadFromDatabase();
-        dbBtn.addEventListener('click', this.boundHandlers.dbClick);
-
-        // Load from localStorage button (fallback)
-        const localBtn = document.createElement('button');
-        localBtn.className = 'analysis-data-loader__button analysis-data-loader__button--secondary';
-        localBtn.textContent = 'LOAD FROM BROWSER';
-
-        this.boundHandlers.localClick = () => this.loadFromLocalStorage();
-        localBtn.addEventListener('click', this.boundHandlers.localClick);
-
-        const mockBtn = document.createElement('button');
-        mockBtn.className = 'analysis-data-loader__button analysis-data-loader__button--mock';
-        mockBtn.type = 'button';
-        mockBtn.textContent = 'LOAD SAMPLE DATA';
-        mockBtn.title = 'Load demo sessions to preview charts (no database or storage needed)';
-        this.boundHandlers.mockClick = () => this.loadMockSampleData();
-        mockBtn.addEventListener('click', this.boundHandlers.mockClick);
-
-        actions.appendChild(dbBtn);
-        actions.appendChild(localBtn);
-        actions.appendChild(mockBtn);
-
-        // Status display
-        const status = document.createElement('div');
-        status.className = 'analysis-data-loader__status';
-        this.statusElement = status;
-
-        this.container.innerHTML = '';
-        this.container.appendChild(header);
-        this.container.appendChild(actions);
-        this.container.appendChild(status);
-
-        this.dbButton = dbBtn;
-        this.localButton = localBtn;
-        this.mockButton = mockBtn;
-        this.updateStatus();
-    }
-
-    /**
-     * Load built-in mock sessions for dashboard preview (dev / demos).
-     */
-    loadMockSampleData() {
-        if (typeof window.getMockAnalysisSessions !== 'function') {
-            this.statusElement.textContent = 'Sample data script not loaded.';
-            this.statusElement.classList.add('analysis-data-loader__status--error');
-            return;
-        }
-        try {
-            const sessions = window.getMockAnalysisSessions();
-            if (!Array.isArray(sessions) || sessions.length === 0) {
-                this.statusElement.textContent = 'Sample data is empty.';
-                this.statusElement.classList.add('analysis-data-loader__status--error');
-                return;
-            }
-            this.statusElement.classList.remove('analysis-data-loader__status--error');
-            this.setSessions(sessions);
-            this.statusElement.textContent =
-                `${sessions.length} demo sessions loaded (preview only — not saved).`;
-        } catch (err) {
-            console.error('AnalysisDataLoader: mock sample load failed', err);
-            this.statusElement.textContent = 'Could not load sample data.';
-            this.statusElement.classList.add('analysis-data-loader__status--error');
-        }
     }
 
     async loadFromDatabase() {
-        this.setLoading(true, 'Loading sessions from database...');
-
+        this.setLoading(true);
         try {
             const response = await fetch('/api/analysis/sessions');
-            if (!response.ok) {
-                throw new Error(`Request failed (${response.status})`);
-            }
-
+            if (!response.ok) throw new Error(`Request failed (${response.status})`);
             const sessions = await response.json();
-            if (!Array.isArray(sessions)) {
-                throw new Error('Invalid response payload');
-            }
-
-            if (sessions.length === 0) {
-                this.sessions = [];
-                this.statusElement.textContent = 'No sessions found in database.';
-                this.statusElement.classList.remove('analysis-data-loader__status--error');
-                this.notifySessionsLoaded();
-                return;
-            }
-
+            if (!Array.isArray(sessions)) throw new Error('Invalid response payload');
             this.setSessions(sessions);
         } catch (err) {
             console.error('AnalysisDataLoader: Error loading database sessions', err);
-            this.statusElement.textContent = 'Error loading from database.';
-            this.statusElement.classList.add('analysis-data-loader__status--error');
+            this.setErrorState(true);
         } finally {
             this.setLoading(false);
         }
     }
 
-    loadFromLocalStorage() {
-        try {
-            const stored = localStorage.getItem('sessions');
-            if (!stored) {
-                this.statusElement.textContent = 'No sessions found in browser storage.';
-                this.statusElement.classList.remove('analysis-data-loader__status--error');
-                return;
-            }
-            const sessions = JSON.parse(stored);
-            if (Array.isArray(sessions) && sessions.length > 0) {
-                this.setSessions(sessions);
-            } else {
-                this.statusElement.textContent = 'No sessions found in browser storage.';
-            }
-        } catch (err) {
-            console.error('AnalysisDataLoader: Error reading localStorage', err);
-            this.statusElement.textContent = 'Error reading browser storage.';
-            this.statusElement.classList.add('analysis-data-loader__status--error');
-        }
-    }
-
     setSessions(newSessions) {
         this.sessions = Array.isArray(newSessions) ? [...newSessions] : [];
-        this.statusElement.classList.remove('analysis-data-loader__status--error');
-        this.updateStatus();
+        this.setErrorState(false);
         this.notifySessionsLoaded();
     }
 
@@ -165,41 +38,22 @@ class AnalysisDataLoader {
         }
     }
 
-    setLoading(isLoading, statusMessage = '') {
+    setLoading(isLoading) {
         this.isLoading = isLoading;
-        if (this.dbButton) this.dbButton.disabled = isLoading;
-        if (this.localButton) this.localButton.disabled = isLoading;
-        if (this.mockButton) this.mockButton.disabled = isLoading;
-
-        if (isLoading && this.statusElement) {
-            this.statusElement.classList.remove('analysis-data-loader__status--error');
-            this.statusElement.textContent = statusMessage;
-        }
+        if (!this.refreshButton) return;
+        this.refreshButton.disabled = isLoading;
+        this.refreshButton.classList.toggle('analyze-refresh-btn--loading', isLoading);
+        this.refreshButton.classList.remove('analyze-refresh-btn--error');
     }
 
-    updateStatus() {
-        if (this.isLoading) return;
-
-        if (this.sessions.length === 0) {
-            this.statusElement.textContent = '';
-            return;
+    setErrorState(hasError) {
+        if (!this.refreshButton) return;
+        this.refreshButton.classList.toggle('analyze-refresh-btn--error', hasError);
+        if (hasError) {
+            this.refreshButton.title = 'Reload failed — try again';
+        } else {
+            this.refreshButton.title = 'Reload from database';
         }
-
-        const trialCount = this.sessions.reduce((sum, s) => {
-            return sum + (s.trials ? s.trials.filter(t => t.status === 'completed').length : 0);
-        }, 0);
-
-        const sessionText = this.sessions.length === 1 ? 'session' : 'sessions';
-        const trialText = trialCount === 1 ? 'trial' : 'trials';
-        this.statusElement.textContent = `${this.sessions.length} ${sessionText} loaded (${trialCount} ${trialText})`;
-    }
-
-    destroy() {
-        if (this.container) {
-            this.container.innerHTML = '';
-            this.container.classList.remove('analysis-data-loader');
-        }
-        this.boundHandlers = {};
     }
 }
 

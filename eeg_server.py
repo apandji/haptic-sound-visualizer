@@ -41,6 +41,12 @@ try:
 except ImportError:
     WINDOW = 1  # fallback to HANNING
 
+from eeg_quality import (
+    classify_channel_quality,
+    compute_channel_metrics,
+    quality_to_score,
+)
+
 
 # Server state
 class EEGServerState:
@@ -59,24 +65,6 @@ class EEGServerState:
 
 
 state = EEGServerState()
-
-def classify_quality(rms_uV: float) -> str:
-    """Classify channel quality using only RMS thresholds."""
-    if 5.0 <= rms_uV <= 100.0:
-        return "good"
-    if 100.0 < rms_uV <= 150.0:
-        return "ok"
-    return "poor"
-
-
-def quality_to_score(quality: str) -> int:
-    """Convert quality label to a coarse numeric score (0-100)."""
-    if quality == "good":
-        return 100
-    if quality == "ok":
-        return 70
-    return 30
-
 
 def parse_quality_channels(arg: str, fallback):
     """Parse comma-separated board channel indexes for signal-quality checks."""
@@ -164,7 +152,7 @@ def generate_mock_reading():
             else:
                 rms_uV = np.random.uniform(0.5, 4.5)
 
-        quality = classify_quality(float(rms_uV))
+        quality = classify_channel_quality(float(rms_uV))
         channel_metrics.append({
             "channel_index": channel_index,
             "rms_uV": float(rms_uV),
@@ -190,53 +178,6 @@ def generate_mock_reading():
         "signal_quality": signal_quality,
         "channel_metrics": channel_metrics,
     }
-
-
-def compute_channel_metrics(raw_eeg_uV: np.ndarray, fs: int, board_channel_indices=None):
-    """Compute per-channel quality using the same method as signal_quality_1.py."""
-    metrics = []
-    if raw_eeg_uV is None or raw_eeg_uV.ndim < 2 or raw_eeg_uV.shape[1] < 16:
-        return metrics
-
-    n_ch, n_samp = raw_eeg_uV.shape
-    nfft = DataFilter.get_nearest_power_of_two(n_samp)
-    if nfft >= n_samp:
-        nfft = nfft // 2
-    nfft = max(8, nfft)
-    overlap = nfft // 2
-
-    for ci in range(n_ch):
-        sig = raw_eeg_uV[ci, :]
-        psd, freqs = DataFilter.get_psd_welch(sig, nfft, overlap, fs, WINDOW)
-        psd = np.asarray(psd)
-        freqs = np.asarray(freqs)
-
-        def band_power(f0, f1):
-            idx = np.logical_and(freqs >= f0, freqs <= f1)
-            if not np.any(idx):
-                return 0.0
-            val = float(np.trapz(psd[idx], freqs[idx]))
-            if not np.isfinite(val):
-                return 0.0
-            return val
-
-        total_1_45 = band_power(1.0, 45.0)
-        if total_1_45 <= 0 or not np.isfinite(total_1_45):
-            total_1_45 = 1e-12
-
-        rms_uV = float(np.sqrt(total_1_45))
-        quality = classify_quality(rms_uV)
-
-        metric = {
-            "channel_index": ci,
-            "rms_uV": rms_uV,
-            "quality": quality,
-        }
-        if board_channel_indices is not None and ci < len(board_channel_indices):
-            metric["board_channel_index"] = int(board_channel_indices[ci])
-        metrics.append(metric)
-
-    return metrics
 
 
 async def read_from_board():

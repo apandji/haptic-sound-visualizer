@@ -1,69 +1,62 @@
 /**
- * PatternExplorerForAnalysis Variant
- * Wraps PatternExplorer for the analysis sidebar.
- * Adds trial count badges, comparison mode, and data adaptation.
+ * PatternExplorerForAnalysis — sidebar pattern list for Analyze.
  */
 class PatternExplorerForAnalysis {
     constructor(options = {}) {
         this.containerId = options.containerId || 'patternList';
         this.container = document.getElementById(this.containerId);
-
-        if (!this.container) {
-            console.error(`PatternExplorerForAnalysis: Container #${this.containerId} not found`);
-            return;
-        }
-
-        // Callbacks
         this.onPatternSelect = options.onPatternSelect || null;
-        this.onComparisonChange = options.onComparisonChange || null;
         this.onFilePreview = options.onFilePreview || null;
-
-        // State
-        this.patterns = []; // [{name, path, trialCount, ...}]
+        this.patterns = [];
         this.selectedPattern = null;
-        this.comparisonPatterns = [];
-        this.isComparisonMode = false;
-
-        // Create internal structure
-        this.headerEl = null;
-        this.toggleBtn = null;
-        this.listContainerId = this.containerId + '_list';
-        this.patternExplorer = null;
-
+        this.withDataOnly = true;
+        this.searchQuery = '';
         this.boundHandlers = {};
+        if (!this.container) return;
         this.init();
     }
 
     init() {
         this.container.classList.add('pattern-explorer-analysis');
 
-        // Build header with PATTERNS label and COMPARE toggle
-        this.headerEl = document.createElement('div');
-        this.headerEl.className = 'pattern-explorer-analysis__header';
+        this.searchRow = document.createElement('div');
+        this.searchRow.className = 'pattern-explorer-analysis__search-row';
 
-        const label = document.createElement('span');
-        label.className = 'pattern-explorer-analysis__header-label';
-        label.textContent = 'PATTERNS';
+        this.searchInput = document.createElement('input');
+        this.searchInput.type = 'search';
+        this.searchInput.className = 'pattern-explorer-analysis__search';
+        this.searchInput.placeholder = 'Search…';
+        this.boundHandlers.searchInput = () => {
+            this.searchQuery = this.searchInput.value.trim().toLowerCase();
+            this._injectPatternBadges();
+        };
+        this.searchInput.addEventListener('input', this.boundHandlers.searchInput);
 
-        this.toggleBtn = document.createElement('button');
-        this.toggleBtn.className = 'pattern-explorer-analysis__compare-btn';
-        this.toggleBtn.textContent = 'COMPARE';
-        this.boundHandlers.toggleClick = () => this.toggleComparisonMode();
-        this.toggleBtn.addEventListener('click', this.boundHandlers.toggleClick);
+        this.dataToggleBtn = document.createElement('button');
+        this.dataToggleBtn.type = 'button';
+        this.dataToggleBtn.className = 'pattern-explorer-analysis__text-btn';
+        this.dataToggleBtn.textContent = 'With data';
+        this.dataToggleBtn.title = 'Show only patterns with trials';
+        this.boundHandlers.dataToggle = () => {
+            this.withDataOnly = !this.withDataOnly;
+            this.dataToggleBtn.textContent = this.withDataOnly ? 'With data' : 'All';
+            this.dataToggleBtn.classList.toggle('pattern-explorer-analysis__text-btn--active', !this.withDataOnly);
+            this.setPatterns(this.patterns);
+        };
+        this.dataToggleBtn.addEventListener('click', this.boundHandlers.dataToggle);
 
-        this.headerEl.appendChild(label);
-        this.headerEl.appendChild(this.toggleBtn);
+        this.searchRow.appendChild(this.searchInput);
+        this.searchRow.appendChild(this.dataToggleBtn);
 
-        // Create list container for PatternExplorer
+        this.listContainerId = this.containerId + '_list';
         const listContainer = document.createElement('div');
         listContainer.id = this.listContainerId;
         listContainer.className = 'pattern-explorer-analysis__list';
 
         this.container.innerHTML = '';
-        this.container.appendChild(this.headerEl);
+        this.container.appendChild(this.searchRow);
         this.container.appendChild(listContainer);
 
-        // Create PatternExplorer instance
         this.patternExplorer = new PatternExplorer({
             containerId: this.listContainerId,
             showPreviewButton: true,
@@ -76,165 +69,72 @@ class PatternExplorerForAnalysis {
         });
     }
 
-    /**
-     * Set patterns from data processor output
-     * @param {Array} patterns - [{name, path, trialCount, sessionCount, uniqueParticipants}]
-     */
     setPatterns(patterns) {
         this.patterns = patterns || [];
-
-        // Convert to file format PatternExplorer expects
-        const files = this.patterns.map(p => ({
-            name: p.name,
-            path: p.path
-        }));
-
-        this.patternExplorer.render(files);
-        this._injectTrialCounts();
+        const visible = this.withDataOnly
+            ? this.patterns.filter(pattern => pattern.trialCount > 0)
+            : this.patterns;
+        this.patternExplorer.render(visible.map(pattern => ({
+            name: pattern.name,
+            path: pattern.path
+        })));
+        this._injectPatternBadges();
     }
 
-    /**
-     * Inject trial count badges after PatternExplorer renders
-     */
-    _injectTrialCounts() {
+    _injectPatternBadges() {
         const listContainer = document.getElementById(this.listContainerId);
         if (!listContainer) return;
 
-        const items = listContainer.querySelectorAll('.file-item');
-        items.forEach(item => {
+        listContainer.querySelectorAll('.file-item').forEach(item => {
             const filePath = item.dataset.filePath;
-            const pattern = this.patterns.find(p => p.path === filePath);
+            const patternName = item.querySelector('.file-item-text')?.textContent;
+            const pattern = this.patterns.find(entry => entry.path === filePath || entry.name === patternName);
             if (!pattern) return;
 
-            // Remove existing badge if any
-            const existing = item.querySelector('.pattern-explorer-analysis__trial-count');
-            if (existing) existing.remove();
+            const matchesSearch = !this.searchQuery || pattern.name.toLowerCase().includes(this.searchQuery);
+            const matchesData = !this.withDataOnly || pattern.trialCount > 0;
+            item.style.display = matchesSearch && matchesData ? '' : 'none';
 
-            const badge = document.createElement('span');
-            badge.className = 'pattern-explorer-analysis__trial-count';
-            badge.textContent = pattern.trialCount;
-            badge.title = `${pattern.trialCount} trial${pattern.trialCount !== 1 ? 's' : ''} across ${pattern.uniqueParticipants} participant${pattern.uniqueParticipants !== 1 ? 's' : ''}`;
+            item.querySelectorAll('.pattern-explorer-analysis__badges').forEach(el => el.remove());
 
-            item.appendChild(badge);
+            const badges = document.createElement('span');
+            badges.className = 'pattern-explorer-analysis__badges';
+
+            if (pattern.trialCount > 0) {
+                const count = document.createElement('span');
+                count.className = 'pattern-explorer-analysis__badge';
+                count.textContent = String(pattern.trialCount);
+                count.title = `${pattern.trialCount} trial(s)`;
+                badges.appendChild(count);
+            }
+
+            if (pattern.hasNewData) {
+                const dot = document.createElement('span');
+                dot.className = 'pattern-explorer-analysis__dot pattern-explorer-analysis__dot--new';
+                dot.title = 'New data since last viewed';
+                badges.appendChild(dot);
+            }
+
+            item.appendChild(badges);
         });
     }
 
-    /**
-     * Handle file click — single-select or comparison toggle
-     */
     handleFileClick(file) {
-        if (this.isComparisonMode) {
-            this._toggleComparison(file.name);
-        } else {
-            this.selectedPattern = file.name;
-            this.patternExplorer.setActiveFile(file.path);
-            if (this.onPatternSelect) this.onPatternSelect(file.name);
-        }
+        this.selectedPattern = file.name;
+        this.patternExplorer.setActiveFile(file.path);
+        if (this.onPatternSelect) this.onPatternSelect(file.name);
     }
 
-    /**
-     * Programmatically select a pattern
-     */
     selectPattern(patternName) {
-        const pattern = this.patterns.find(p => p.name === patternName);
+        const pattern = this.patterns.find(entry => entry.name === patternName);
         if (!pattern) return;
-
         this.selectedPattern = patternName;
         this.patternExplorer.setActiveFile(pattern.path);
         if (this.onPatternSelect) this.onPatternSelect(patternName);
     }
 
-    /**
-     * Set playing state for audio preview
-     */
     setPlayingState(filePath, isPlaying) {
-        if (this.patternExplorer) {
-            this.patternExplorer.setPlayingFile(filePath, isPlaying);
-        }
-    }
-
-    // --- Comparison mode ---
-
-    toggleComparisonMode() {
-        this.isComparisonMode = !this.isComparisonMode;
-        this.toggleBtn.classList.toggle('pattern-explorer-analysis__compare-btn--active', this.isComparisonMode);
-
-        if (!this.isComparisonMode) {
-            // Exit comparison mode — clear comparison selections
-            this.comparisonPatterns = [];
-            this._updateComparisonUI();
-
-            // Restore single selection
-            if (this.selectedPattern) {
-                const pattern = this.patterns.find(p => p.name === this.selectedPattern);
-                if (pattern) this.patternExplorer.setActiveFile(pattern.path);
-                if (this.onPatternSelect) this.onPatternSelect(this.selectedPattern);
-            }
-        } else {
-            // Enter comparison mode — start with currently selected pattern
-            this.comparisonPatterns = [];
-            if (this.selectedPattern) {
-                this.comparisonPatterns.push(this.selectedPattern);
-            }
-            // Clear active state since we use checkboxes now
-            this.patternExplorer.setActiveFile(null);
-            this._updateComparisonUI();
-        }
-    }
-
-    _toggleComparison(patternName) {
-        const index = this.comparisonPatterns.indexOf(patternName);
-        if (index >= 0) {
-            this.comparisonPatterns.splice(index, 1);
-        } else {
-            if (this.comparisonPatterns.length < 4) {
-                this.comparisonPatterns.push(patternName);
-            }
-        }
-
-        this._updateComparisonUI();
-
-        if (this.onComparisonChange) {
-            this.onComparisonChange([...this.comparisonPatterns]);
-        }
-    }
-
-    _updateComparisonUI() {
-        const colors = typeof COMPARISON_COLORS !== 'undefined' ? COMPARISON_COLORS : ['#333', '#999', '#cc0000', '#006699'];
-        const listContainer = document.getElementById(this.listContainerId);
-        if (!listContainer) return;
-
-        const items = listContainer.querySelectorAll('.file-item');
-        items.forEach(item => {
-            const filePath = item.dataset.filePath;
-            const pattern = this.patterns.find(p => p.path === filePath);
-            if (!pattern) return;
-
-            const compIndex = this.comparisonPatterns.indexOf(pattern.name);
-            const isInComparison = compIndex >= 0;
-
-            item.classList.toggle('pattern-explorer-analysis__item--comparison', isInComparison);
-
-            if (isInComparison) {
-                item.style.borderLeftColor = colors[compIndex % colors.length];
-            } else {
-                item.style.borderLeftColor = '';
-            }
-        });
-    }
-
-    destroy() {
-        if (this.toggleBtn && this.boundHandlers.toggleClick) {
-            this.toggleBtn.removeEventListener('click', this.boundHandlers.toggleClick);
-        }
-        if (this.patternExplorer) {
-            this.patternExplorer.destroy();
-        }
-        this.boundHandlers = {};
-        if (this.container) {
-            this.container.innerHTML = '';
-            this.container.classList.remove('pattern-explorer-analysis');
-        }
+        if (this.patternExplorer) this.patternExplorer.setPlayingFile(filePath, isPlaying);
     }
 }
 

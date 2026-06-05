@@ -1,0 +1,20 @@
+{
+  "rms_good_min": 5.0,
+  "rms_good_max": 100.0,
+  "rms_ok_max": 150.0,
+  "smoothing_alpha": 0.28,
+  "tier_hold_readings": 3,
+  "hysteresis_good_exit_uv": 12.0,
+  "hysteresis_fair_exit_high_uv": 15.0,
+  "hysteresis_fair_exit_low_uv": 10.0,
+  "hysteresis_poor_enter_uv": 8.0,
+  "eeg_band_hz": [1.0, 45.0],
+  "quality_labels": {
+    "good": "GOOD",
+    "ok": "OK",
+    "poor": "POOR"
+  },
+  "stability_seconds": 1.5,
+  "stability_min_good_channels": 3,
+  "window_fill_seconds": 2.0
+}

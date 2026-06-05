@@ -45,8 +45,23 @@ class SignalQualityVisualizer {
         this.mockDataIndex = 0; // Current position in mock data
         this.latestReading = null; // Most recent reading pushed from EEGDataCollector
         this.latestReadingTimestamp = null; // Local receive time (Date.now)
+        this.latestReadingSource = null; // 'board' | 'mock' | null
         this.lastUpdateTime = null; // Timestamp of last successful update
         this.errorCount = 0; // Track consecutive errors
+        
+        // Stability tracking (same quality tiers held continuously)
+        this.stabilityRequiredMs = Math.round(
+            ((typeof EEGQuality !== 'undefined' && EEGQuality.config.stability_seconds) || 1.5) * 1000
+        );
+        this.stabilityMinGoodChannels = (
+            typeof EEGQuality !== 'undefined' && EEGQuality.config.stability_min_good_channels
+        ) || 3;
+        this.qualitySmoother = (
+            typeof EEGQuality !== 'undefined' && EEGQuality.ChannelQualitySmoother
+        ) ? new EEGQuality.ChannelQualitySmoother() : null;
+        this.stabilitySnapshot = null; // serialized channel quality key
+        this.stabilitySince = null;
+        this.stableMs = 0;
         
         // Channel labels (generated from active channels)
         this.channelLabels = this.generateChannelLabels();
@@ -65,6 +80,10 @@ class SignalQualityVisualizer {
         this.channelsContainerEl = null;
         this.summaryEl = null;
         this.lastUpdateEl = null;
+        this.bandsEl = null;
+        this.stabilityEl = null;
+        this.hintsEl = null;
+        this.sourceEl = null;
         
         // Initialize
         this.init();
@@ -279,21 +298,48 @@ class SignalQualityVisualizer {
         status.textContent = 'Disconnected';
         this.connectionStatusEl = status;
         
+        // Data source indicator
+        const source = document.createElement('div');
+        source.className = 'signal-quality-visualizer__source';
+        source.textContent = '';
+        this.sourceEl = source;
+
         // Last update time
         const lastUpdate = document.createElement('div');
         lastUpdate.className = 'signal-quality-visualizer__last-update';
         lastUpdate.textContent = '';
         this.lastUpdateEl = lastUpdate;
+
+        // Stability indicator
+        const stability = document.createElement('div');
+        stability.className = 'signal-quality-visualizer__stability';
+        stability.textContent = '';
+        this.stabilityEl = stability;
         
         // Quality table
         this.qualityTable = document.createElement('table');
         this.qualityTable.className = 'signal-quality-visualizer__table';
         this.createQualityTable();
+
+        // Band context (informational)
+        const bands = document.createElement('div');
+        bands.className = 'signal-quality-visualizer__bands';
+        bands.innerHTML = '<span class="signal-quality-visualizer__bands-note">Quality uses RMS (μV) only: GOOD 5–100, OK 100–150, POOR otherwise. Band percentages (α/θ/β) are informational.</span>';
+        this.bandsEl = bands;
+
+        // Per-channel hints
+        const hints = document.createElement('div');
+        hints.className = 'signal-quality-visualizer__hints';
+        this.hintsEl = hints;
         
         this.expandedPanel.appendChild(header);
         this.expandedPanel.appendChild(status);
+        this.expandedPanel.appendChild(source);
         this.expandedPanel.appendChild(lastUpdate);
+        this.expandedPanel.appendChild(stability);
         this.expandedPanel.appendChild(this.qualityTable);
+        this.expandedPanel.appendChild(bands);
+        this.expandedPanel.appendChild(hints);
         
         this.container.appendChild(this.expandedPanel);
     }
@@ -394,6 +440,7 @@ class SignalQualityVisualizer {
         }
         this.latestReading = reading;
         this.latestReadingTimestamp = Date.now();
+        this.latestReadingSource = reading.source || null;
     }
 
     /**
@@ -402,25 +449,117 @@ class SignalQualityVisualizer {
     clearLiveReading() {
         this.latestReading = null;
         this.latestReadingTimestamp = null;
+        this.latestReadingSource = null;
         this.lastUpdateTime = null;
         this.channelQualities = [];
+        this.resetStability();
+        if (this.qualitySmoother) {
+            this.qualitySmoother.reset();
+        }
     }
 
     /**
-     * Build a fallback total-power estimate when per-channel metrics are unavailable.
+     * Apply EMA + hysteresis + tier debounce so colors don't flicker every second.
      */
-    getFallbackTotalPower(reading) {
-        const explicitTotal = Number(reading.total_1_45_uV2);
-        if (Number.isFinite(explicitTotal) && explicitTotal > 0) {
-            return explicitTotal;
+    smoothQualities(qualities) {
+        if (!this.qualitySmoother || !Array.isArray(qualities)) {
+            return qualities || [];
         }
 
-        const bands = ['delta_abs', 'theta_abs', 'alpha_abs', 'beta_abs', 'gamma_abs'];
-        const summed = bands.reduce((acc, key) => {
-            const value = Number(reading[key]);
-            return Number.isFinite(value) && value > 0 ? acc + value : acc;
-        }, 0);
-        return summed > 0 ? summed : 1.0;
+        const api = this._qualityApi();
+        return qualities.map((q) => {
+            const smoothed = this.qualitySmoother.smoothChannel(q.channel, q.rms_uV);
+            if (!smoothed) {
+                return q;
+            }
+
+            const hintMetric = { rms_uV: smoothed.rms_uV, quality: smoothed.quality };
+
+            return {
+                ...q,
+                rms_uV: smoothed.rms_uV,
+                rms_uV_raw: smoothed.rms_uV_raw,
+                quality: smoothed.quality,
+                hint: api ? api.getChannelQualityHint(hintMetric) : q.hint
+            };
+        });
+    }
+
+    resetStability() {
+        this.stabilitySnapshot = null;
+        this.stabilitySince = null;
+        this.stableMs = 0;
+    }
+
+    /**
+     * Build a stable fingerprint from current channel qualities.
+     */
+    buildStabilitySnapshot(qualities) {
+        const goodCount = (qualities || []).filter((q) => q.quality === 'good').length;
+        const minGood = this.stabilityMinGoodChannels || 3;
+        return goodCount >= minGood ? `ready:${goodCount}` : `waiting:${goodCount}`;
+    }
+
+    trackStability(qualities) {
+        const snapshot = this.buildStabilitySnapshot(qualities);
+        const now = Date.now();
+        if (!snapshot) {
+            this.resetStability();
+            return;
+        }
+        if (snapshot === this.stabilitySnapshot) {
+            if (!this.stabilitySince) {
+                this.stabilitySince = now;
+            }
+            this.stableMs = now - this.stabilitySince;
+        } else {
+            this.stabilitySnapshot = snapshot;
+            this.stabilitySince = now;
+            this.stableMs = 0;
+        }
+    }
+
+    /**
+     * @returns {{ stable: boolean, stableMs: number, requiredMs: number }}
+     */
+    getStabilityStatus() {
+        return {
+            stable: this.stableMs >= this.stabilityRequiredMs,
+            stableMs: this.stableMs,
+            requiredMs: this.stabilityRequiredMs
+        };
+    }
+
+    /**
+     * Evaluate calibration readiness using channel metrics from the latest reading.
+     */
+    getCalibrationEvaluation(requiredChannels = 4, requiredGoodChannels = 3) {
+        const qualities = Array.isArray(this.channelQualities) ? this.channelQualities : [];
+        const evaluation = {
+            pass: false,
+            stable: false,
+            goodChannels: 0,
+            totalChannels: 0,
+            requiredGoodChannels,
+            requiredChannels,
+            stableMs: this.stableMs,
+            requiredStableMs: this.stabilityRequiredMs
+        };
+
+        evaluation.totalChannels = qualities.length;
+        evaluation.goodChannels = qualities.filter((q) => q.quality === 'good').length;
+
+        const stability = this.getStabilityStatus();
+        evaluation.stable = stability.stable;
+        evaluation.stableMs = stability.stableMs;
+
+        evaluation.pass = (
+            evaluation.totalChannels >= requiredChannels &&
+            evaluation.goodChannels >= requiredGoodChannels &&
+            evaluation.stable
+        );
+
+        return evaluation;
     }
 
     /**
@@ -434,24 +573,31 @@ class SignalQualityVisualizer {
         const readingTimestamp = Number(reading.timestamp_ms);
         const timestamp = Number.isFinite(readingTimestamp) ? readingTimestamp : Date.now();
         const rawMetrics = Array.isArray(reading.channel_metrics) ? reading.channel_metrics : [];
+        if (rawMetrics.length === 0) {
+            return [];
+        }
 
-        const totalPower = this.getFallbackTotalPower(reading);
-        const fallbackRms = Math.max(0.1, Math.sqrt(totalPower));
+        const api = this._qualityApi();
 
         return this.activeChannels.map((activeChannel, idx) => {
             const metric = rawMetrics.find((item) => Number(item.channel_index) === activeChannel) || rawMetrics[idx] || null;
-            const metricRms = Number(metric?.rms_uV);
+            const normalized = api && metric ? api.normalizeChannelMetric(metric) : metric;
 
-            const rms_uV = Number.isFinite(metricRms) ? Math.max(0.1, metricRms) : fallbackRms;
+            if (!normalized || !Number.isFinite(normalized.rms_uV)) {
+                return null;
+            }
+
+            const hint = api ? api.getChannelQualityHint(normalized) : '';
 
             return {
                 channel: this.channelLabels[idx],
                 channelIndex: idx,
-                rms_uV,
-                quality: this.classifyQuality(rms_uV),
+                rms_uV: normalized.rms_uV,
+                quality: normalized.quality,
+                hint,
                 timestamp
             };
-        });
+        }).filter(Boolean);
     }
     
     /**
@@ -473,41 +619,40 @@ class SignalQualityVisualizer {
         for (let i = 0; i < this.channelCount; i++) {
             const channelSeed = (this.mockDataIndex * 10 + i) % 100;
             const seededFactor = channelSeed / 100;
+            let channelRMS;
             let targetQuality;
             const qualityRoll = Math.random();
             if (qualityRoll < 0.6) {
                 targetQuality = 'good';
+                channelRMS = 15 + (seededFactor * 70);
             } else if (qualityRoll < 0.9) {
                 targetQuality = 'ok';
-            } else {
-                targetQuality = 'poor';
-            }
-            
-            let channelRMS;
-            
-            if (targetQuality === 'good') {
-                channelRMS = 15 + (seededFactor * 70);
-            } else if (targetQuality === 'ok') {
                 channelRMS = 105 + (seededFactor * 40);
             } else {
+                targetQuality = 'poor';
                 if (Math.random() < 0.5) {
                     channelRMS = 160 + (seededFactor * 220);
                 } else {
                     channelRMS = 0.5 + (seededFactor * 3.0);
                 }
             }
-            
+
             const jitter = targetQuality === 'poor'
                 ? (Math.random() - 0.5)
                 : (Math.random() - 0.5) * 6;
             channelRMS = Math.max(0.1, channelRMS + jitter);
             const quality = this.classifyQuality(channelRMS);
-            
+            const api = this._qualityApi();
+            const hint = api
+                ? api.getChannelQualityHint({ rms_uV: channelRMS, quality })
+                : '';
+
             qualities.push({
                 channel: this.channelLabels[i],
                 channelIndex: i,
                 rms_uV: channelRMS,
-                quality: quality,
+                quality,
+                hint,
                 timestamp: Date.now()
             });
         }
@@ -546,7 +691,7 @@ class SignalQualityVisualizer {
             }
             
             let rms_uV;
-            
+
             if (state === 'good') {
                 rms_uV = 15 + Math.random() * 75;
             } else if (state === 'ok') {
@@ -558,14 +703,19 @@ class SignalQualityVisualizer {
                     rms_uV = 0.5 + Math.random() * 4.0;
                 }
             }
-            
+
             const quality = this.classifyQuality(rms_uV);
-            
+            const api = this._qualityApi();
+            const hint = api
+                ? api.getChannelQualityHint({ rms_uV, quality })
+                : '';
+
             qualities.push({
                 channel: this.channelLabels[i],
                 channelIndex: i,
-                rms_uV: rms_uV,
-                quality: quality,
+                rms_uV,
+                quality,
+                hint,
                 timestamp: Date.now()
             });
         }
@@ -573,14 +723,33 @@ class SignalQualityVisualizer {
         return qualities;
     }
     
+    _qualityApi() {
+        return typeof EEGQuality !== 'undefined' ? EEGQuality : null;
+    }
+
     classifyQuality(rms_uV) {
-        if (rms_uV >= 5.0 && rms_uV <= 100.0) {
-            return 'good';
-        } else if (rms_uV > 100.0 && rms_uV <= 150.0) {
-            return 'ok';
-        } else {
-            return 'poor';
+        const api = this._qualityApi();
+        if (api) {
+            return api.classifyChannelQuality(rms_uV);
         }
+        const rms = Number(rms_uV);
+        if (rms >= 5.0 && rms <= 100.0) {
+            return 'good';
+        }
+        if (rms > 100.0 && rms <= 150.0) {
+            return 'ok';
+        }
+        return 'poor';
+    }
+
+    getQualityLabel(quality) {
+        const api = this._qualityApi();
+        return api ? api.getQualityDisplayLabel(quality) : quality;
+    }
+
+    formatRms(value) {
+        const api = this._qualityApi();
+        return api ? api.formatRms(value) : (Number.isFinite(Number(value)) ? Number(value).toFixed(1) : '--');
     }
     
     /**
@@ -592,31 +761,121 @@ class SignalQualityVisualizer {
         const tbody = this.qualityTable.querySelector('.signal-quality-visualizer__table-body');
         if (!tbody) return;
         
-        qualities.forEach((q, index) => {
+        qualities.forEach((q) => {
             const row = tbody.querySelector(`tr[data-channel="${q.channel}"]`);
             if (!row) return;
             
-            // Update RMS
             const rmsCell = row.querySelector('.signal-quality-visualizer__rms');
             if (rmsCell) {
-                rmsCell.textContent = q.rms_uV.toFixed(1);
+                rmsCell.textContent = this.formatRms(q.rms_uV);
+                if (Number.isFinite(q.rms_uV_raw) && Math.abs(q.rms_uV_raw - q.rms_uV) > 0.5) {
+                    rmsCell.title = `Smoothed ${this.formatRms(q.rms_uV)} μV (instant ${this.formatRms(q.rms_uV_raw)} μV)`;
+                } else {
+                    rmsCell.title = 'RMS (μV) — smoothed for stable colors';
+                }
             }
-            
-            // Update quality badge
+
             const qualityBadge = row.querySelector('.signal-quality-visualizer__quality-badge');
             if (qualityBadge) {
-                qualityBadge.textContent = q.quality;
+                qualityBadge.textContent = this.getQualityLabel(q.quality);
                 qualityBadge.className = `signal-quality-visualizer__quality-badge signal-quality-visualizer__quality-badge--${q.quality}`;
             }
             
-            // Update row class for styling
             row.className = `signal-quality-visualizer__row--${q.quality}`;
         });
         
-        // Update minimized button display (if streaming)
         if (this.connectionState === 'streaming') {
             this.updateStatusDot(qualities);
         }
+
+        this.updateHintsPanel(qualities);
+    }
+
+    updateBandsPanel(reading) {
+        if (!this.bandsEl || !reading) {
+            return;
+        }
+
+        const api = this._qualityApi();
+        const alpha = api ? api.formatBandPercent(reading.alpha_rel) : '--';
+        const theta = api ? api.formatBandPercent(reading.theta_rel) : '--';
+        const beta = api ? api.formatBandPercent(reading.beta_rel) : '--';
+        const note = this.bandsEl.querySelector('.signal-quality-visualizer__bands-note');
+        const valuesHtml = `<span class="signal-quality-visualizer__bands-values">Bands (avg): α ${alpha} · θ ${theta} · β ${beta}</span>`;
+        if (note) {
+            this.bandsEl.innerHTML = `${valuesHtml}<span class="signal-quality-visualizer__bands-note">Quality uses RMS (μV) only: GOOD 5–100, OK 100–150, POOR otherwise. Band percentages (α/θ/β) are informational.</span>`;
+        } else {
+            this.bandsEl.innerHTML = valuesHtml;
+        }
+    }
+
+    updateHintsPanel(qualities) {
+        if (!this.hintsEl) {
+            return;
+        }
+
+        const actionable = (qualities || []).filter((q) => q.quality !== 'good' && q.hint);
+        if (actionable.length === 0) {
+            this.hintsEl.innerHTML = '';
+            return;
+        }
+
+        this.hintsEl.innerHTML = actionable.map((q) => (
+            `<div class="signal-quality-visualizer__hint signal-quality-visualizer__hint--${q.quality}">`
+            + `<strong>${q.channel}</strong>: ${q.hint}`
+            + '</div>'
+        )).join('');
+    }
+
+    updateStabilityDisplay() {
+        if (!this.stabilityEl) {
+            return;
+        }
+
+        const { stable, stableMs, requiredMs } = this.getStabilityStatus();
+        const seconds = Math.max(0, stableMs / 1000);
+        const requiredSeconds = requiredMs / 1000;
+
+        if (stable) {
+            this.stabilityEl.textContent = `Stable: ${this.stabilityMinGoodChannels}+ Good channels held for ${requiredSeconds.toFixed(0)}s.`;
+            this.stabilityEl.className = 'signal-quality-visualizer__stability signal-quality-visualizer__stability--stable';
+            return;
+        }
+
+        const goodCount = (this.channelQualities || []).filter((q) => q.quality === 'good').length;
+        if (seconds > 0) {
+            this.stabilityEl.textContent = `Stabilizing… ${goodCount} Good (${seconds.toFixed(1)}s / ${requiredSeconds.toFixed(0)}s)`;
+        } else {
+            this.stabilityEl.textContent = `Need ${this.stabilityMinGoodChannels}+ Good channels steady for ${requiredSeconds.toFixed(0)}s (values are smoothed).`;
+        }
+        this.stabilityEl.className = 'signal-quality-visualizer__stability signal-quality-visualizer__stability--waiting';
+    }
+
+    updateSourceDisplay() {
+        if (!this.sourceEl) {
+            return;
+        }
+
+        if (this.useMockData) {
+            this.sourceEl.textContent = 'Source: simulated (mock mode)';
+            this.sourceEl.className = 'signal-quality-visualizer__source signal-quality-visualizer__source--mock';
+            return;
+        }
+
+        if (this.latestReadingSource === 'mock') {
+            this.sourceEl.textContent = 'Source: mock EEG server — not live hardware';
+            this.sourceEl.className = 'signal-quality-visualizer__source signal-quality-visualizer__source--mock';
+            return;
+        }
+
+        if (this.latestReadingSource === 'board') {
+            this.sourceEl.textContent = 'Source: Ganglion (live)';
+            this.sourceEl.className = 'signal-quality-visualizer__source signal-quality-visualizer__source--live';
+            return;
+        }
+
+        this.sourceEl.textContent = 'Source: waiting for EEG server…';
+        this.sourceEl.className = 'signal-quality-visualizer__source';
     }
     
     /**
@@ -644,10 +903,9 @@ class SignalQualityVisualizer {
                     const statusEl = indicator.querySelector('.signal-quality-visualizer__channel-status');
                     if (statusEl) {
                         statusEl.setAttribute('data-status', q.quality);
-                        // Update RMS value (unit is already in DOM)
                         const valueEl = statusEl.querySelector('.signal-quality-visualizer__channel-status-value');
                         if (valueEl) {
-                            valueEl.textContent = Math.round(q.rms_uV);
+                            valueEl.textContent = this.formatRms(q.rms_uV);
                         }
                     }
                     // Update indicator class for styling
@@ -658,17 +916,10 @@ class SignalQualityVisualizer {
         
         // Update summary text
         if (this.summaryEl) {
-            const counts = { good: 0, ok: 0, poor: 0 };
-            qualities.forEach(q => {
-                counts[q.quality] = (counts[q.quality] || 0) + 1;
-            });
-            
-            const parts = [];
-            if (counts.good > 0) parts.push(`${counts.good} good`);
-            if (counts.ok > 0) parts.push(`${counts.ok} ok`);
-            if (counts.poor > 0) parts.push(`${counts.poor} poor`);
-            
-            this.summaryEl.textContent = parts.length > 0 ? parts.join(', ') : '--';
+            const api = this._qualityApi();
+            this.summaryEl.textContent = api
+                ? api.buildQualitySummary(qualities)
+                : '--';
         }
     }
     
@@ -732,6 +983,8 @@ class SignalQualityVisualizer {
                 }
             }
 
+            qualities = this.smoothQualities(qualities);
+
             if (this.connectionState !== 'streaming') {
                 this.setConnectionState('streaming');
             }
@@ -739,9 +992,15 @@ class SignalQualityVisualizer {
             // Reset error count on successful update
             this.errorCount = 0;
             this.channelQualities = qualities;
+            this.trackStability(qualities);
             
             // Update display
             this.updateQualityDisplay(qualities);
+            this.updateStabilityDisplay();
+            this.updateSourceDisplay();
+            if (!this.useMockData && this.latestReading) {
+                this.updateBandsPanel(this.latestReading);
+            }
             
             // Update last update time
             this.updateLastUpdateTime(true);
@@ -1037,6 +1296,9 @@ class SignalQualityVisualizer {
         
         this.isMonitoring = false;
         this.clearLiveReading();
+        if (this.qualitySmoother) {
+            this.qualitySmoother.reset();
+        }
         this.setConnectionState('released');
         
         // Hide widget
@@ -1313,6 +1575,10 @@ class SignalQualityVisualizer {
             this.statusDotEl = null;
             this.channelsContainerEl = null;
             this.summaryEl = null;
+            this.bandsEl = null;
+            this.stabilityEl = null;
+            this.hintsEl = null;
+            this.sourceEl = null;
             this.connectionState = 'disconnected';
             this.isMonitoring = false;
         }

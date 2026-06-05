@@ -503,7 +503,7 @@ class TestExecutionOverlay {
                             <button type="button" class="test-execution-overlay__calibration-test-btn" id="calibrationTestSoundBtn">Test</button>
                         </li>
                         <li class="test-execution-overlay__calibration-checklist-item">Ask the participant if they feel anything when you click Test.</li>
-                        <li class="test-execution-overlay__calibration-checklist-item">Start test when at least ${goodN} of ${totalN} channels are good and showing green. You can also manually start the test.</li>
+                        <li class="test-execution-overlay__calibration-checklist-item">Start test when at least ${goodN} of ${totalN} channels are GOOD (green). OK (yellow) does not count. You can also manually start the test.</li>
                     </ol>
                     <div class="test-execution-overlay__calibration-widget-slot" id="calibrationWidgetContainer"></div>
                     <div class="test-execution-overlay__calibration-gate" id="calibrationGateStatus">Waiting for channel readings...</div>
@@ -894,10 +894,13 @@ class TestExecutionOverlay {
      * Update calibration gate status text (e.g. "2/4 good, need 3")
      * @param {Object} gate
      * @param {boolean} gate.pass
+     * @param {boolean} [gate.stable]
      * @param {number} gate.goodChannels
      * @param {number} gate.totalChannels
      * @param {number} gate.requiredGoodChannels
      * @param {number} gate.requiredChannels
+     * @param {number} [gate.stableMs]
+     * @param {number} [gate.requiredStableMs]
      */
     updateCalibrationGateStatus(gate = {}) {
         if (this.currentPhase !== 'calibration') {
@@ -914,19 +917,23 @@ class TestExecutionOverlay {
         const totalChannels = Number(gate.totalChannels) || 0;
         const goodChannels = Number(gate.goodChannels) || 0;
         const hasFullReading = totalChannels >= requiredChannels;
-        const isReady = Boolean(gate.pass);
+        const channelsReady = goodChannels >= requiredGoodChannels;
+        const stable = gate.stable !== false && Boolean(gate.stable);
+        const requiredStableMs = Number(gate.requiredStableMs) || 2000;
+        const stableMs = Number(gate.stableMs) || 0;
+        const isReady = Boolean(gate.pass) || (channelsReady && stable);
 
         gateStatusEl.classList.remove('test-execution-overlay__calibration-gate--ready');
         gateStatusEl.classList.remove('test-execution-overlay__calibration-gate--waiting');
 
         if (!hasFullReading) {
-            gateStatusEl.textContent = `Reading channels... (${totalChannels}/${requiredChannels} available)`;
+            gateStatusEl.textContent = `Reading channels… (${totalChannels}/${requiredChannels} available). Allow ~2s for the EEG window to fill.`;
             gateStatusEl.classList.add('test-execution-overlay__calibration-gate--waiting');
             return;
         }
 
         if (isReady) {
-            gateStatusEl.textContent = `Ready: ${goodChannels}/${requiredChannels} channels are good. Press Start Test to continue.`;
+            gateStatusEl.textContent = `Ready: ${goodChannels}/${requiredChannels} channels GOOD and stable. Press Start Test to continue.`;
             gateStatusEl.classList.add('test-execution-overlay__calibration-gate--ready');
             const manualStartBtn = this.contentContainer.querySelector('#calibrationManualStartBtn');
             if (manualStartBtn) {
@@ -935,8 +942,16 @@ class TestExecutionOverlay {
             return;
         }
 
+        if (channelsReady && !stable) {
+            const stableSeconds = (requiredStableMs / 1000).toFixed(0);
+            const elapsed = (stableMs / 1000).toFixed(1);
+            gateStatusEl.textContent = `${goodChannels}/${requiredChannels} channels GOOD. Hold steady — stabilizing ${elapsed}s / ${stableSeconds}s before recommended start.`;
+            gateStatusEl.classList.add('test-execution-overlay__calibration-gate--waiting');
+            return;
+        }
+
         const needMore = Math.max(0, requiredGoodChannels - goodChannels);
-        gateStatusEl.textContent = `${goodChannels}/${requiredChannels} channels are good. Need ${needMore} more good channel${needMore === 1 ? '' : 's'} before recommended start.`;
+        gateStatusEl.textContent = `${goodChannels}/${requiredChannels} channels GOOD. Need ${needMore} more GOOD channel${needMore === 1 ? '' : 's'} (OK/yellow does not count). Check hints in the signal panel.`;
         gateStatusEl.classList.add('test-execution-overlay__calibration-gate--waiting');
     }
 

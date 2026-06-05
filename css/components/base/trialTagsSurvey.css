@@ -256,6 +256,10 @@
     cursor: default;
 }
 
+.trial-tags-survey__option-btn--known:not(.selected) {
+    border-style: dashed;
+}
+
 .trial-tags-survey__option-btn-label {
     width: 100%;
     min-width: 0;
