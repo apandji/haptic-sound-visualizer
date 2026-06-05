@@ -4,16 +4,17 @@
 
     app.loadPatternMetadata = async function loadPatternMetadata() {
         try {
-            const response = await fetch('pattern_metadata.json');
-            if (response.ok) {
-                const data = await response.json();
-                if (data.patterns && Array.isArray(data.patterns)) {
-                    state.patternMetadata = {};
-                    data.patterns.forEach((pattern) => {
-                        state.patternMetadata[pattern.filename] = pattern;
-                    });
-                    console.log('Loaded metadata for', Object.keys(state.patternMetadata).length, 'patterns');
-                }
+            const cache = window.AppDataCache;
+            const data = cache
+                ? await cache.fetchJson('pattern-metadata', 'pattern_metadata.json')
+                : await fetch('pattern_metadata.json').then(r => r.json());
+
+            if (data.patterns && Array.isArray(data.patterns)) {
+                state.patternMetadata = {};
+                data.patterns.forEach((pattern) => {
+                    state.patternMetadata[pattern.filename] = pattern;
+                });
+                console.log('Loaded metadata for', Object.keys(state.patternMetadata).length, 'patterns');
             }
         } catch (error) {
             console.warn('Could not load pattern metadata:', error);
@@ -22,6 +23,15 @@
 
     app.loadFileList = async function loadFileList() {
         try {
+            const cache = window.AppDataCache;
+            if (cache) {
+                const cached = cache.get('audio-files');
+                if (Array.isArray(cached) && cached.length) {
+                    state.allFilesList = cached;
+                    app.initializeComponent();
+                }
+            }
+
             const apiResponse = await fetch('/api/list-audio-files');
             if (apiResponse.ok) {
                 const contentType = apiResponse.headers.get('content-type');
@@ -29,6 +39,7 @@
                     const data = await apiResponse.json();
                     if (Array.isArray(data)) {
                         state.allFilesList = data;
+                        if (cache) cache.set('audio-files', data);
                         console.log('Loaded', state.allFilesList.length, 'files from API');
                         app.initializeComponent();
                         return;

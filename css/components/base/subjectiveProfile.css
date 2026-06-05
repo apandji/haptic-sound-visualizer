@@ -14,37 +14,6 @@
     display: none;
 }
 
-.analyze-pattern-tabs {
-    display: inline-flex;
-    gap: 4px;
-    margin-top: var(--spacing-lg);
-    padding: 4px;
-    background: #f3f3f3;
-    border-radius: var(--radius-md);
-}
-
-.analyze-pattern-tabs__btn {
-    border: none;
-    background: transparent;
-    color: var(--color-text-muted);
-    font: inherit;
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-medium);
-    padding: 8px 16px;
-    border-radius: calc(var(--radius-md) - 2px);
-    cursor: pointer;
-}
-
-.analyze-pattern-tabs__btn--active {
-    background: var(--color-bg-elevated);
-    color: var(--color-text);
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
-}
-
-.analyze-pattern-tab-panel[hidden] {
-    display: none;
-}
-
 .analyze-panel__title-row {
     display: flex;
     align-items: baseline;
@@ -81,16 +50,14 @@
 }
 
 .subjective-scales__card {
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-md);
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--radius-lg);
     padding: var(--spacing-md);
-    background: #fafafa;
+    background: var(--color-surface-subtle);
 }
 
 .subjective-scales__label {
     font-size: var(--font-size-xs);
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
     color: var(--color-text-muted);
     margin-bottom: 4px;
 }
@@ -98,6 +65,8 @@
 .subjective-scales__median {
     font-size: var(--font-size-lg);
     font-weight: var(--font-weight-semibold);
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
     margin-bottom: var(--spacing-sm);
 }
 
@@ -231,10 +200,9 @@
 }
 
 .survey-heatmap__legend-end {
-    font-size: 10px;
+    font-size: 11px;
     color: var(--color-text-faint);
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.01em;
 }
 
 .survey-heatmap__legend-scale {

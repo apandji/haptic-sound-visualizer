@@ -4,10 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SAIL Pattern Library - Test</title>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
     <!-- Design tokens (load first) -->
-    <link rel="stylesheet" href="css/design-tokens.css?v=2026-03-17.1">
+    <link rel="stylesheet" href="css/design-tokens.css?v=2026-06-07.1">
+    <link rel="stylesheet" href="css/chrome.css?v=2026-06-07.5">
     <!-- Page CSS -->
-    <link rel="stylesheet" href="css/pages/test.css?v=2026-03-17.1">
+    <link rel="stylesheet" href="css/pages/test.css?v=2026-06-07.1">
     
     <!-- Component CSS -->
     <link rel="stylesheet" href="css/components/base/patternExplorer.css?v=2026-02-26.1">
@@ -21,19 +23,20 @@
     <link rel="stylesheet" href="css/components/base/signalQualityVisualizer.css?v=2026-06-02.5">
 </head>
 <body>
-    <!-- Top Navigation Header -->
-    <div class="top-header">
-        <a href="index.html" class="nav-link">Explore</a>
-        <span class="nav-separator">|</span>
-        <a href="test.html" class="nav-link active">Test</a>
-        <span class="nav-separator">|</span>
-        <a href="analyze.html" class="nav-link">Analyze</a>
-    </div>
-    
-    <!-- Page Title Header -->
-    <div class="page-title-header">
-        <h1 class="page-title">Setup Test</h1>
-    </div>
+    <header class="app-header">
+        <div class="app-header__start">
+            <span class="app-header__brand">SAIL</span>
+            <nav class="segmented-control segmented-control--nav" aria-label="Main navigation" data-app-nav>
+                <span class="segmented-control__indicator" aria-hidden="true"></span>
+                <a href="index.html" class="segmented-control__item">Explore</a>
+                <a href="test.html" class="segmented-control__item segmented-control__item--active" aria-current="page">Test</a>
+                <a href="analyze.html" class="segmented-control__item">Analyze</a>
+            </nav>
+        </div>
+        <div class="app-header__center">
+            <h1 class="app-header__title">Setup test</h1>
+        </div>
+    </header>
     
     <!-- Main Layout: Patterns + Session in one view -->
     <div class="layout layout--setup" id="setupLayout">
@@ -113,6 +116,7 @@
     <script src="js/components/base/signalQualityVisualizer.js?v=2026-06-02.5"></script>
     <script src="js/components/variants/patternExplorerWithSelection.js?v=2026-02-26.1"></script>
     <!-- Page Script -->
+    <script src="js/dataCache.js?v=2026-06-07.5"></script>
     <script src="js/test/state.js?v=2026-02-26.1"></script>
     <script src="js/test/dataAndComponents.js?v=2026-02-26.1"></script>
     <script src="js/test/audioPreview.js?v=2026-02-26.1"></script>
@@ -120,5 +124,6 @@
     <script src="js/test/testExecution.js?v=2026-06-05.9"></script>
     <script src="js/test/signalQuality.js?v=2026-02-26.1"></script>
     <script src="js/test/bootstrap.js?v=2026-02-26.1"></script>
+    <script src="js/appNav.js?v=2026-06-07.5"></script>
 </body>
 </html>

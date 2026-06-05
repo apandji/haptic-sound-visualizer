@@ -28,7 +28,7 @@ class SummaryStats {
         const card = document.createElement('div');
         card.className = 'summary-stats__card';
         const valueEl = document.createElement('div');
-        valueEl.className = 'summary-stats__card-value';
+        valueEl.className = 'summary-stats__card-value font-mono';
         valueEl.textContent = value;
         const labelEl = document.createElement('div');
         labelEl.className = 'summary-stats__card-label';

@@ -11,16 +11,25 @@ class AnalysisDataLoader {
     }
 
     async loadFromDatabase() {
-        this.setLoading(true);
+        const cache = window.AppDataCache;
+        const cached = cache?.get('analysis-sessions');
+        if (Array.isArray(cached) && cached.length) {
+            this.setSessions(cached);
+        }
+
+        this.setLoading(!cached?.length);
         try {
-            const response = await fetch('/api/analysis/sessions');
-            if (!response.ok) throw new Error(`Request failed (${response.status})`);
-            const sessions = await response.json();
+            const sessions = cache
+                ? await cache.fetchJson('analysis-sessions', '/api/analysis/sessions', { ttlMs: 60 * 1000 })
+                : await fetch('/api/analysis/sessions').then(r => r.json());
+
             if (!Array.isArray(sessions)) throw new Error('Invalid response payload');
             this.setSessions(sessions);
         } catch (err) {
             console.error('AnalysisDataLoader: Error loading database sessions', err);
-            this.setErrorState(true);
+            if (!cached?.length) {
+                this.setErrorState(true);
+            }
         } finally {
             this.setLoading(false);
         }

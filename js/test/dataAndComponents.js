@@ -1,16 +1,17 @@
 // Load pattern metadata
         async function loadPatternMetadata() {
             try {
-                const response = await fetch('pattern_metadata.json');
-                if (response.ok) {
-                    const data = await response.json();
-                    if (data.patterns && Array.isArray(data.patterns)) {
-                        patternMetadata = {};
-                        data.patterns.forEach(pattern => {
-                            patternMetadata[pattern.filename] = pattern;
-                        });
-                        console.log('Loaded metadata for', Object.keys(patternMetadata).length, 'patterns');
-                    }
+                const cache = window.AppDataCache;
+                const data = cache
+                    ? await cache.fetchJson('pattern-metadata', 'pattern_metadata.json')
+                    : await fetch('pattern_metadata.json').then(r => r.json());
+
+                if (data.patterns && Array.isArray(data.patterns)) {
+                    patternMetadata = {};
+                    data.patterns.forEach(pattern => {
+                        patternMetadata[pattern.filename] = pattern;
+                    });
+                    console.log('Loaded metadata for', Object.keys(patternMetadata).length, 'patterns');
                 }
             } catch (error) {
                 console.warn('Could not load pattern metadata:', error);
@@ -53,6 +54,22 @@
         
         // Load file list from server or static JSON file
         async function loadFileList() {
+            const cache = window.AppDataCache;
+
+            if (cache) {
+                const cached = cache.get('audio-files');
+                if (Array.isArray(cached) && cached.length) {
+                    allFilesList = cached.map(file => {
+                        const filename = typeof file === 'string' ? file : file.name || file.filename;
+                        return {
+                            name: filename,
+                            path: `audio_files/${filename}`
+                        };
+                    });
+                    await initializeComponents();
+                }
+            }
+
             // Try API endpoint first (for local development)
             try {
                 const apiResponse = await fetch('/api/list-audio-files');
@@ -68,6 +85,7 @@
                                     path: `audio_files/${filename}`
                                 };
                             });
+                            if (cache) cache.set('audio-files', data);
                             console.log('Loaded', allFilesList.length, 'files from API');
                             await initializeComponents();
                             return;

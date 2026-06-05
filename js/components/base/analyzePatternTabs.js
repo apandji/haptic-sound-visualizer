@@ -37,7 +37,7 @@ class AnalyzePatternTabs {
 
         this.buttons.forEach(button => {
             const isActive = button.dataset.analyzeTab === tab;
-            button.classList.toggle('analyze-pattern-tabs__btn--active', isActive);
+            button.classList.toggle('segmented-control__item--active', isActive);
             button.setAttribute('aria-selected', isActive ? 'true' : 'false');
         });
 

@@ -4,10 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SAIL Pattern Library</title>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
     <!-- Design tokens (load first) -->
-    <link rel="stylesheet" href="css/design-tokens.css?v=2026-03-17.1">
+    <link rel="stylesheet" href="css/design-tokens.css?v=2026-06-07.1">
+    <link rel="stylesheet" href="css/chrome.css?v=2026-06-07.5">
     <!-- Page CSS -->
-    <link rel="stylesheet" href="css/pages/index.css?v=2026-03-17.1">
+    <link rel="stylesheet" href="css/pages/index.css?v=2026-06-07.1">
     
     <!-- Component CSS -->
     <link rel="stylesheet" href="css/components/base/patternExplorer.css?v=2026-02-26.1">
@@ -17,19 +19,20 @@
     <link rel="stylesheet" href="css/components/base/audioControls.css?v=2026-02-26.1">
 </head>
 <body>
-    <!-- Top Navigation Header -->
-    <div class="top-header">
-        <a href="index.html" class="nav-link active">Explore</a>
-        <span class="nav-separator">|</span>
-        <a href="test.html" class="nav-link">Test</a>
-        <span class="nav-separator">|</span>
-        <a href="analyze.html" class="nav-link">Analyze</a>
-    </div>
-    
-    <!-- Page Title Header -->
-    <div class="page-title-header">
-        <h1 class="page-title">Preview Patterns</h1>
-    </div>
+    <header class="app-header">
+        <div class="app-header__start">
+            <span class="app-header__brand">SAIL</span>
+            <nav class="segmented-control segmented-control--nav" aria-label="Main navigation" data-app-nav>
+                <span class="segmented-control__indicator" aria-hidden="true"></span>
+                <a href="index.html" class="segmented-control__item segmented-control__item--active" aria-current="page">Explore</a>
+                <a href="test.html" class="segmented-control__item">Test</a>
+                <a href="analyze.html" class="segmented-control__item">Analyze</a>
+            </nav>
+        </div>
+        <div class="app-header__center">
+            <h1 class="app-header__title">Preview patterns</h1>
+        </div>
+    </header>
     
     <!-- Main Layout -->
     <div class="layout">
@@ -83,10 +86,12 @@
     <script src="js/components/variants/patternExplorerWithFilters.js?v=2026-02-26.1"></script>
     
     <!-- Page Script -->
+    <script src="js/dataCache.js?v=2026-06-07.5"></script>
     <script src="js/app/state.js?v=2026-02-26.1"></script>
     <script src="js/app/audioLifecycle.js?v=2026-02-26.1"></script>
     <script src="js/app/explorer.js?v=2026-02-26.1"></script>
     <script src="js/app/dataLoaders.js?v=2026-02-26.1"></script>
     <script src="js/app/bootstrap.js?v=2026-02-26.1"></script>
+    <script src="js/appNav.js?v=2026-06-07.5"></script>
 </body>
 </html>

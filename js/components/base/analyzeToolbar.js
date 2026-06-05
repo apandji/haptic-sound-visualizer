@@ -1,5 +1,5 @@
 /**
- * AnalyzeToolbar — compact bar + floating filters popover.
+ * AnalyzeToolbar — header tools + floating filters popover.
  */
 class AnalyzeToolbar {
     constructor(options = {}) {
@@ -16,27 +16,24 @@ class AnalyzeToolbar {
     }
 
     render() {
-        this.container.className = 'analyze-toolbar';
         this.container.innerHTML = `
-            <div class="analyze-toolbar__bar">
-                <div class="analyze-toolbar__summary" id="analyzeCorpusSummary">Loading…</div>
-                <div class="analyze-toolbar__spacer"></div>
-                <button type="button" class="analyze-toolbar__icon-btn" id="analyzeFiltersToggle" aria-expanded="false" aria-controls="analyzeFiltersPopover" title="Filters">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                        <path d="M4 6h16M7 12h10M10 18h4" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
-                    </svg>
-                    <span class="analyze-toolbar__icon-btn-label">Filters</span>
-                </button>
-                <button type="button" id="analyzeRefreshBtn" class="analyze-toolbar__icon-btn analyze-refresh-btn" title="Reload from database" aria-label="Reload from database">
-                    <svg class="analyze-refresh-btn__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                        <path d="M21 12a9 9 0 1 1-2.64-6.36" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
-                        <path d="M21 3v6h-6" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                </button>
-            </div>
+            <button type="button" class="icon-btn" id="analyzeFiltersToggle" aria-expanded="false" aria-controls="analyzeFiltersPopover" title="Filters">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M4 6h16M7 12h10M10 18h4" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
+                </svg>
+                <span class="icon-btn__label">Filters</span>
+                <span class="icon-btn__badge" id="analyzeFiltersBadge" hidden></span>
+            </button>
+            <button type="button" id="analyzeRefreshBtn" class="icon-btn analyze-refresh-btn" title="Reload from database" aria-label="Reload from database">
+                <svg class="analyze-refresh-btn__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M21 12a9 9 0 1 1-2.64-6.36" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
+                    <path d="M21 3v6h-6" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </button>
         `;
 
-        this.summaryEl = this.container.querySelector('#analyzeCorpusSummary');
+        this.summaryEl = document.getElementById('analyzeCorpusSummary');
+        this.filtersBadgeEl = this.container.querySelector('#analyzeFiltersBadge');
         this.refreshButton = this.container.querySelector('#analyzeRefreshBtn');
         this.filtersToggle = this.container.querySelector('#analyzeFiltersToggle');
         this.completedOnlyInput = null;
@@ -169,7 +166,7 @@ class AnalyzeToolbar {
         this.filtersBackdrop.hidden = false;
         this.filtersPopover.hidden = false;
         this.filtersToggle.setAttribute('aria-expanded', 'true');
-        this.filtersToggle.classList.add('analyze-toolbar__icon-btn--active');
+        this.filtersToggle.classList.add('icon-btn--active');
         this._positionPopover();
     }
 
@@ -178,7 +175,7 @@ class AnalyzeToolbar {
         this.filtersBackdrop.hidden = true;
         this.filtersPopover.hidden = true;
         this.filtersToggle.setAttribute('aria-expanded', 'false');
-        this.filtersToggle.classList.remove('analyze-toolbar__icon-btn--active');
+        this.filtersToggle.classList.remove('icon-btn--active');
     }
 
     _positionPopover() {
@@ -210,6 +207,7 @@ class AnalyzeToolbar {
             });
             this.dateRangeCalendar.setRange(current.dateFrom, current.dateTo);
         }
+        this._updateFilterBadge();
     }
 
     _renderParticipantChips() {
@@ -264,7 +262,45 @@ class AnalyzeToolbar {
         });
     }
 
+    _countActiveFilters() {
+        const participants = this.filterOptions.participants || [];
+        const { dateFrom, dateTo } = this.dateRangeCalendar
+            ? this.dateRangeCalendar.getRange()
+            : { dateFrom: '', dateTo: '' };
+
+        let count = 0;
+
+        if (this.includedParticipantIds !== null) {
+            count += 1;
+        }
+        if (dateFrom || dateTo) {
+            count += 1;
+        }
+        if (this.completedOnlyInput && !this.completedOnlyInput.checked) {
+            count += 1;
+        }
+        if (this.hideExcludedInput && !this.hideExcludedInput.checked) {
+            count += 1;
+        }
+
+        return count;
+    }
+
+    _updateFilterBadge() {
+        if (!this.filtersBadgeEl) return;
+
+        const count = this._countActiveFilters();
+        if (count > 0) {
+            this.filtersBadgeEl.hidden = false;
+            this.filtersBadgeEl.textContent = String(count);
+        } else {
+            this.filtersBadgeEl.hidden = true;
+            this.filtersBadgeEl.textContent = '';
+        }
+    }
+
     updateSummary(summary = {}) {
+        if (!this.summaryEl) return;
         this.summaryEl.textContent = `${summary.sessionCount || 0} sessions · ${summary.trialCount || 0} trials · ${summary.participantCount || 0} participants`;
     }
 
@@ -285,6 +321,7 @@ class AnalyzeToolbar {
     }
 
     emitFilters() {
+        this._updateFilterBadge();
         if (this.onFiltersChange) this.onFiltersChange(this.getFilters());
     }
 }

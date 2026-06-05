@@ -4,32 +4,40 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SAIL Pattern Library - Analyze</title>
-    <link rel="stylesheet" href="css/design-tokens.css?v=2026-06-05.3">
-    <link rel="stylesheet" href="css/pages/analyze.css?v=2026-06-06.5">
+    <link rel="preconnect" href="https://cdn.plot.ly" crossorigin>
+    <link rel="stylesheet" href="css/design-tokens.css?v=2026-06-07.1">
+    <link rel="stylesheet" href="css/chrome.css?v=2026-06-07.5">
+    <link rel="stylesheet" href="css/pages/analyze.css?v=2026-06-07.1">
     <link rel="stylesheet" href="css/components/base/patternExplorer.css?v=2026-06-05.3">
-    <link rel="stylesheet" href="css/components/variants/patternExplorerForAnalysis.css?v=2026-06-05.3">
-    <link rel="stylesheet" href="css/components/base/summaryStats.css?v=2026-06-06.1">
+    <link rel="stylesheet" href="css/components/variants/patternExplorerForAnalysis.css?v=2026-06-07.1">
+    <link rel="stylesheet" href="css/components/base/summaryStats.css?v=2026-06-07.1">
     <link rel="stylesheet" href="css/components/base/radarChart.css?v=2026-06-05.3">
     <link rel="stylesheet" href="css/components/base/boxPlotChart.css?v=2026-06-05.3">
     <link rel="stylesheet" href="css/components/base/timeSeriesChart.css?v=2026-06-05.3">
-    <link rel="stylesheet" href="css/components/base/analyzeSidebarNav.css?v=2026-06-05.3">
-    <link rel="stylesheet" href="css/components/base/analyzeToolbar.css?v=2026-06-05.6">
+    <link rel="stylesheet" href="css/components/base/analyzeSidebarNav.css?v=2026-06-07.1">
+    <link rel="stylesheet" href="css/components/base/analyzeToolbar.css?v=2026-06-07.1">
     <link rel="stylesheet" href="css/components/base/actionFrequencyChart.css?v=2026-06-05.3">
     <link rel="stylesheet" href="css/components/base/trialsSidebarList.css?v=2026-06-05.3">
     <link rel="stylesheet" href="css/components/base/trialsListView.css?v=2026-06-05.3">
     <link rel="stylesheet" href="css/components/base/trialDetailView.css?v=2026-06-05.3">
-    <link rel="stylesheet" href="css/components/base/subjectiveProfile.css?v=2026-06-06.8">
+    <link rel="stylesheet" href="css/components/base/subjectiveProfile.css?v=2026-06-07.1">
 </head>
 <body>
-    <div class="top-header">
-        <a href="index.html" class="nav-link">Explore</a>
-        <span class="nav-separator">|</span>
-        <a href="test.html" class="nav-link">Test</a>
-        <span class="nav-separator">|</span>
-        <a href="analyze.html" class="nav-link active">Analyze</a>
-    </div>
-
-    <div id="analyzeToolbar"></div>
+    <header class="app-header">
+        <div class="app-header__start">
+            <span class="app-header__brand">SAIL</span>
+            <nav class="segmented-control segmented-control--nav" aria-label="Main navigation" data-app-nav>
+                <span class="segmented-control__indicator" aria-hidden="true"></span>
+                <a href="index.html" class="segmented-control__item">Explore</a>
+                <a href="test.html" class="segmented-control__item">Test</a>
+                <a href="analyze.html" class="segmented-control__item segmented-control__item--active" aria-current="page">Analyze</a>
+            </nav>
+        </div>
+        <div class="app-header__center">
+            <span class="app-header__context" id="analyzeCorpusSummary">Loading…</span>
+        </div>
+        <div class="app-header__end" id="analyzeToolbar"></div>
+    </header>
 
     <div class="layout">
         <aside class="analyze-sidebar">
@@ -43,24 +51,27 @@
         </aside>
 
         <main class="analyze-main">
-            <div class="analyze-main__placeholder" id="analyzePlaceholder">
-                <span class="analyze-main__placeholder-text">Loading session data…</span>
+            <div class="analyze-main__placeholder app-loading" id="analyzePlaceholder">
+                <div class="loading-spinner" aria-hidden="true"></div>
+                <p class="app-loading__text analyze-main__placeholder-text">Reading session data…</p>
             </div>
 
             <div class="analyze-main__content" id="analyzeContent">
                 <div id="patternView" class="analyze-view active">
-                    <header class="pattern-detail-header" id="patternDetailHeader" hidden>
-                        <h2 class="pattern-detail-header__title" id="patternDetailTitle"></h2>
-                        <div class="pattern-detail-header__meta" id="patternDetailMeta"></div>
-                    </header>
+                    <div class="analyze-sticky-context" id="analyzeStickyContext">
+                        <header class="pattern-detail-header" id="patternDetailHeader" hidden>
+                            <h2 class="pattern-detail-header__title font-mono" id="patternDetailTitle"></h2>
+                            <div class="pattern-detail-header__meta" id="patternDetailMeta"></div>
+                        </header>
 
-                    <div id="summaryStats"></div>
+                        <div id="summaryStats"></div>
 
-                    <div class="analyze-sample-note" id="analyzeSampleNote" hidden></div>
+                        <div class="analyze-sample-note" id="analyzeSampleNote" hidden></div>
 
-                    <div class="analyze-pattern-tabs" id="analyzePatternTabs" role="tablist" aria-label="Pattern feedback">
-                        <button type="button" class="analyze-pattern-tabs__btn analyze-pattern-tabs__btn--active" data-analyze-tab="physiological" role="tab" aria-selected="true">Physiological</button>
-                        <button type="button" class="analyze-pattern-tabs__btn" data-analyze-tab="subjective" role="tab" aria-selected="false">Subjective</button>
+                        <div class="segmented-control segmented-control--sm" id="analyzePatternTabs" role="tablist" aria-label="Pattern feedback">
+                            <button type="button" class="segmented-control__item segmented-control__item--active" data-analyze-tab="physiological" role="tab" aria-selected="true">Physiological</button>
+                            <button type="button" class="segmented-control__item" data-analyze-tab="subjective" role="tab" aria-selected="false">Subjective</button>
+                        </div>
                     </div>
 
                     <div id="analyzePhysioPanel" class="analyze-pattern-tab-panel">
@@ -149,18 +160,19 @@
     </div>
 
     <script src="https://cdn.plot.ly/plotly-2.35.2.min.js" charset="utf-8"></script>
+    <script src="js/dataCache.js?v=2026-06-07.5"></script>
     <script src="js/analyze/constants.js?v=2026-06-06.2"></script>
     <script src="js/analyze/storage.js?v=2026-06-05.3"></script>
     <script src="js/modules/analysisDataProcessor.js?v=2026-06-06.2"></script>
     <script src="js/components/base/patternExplorer.js?v=2026-06-05.3"></script>
-    <script src="js/components/base/analysisDataLoader.js?v=2026-06-05.3"></script>
-    <script src="js/components/base/analyzeSidebarNav.js?v=2026-06-05.3"></script>
+    <script src="js/components/base/analysisDataLoader.js?v=2026-06-07.5"></script>
+    <script src="js/components/base/analyzeSidebarNav.js?v=2026-06-07.1"></script>
     <script src="js/components/base/analyzeDateRangeCalendar.js?v=2026-06-05.6"></script>
-    <script src="js/components/base/analyzeToolbar.js?v=2026-06-05.10"></script>
+    <script src="js/components/base/analyzeToolbar.js?v=2026-06-07.1"></script>
     <script src="js/components/variants/patternExplorerForAnalysis.js?v=2026-06-05.10"></script>
-    <script src="js/components/base/summaryStats.js?v=2026-06-06.1"></script>
+    <script src="js/components/base/summaryStats.js?v=2026-06-07.1"></script>
     <script src="js/components/base/actionFrequencyChart.js?v=2026-06-05.10"></script>
-    <script src="js/components/base/analyzePatternTabs.js?v=2026-06-06.1"></script>
+    <script src="js/components/base/analyzePatternTabs.js?v=2026-06-07.1"></script>
     <script src="js/components/base/subjectiveProfilePanel.js?v=2026-06-06.8"></script>
     <script src="js/components/base/trialsSidebarList.js?v=2026-06-05.3"></script>
     <script src="js/components/base/trialsListView.js?v=2026-06-06.1"></script>
@@ -172,5 +184,6 @@
     <script src="js/analyze/state.js?v=2026-06-05.3"></script>
     <script src="js/analyze/app.js?v=2026-06-06.7"></script>
     <script src="js/analyze/bootstrap.js?v=2026-06-05.3"></script>
+    <script src="js/appNav.js?v=2026-06-07.5"></script>
 </body>
 </html>
