@@ -341,6 +341,9 @@ class TimeSeriesChart {
         const blDuration = data?.baselineDuration || 10;
         const stimDuration = data?.stimulationDuration || 30;
         const font = typeof PLOTLY_THEME !== 'undefined' ? PLOTLY_THEME.fontFamily : 'sans-serif';
+        const phaseLine = (PLOTLY_THEME && PLOTLY_THEME.phaseLineColor) || '#ccc';
+        const ghostLine = (PLOTLY_THEME && PLOTLY_THEME.ghostLineColor) || '#ddd';
+        const annotationColor = (PLOTLY_THEME && PLOTLY_THEME.annotationColor) || '#bbb';
 
         const totalStart = -(calDuration + blDuration);
         layout.xaxis.range = [totalStart, stimDuration - 1];
@@ -355,7 +358,7 @@ class TimeSeriesChart {
                 x0: -blDuration, x1: -blDuration,
                 y0: 0, y1: 1,
                 yref: 'paper',
-                line: { color: '#ddd', width: 1, dash: 'dot' }
+                line: { color: ghostLine, width: 1, dash: 'dot' }
             });
 
             layout.annotations.push({
@@ -364,7 +367,7 @@ class TimeSeriesChart {
                 yref: 'paper',
                 text: 'CALIBRATION',
                 showarrow: false,
-                font: { size: 9, color: '#ccc', family: font }
+                font: { size: 9, color: annotationColor, family: font }
             });
         }
 
@@ -374,7 +377,7 @@ class TimeSeriesChart {
             x0: 0, x1: 0,
             y0: 0, y1: 1,
             yref: 'paper',
-            line: { color: '#ccc', width: 1, dash: 'dash' }
+            line: { color: phaseLine, width: 1, dash: 'dash' }
         });
 
         // Baseline label
@@ -384,7 +387,7 @@ class TimeSeriesChart {
             yref: 'paper',
             text: 'BASELINE',
             showarrow: false,
-            font: { size: 9, color: '#bbb', family: font }
+            font: { size: 9, color: annotationColor, family: font }
         });
 
         // Stimulation label
@@ -394,7 +397,7 @@ class TimeSeriesChart {
             yref: 'paper',
             text: 'STIMULATION',
             showarrow: false,
-            font: { size: 9, color: '#bbb', family: font }
+            font: { size: 9, color: annotationColor, family: font }
         });
     }
 
@@ -407,16 +410,30 @@ class TimeSeriesChart {
             font: { family: font, size: (PLOTLY_THEME && PLOTLY_THEME.fontSize) || 11, color: (PLOTLY_THEME && PLOTLY_THEME.fontColor) || '#666' },
             xaxis: {
                 ...(base.xaxis || {}),
-                title: { text: 'Time (seconds)', font: { size: (PLOTLY_THEME && PLOTLY_THEME.titleFontSize) || 10, family: font } },
+                title: {
+                    text: 'Time (seconds)',
+                    font: {
+                        size: (PLOTLY_THEME && PLOTLY_THEME.titleFontSize) || 10,
+                        family: font,
+                        color: (PLOTLY_THEME && PLOTLY_THEME.fontColor) || '#666',
+                    },
+                },
                 dtick: 5,
                 gridcolor: (PLOTLY_THEME && PLOTLY_THEME.gridColor) || '#e8e8e8',
-                tickfont: { size: 9, family: font }
+                tickfont: { size: 9, family: font, color: (PLOTLY_THEME && PLOTLY_THEME.fontColor) || '#666' }
             },
             yaxis: {
                 ...(base.yaxis || {}),
-                title: { text: yLabel, font: { size: (PLOTLY_THEME && PLOTLY_THEME.titleFontSize) || 10, family: font } },
+                title: {
+                    text: yLabel,
+                    font: {
+                        size: (PLOTLY_THEME && PLOTLY_THEME.titleFontSize) || 10,
+                        family: font,
+                        color: (PLOTLY_THEME && PLOTLY_THEME.fontColor) || '#666',
+                    },
+                },
                 gridcolor: (PLOTLY_THEME && PLOTLY_THEME.gridColor) || '#e8e8e8',
-                tickfont: { size: 9, family: font }
+                tickfont: { size: 9, family: font, color: (PLOTLY_THEME && PLOTLY_THEME.fontColor) || '#666' }
             }
         };
     }

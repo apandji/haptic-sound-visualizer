@@ -63,12 +63,65 @@ class Visualizer {
     }
 
     /**
+     * Read --color-visualizer-bg from document tokens as [r, g, b].
+     */
+    getVisualizerBackground() {
+        const raw = getComputedStyle(document.documentElement)
+            .getPropertyValue('--color-visualizer-bg')
+            .trim();
+        if (raw.startsWith('#') && raw.length >= 7) {
+            const hex = raw.slice(1);
+            return [
+                parseInt(hex.slice(0, 2), 16),
+                parseInt(hex.slice(2, 4), 16),
+                parseInt(hex.slice(4, 6), 16),
+            ];
+        }
+        return [250, 250, 250];
+    }
+
+    /**
+     * Read --color-accent from document tokens as [r, g, b].
+     */
+    getVisualizerAccentColor() {
+        const raw = getComputedStyle(document.documentElement)
+            .getPropertyValue('--color-accent')
+            .trim();
+        if (raw.startsWith('#') && raw.length >= 7) {
+            const hex = raw.slice(1);
+            return [
+                parseInt(hex.slice(0, 2), 16),
+                parseInt(hex.slice(2, 4), 16),
+                parseInt(hex.slice(4, 6), 16),
+            ];
+        }
+        return [186, 12, 47];
+    }
+
+    /**
+     * Subtle center-line color derived from --color-text-faint.
+     */
+    getVisualizerMutedLineColor() {
+        const raw = getComputedStyle(document.documentElement)
+            .getPropertyValue('--color-text-faint')
+            .trim();
+        if (raw.startsWith('#') && raw.length >= 7) {
+            const hex = raw.slice(1);
+            return [
+                parseInt(hex.slice(0, 2), 16),
+                parseInt(hex.slice(2, 4), 16),
+                parseInt(hex.slice(4, 6), 16),
+            ];
+        }
+        return [160, 160, 160];
+    }
+
+    /**
      * Initialize p5.js sketch
      */
     initSketch() {
-        const self = this; // Store reference to Visualizer instance
-        
-        // Check if p5 is available
+        const self = this;
+
         if (typeof p5 === 'undefined') {
             console.error('p5.js is not loaded!');
             return;
@@ -110,8 +163,9 @@ class Visualizer {
             };
 
             p.draw = () => {
-                // Light background
-                p.background(250, 250, 250);
+        // Theme-aware background from design tokens
+                const bg = self.getVisualizerBackground();
+                p.background(bg[0], bg[1], bg[2]);
 
                 // Check if FFT is initialized
                 if (!self.fft) {
@@ -228,7 +282,8 @@ class Visualizer {
                         
                         if (playheadDuration > 0) {
                             const progress = playheadTime / playheadDuration;
-                            p.stroke(255, 0, 0);
+                            const accent = self.getVisualizerAccentColor();
+                            p.stroke(accent[0], accent[1], accent[2]);
                             p.strokeWeight(2);
                             p.line(progress * p.width, 0, progress * p.width, p.height);
                         }
@@ -516,8 +571,10 @@ class Visualizer {
         if (!this.fft && !this.isPaused) return;
         
         const waveform = this.getWaveformData();
+        const accent = this.getVisualizerAccentColor();
+        const muted = this.getVisualizerMutedLineColor();
 
-        p.stroke(0);
+        p.stroke(accent[0], accent[1], accent[2]);
         p.strokeWeight(1.5);
         p.noFill();
 
@@ -531,8 +588,8 @@ class Visualizer {
         }
         p.endShape();
 
-        // Draw center line - subtle gray
-        p.stroke(200);
+        // Draw center line
+        p.stroke(muted[0], muted[1], muted[2], 180);
         p.strokeWeight(1);
         p.line(0, p.height / 2, p.width, p.height / 2);
     }

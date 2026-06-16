@@ -96,7 +96,19 @@
 
         console.error('Failed to load audio files from any source');
         const fileListEl = document.getElementById('fileList');
-        if (fileListEl) {
+        if (window.AppUI) {
+            AppUI.renderError(fileListEl, {
+                title: 'Could not load patterns',
+                hint: 'Check your connection or refresh the page.',
+                onRetry: () => app.loadFileList(),
+            });
+            AppUI.showBanner({
+                type: 'error',
+                message: 'Could not load the pattern library.',
+                actionLabel: 'Retry',
+                onAction: () => app.loadFileList(),
+            });
+        } else if (fileListEl) {
             fileListEl.innerHTML =
                 '<div style="padding: 20px; color: #999; font-size: 12px;">Failed to load audio files</div>';
         }

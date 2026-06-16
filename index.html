@@ -4,48 +4,56 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SAIL Pattern Library</title>
+    <script src="js/theme.js?v=2026-06-08.1"></script>
+    <script src="js/icons.js?v=2026-06-13.1"></script>
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
     <!-- Design tokens (load first) -->
-    <link rel="stylesheet" href="css/design-tokens.css?v=2026-06-07.1">
-    <link rel="stylesheet" href="css/chrome.css?v=2026-06-07.5">
+    <link rel="stylesheet" href="css/design-tokens.css?v=2026-06-09.3">
+    <link rel="stylesheet" href="css/chrome.css?v=2026-06-13.1">
     <!-- Page CSS -->
-    <link rel="stylesheet" href="css/pages/index.css?v=2026-06-07.1">
+    <link rel="stylesheet" href="css/pages/index.css?v=2026-06-08.1">
     
     <!-- Component CSS -->
-    <link rel="stylesheet" href="css/components/base/patternExplorer.css?v=2026-02-26.1">
-    <link rel="stylesheet" href="css/components/base/filterPanel.css?v=2026-02-26.1">
-    <link rel="stylesheet" href="css/components/base/dualSlider.css?v=2026-02-26.1">
-    <link rel="stylesheet" href="css/components/base/visualizer.css?v=2026-02-26.1">
-    <link rel="stylesheet" href="css/components/base/audioControls.css?v=2026-02-26.1">
+    <link rel="stylesheet" href="css/components/base/patternExplorer.css?v=2026-06-09.2">
+    <link rel="stylesheet" href="css/components/base/filterPanel.css?v=2026-06-09.2">
+    <link rel="stylesheet" href="css/components/base/dualSlider.css?v=2026-06-08.2">
+    <link rel="stylesheet" href="css/components/base/visualizer.css?v=2026-06-08.2">
+    <link rel="stylesheet" href="css/components/base/audioControls.css?v=2026-06-08.2">
 </head>
 <body>
+    <a href="#main-content" class="skip-link">Skip to main content</a>
     <header class="app-header">
         <div class="app-header__start">
             <span class="app-header__brand">SAIL</span>
-            <nav class="segmented-control segmented-control--nav" aria-label="Main navigation" data-app-nav>
-                <span class="segmented-control__indicator" aria-hidden="true"></span>
-                <a href="index.html" class="segmented-control__item segmented-control__item--active" aria-current="page">Explore</a>
-                <a href="test.html" class="segmented-control__item">Test</a>
-                <a href="analyze.html" class="segmented-control__item">Analyze</a>
+            <nav class="app-nav-links" aria-label="Main navigation" data-app-nav>
+                <a href="index.html" class="app-nav-links__item app-nav-links__item--active" aria-current="page"><span class="icon" data-icon="compass"></span>Explore</a>
+                <a href="test.html" class="app-nav-links__item"><span class="icon" data-icon="flask"></span>Test</a>
+                <a href="analyze.html" class="app-nav-links__item"><span class="icon" data-icon="chart"></span>Analyze</a>
             </nav>
         </div>
         <div class="app-header__center">
             <h1 class="app-header__title">Preview patterns</h1>
         </div>
+        <div class="app-header__end" data-theme-toggle-mount></div>
     </header>
     
     <!-- Main Layout -->
     <div class="layout">
         <!-- Sidebar with PatternExplorerWithFilters -->
-        <div class="sidebar">
+        <aside class="sidebar" aria-label="Pattern library">
             <!-- The component will reorganize these containers into its own structure -->
             <!-- Order: filterPanel first, then fileList (component will create sticky wrapper) -->
             <div id="filterPanel"></div>
-            <div id="fileList">Loading files...</div>
-        </div>
+            <div id="fileList" aria-live="polite" aria-busy="true">
+                <div class="app-loading app-loading--compact" role="status">
+                    <div class="loading-spinner" aria-hidden="true"></div>
+                    <p class="app-loading__text">Loading patterns…</p>
+                </div>
+            </div>
+        </aside>
         
         <!-- Main Content Area -->
-        <div class="main-content">
+        <main class="main-content" id="main-content">
             <!-- Placeholder when no file selected -->
             <div class="main-content__placeholder" id="mainPlaceholder">
                 <span class="main-content__placeholder-icon" aria-hidden="true">
@@ -68,7 +76,7 @@
                 <div id="audioControlsContainer"></div>
                 <div id="p5-container"></div>
             </div>
-        </div>
+        </main>
     </div>
     
     <!-- p5.js dependencies (for visualizer) -->
@@ -78,20 +86,22 @@
     <!-- Component JavaScript -->
     <script src="js/modules/filters.js?v=2026-02-26.1"></script>
     <script src="js/modules/audioPlayer.js?v=2026-02-26.1"></script>
-    <script src="js/components/base/patternExplorer.js?v=2026-02-26.1"></script>
-    <script src="js/components/base/filterPanel.js?v=2026-02-26.1"></script>
+    <script src="js/components/base/patternExplorer.js?v=2026-06-09.2"></script>
+    <script src="js/components/base/filterPanel.js?v=2026-06-09.1"></script>
     <script src="js/components/base/dualSlider.js?v=2026-02-26.1"></script>
-    <script src="js/components/base/visualizer.js?v=2026-02-26.1"></script>
+    <script src="js/components/base/visualizer.js?v=2026-06-08.5"></script>
     <script src="js/components/base/audioControls.js?v=2026-02-26.1"></script>
-    <script src="js/components/variants/patternExplorerWithFilters.js?v=2026-02-26.1"></script>
+    <script src="js/components/base/patternLibraryShell.js?v=2026-06-09.2"></script>
+    <script src="js/components/variants/patternExplorerWithFilters.js?v=2026-06-07.8"></script>
     
     <!-- Page Script -->
-    <script src="js/dataCache.js?v=2026-06-07.5"></script>
+    <script src="js/uiHelpers.js?v=2026-06-09.2"></script>
+    <script src="js/dataCache.js?v=2026-06-07.6"></script>
     <script src="js/app/state.js?v=2026-02-26.1"></script>
     <script src="js/app/audioLifecycle.js?v=2026-02-26.1"></script>
-    <script src="js/app/explorer.js?v=2026-02-26.1"></script>
-    <script src="js/app/dataLoaders.js?v=2026-02-26.1"></script>
+    <script src="js/app/explorer.js?v=2026-06-07.7"></script>
+    <script src="js/app/dataLoaders.js?v=2026-06-07.7"></script>
     <script src="js/app/bootstrap.js?v=2026-02-26.1"></script>
-    <script src="js/appNav.js?v=2026-06-07.5"></script>
+    <script src="js/appNav.js?v=2026-06-12.6"></script>
 </body>
 </html>

@@ -18,6 +18,30 @@ function isPersistableTrial(trial) {
             return completedEndTimes.length > 0 ? completedEndTimes[completedEndTimes.length - 1] : null;
         }
 
+        const CHECKPOINT_KEY = 'testSession_checkpoint';
+
+        /** Snapshot in-progress session data so a tab crash doesn't lose completed trials. */
+        function checkpointActiveSession() {
+            if (!testSession || !testSession.isActive) return;
+            try {
+                const payload = testSession.getSessionData();
+                localStorage.setItem(CHECKPOINT_KEY, JSON.stringify({
+                    savedAt: new Date().toISOString(),
+                    ...payload
+                }));
+            } catch (error) {
+                console.warn('Could not checkpoint active session:', error);
+            }
+        }
+
+        function clearSessionCheckpoint() {
+            try {
+                localStorage.removeItem(CHECKPOINT_KEY);
+            } catch (error) {
+                console.warn('Could not clear session checkpoint:', error);
+            }
+        }
+
         function buildPersistableSessionData(sessionData) {
             if (!sessionData) return null;
 
@@ -76,6 +100,7 @@ function isPersistableTrial(trial) {
 
                 if (result.success) {
                     console.log('Session saved to database:', result);
+                    clearSessionCheckpoint();
                     showDatabaseSaveMessage(
                         `Session saved to database (ID: ${result.session_id})`,
                         'success',
@@ -107,31 +132,19 @@ function isPersistableTrial(trial) {
          * Show database save status message
          */
         function showDatabaseSaveMessage(message, type, details = null) {
-            const existingMsg = document.getElementById('dbSaveMessage');
-            if (existingMsg) {
-                existingMsg.remove();
-            }
-
-            const msg = document.createElement('div');
-            msg.id = 'dbSaveMessage';
-            msg.className = `export-message export-message--${type === 'warning' ? 'error' : type}`;
-
             let detailsText = '';
             if (details && type === 'success') {
-                detailsText = ` | Trials: ${details.trials_saved}, Readings: ${details.readings_saved}, Responses: ${details.tags_saved}`;
+                detailsText = `Trials: ${details.trials_saved}, Readings: ${details.readings_saved}, Responses: ${details.tags_saved}`;
             }
 
-            msg.textContent = message + detailsText;
-
-            const sessionSidebar = document.querySelector('.session-sidebar');
-            if (sessionSidebar) {
-                sessionSidebar.insertBefore(msg, sessionSidebar.firstChild);
-                setTimeout(() => {
-                    if (msg.parentElement) {
-                        msg.remove();
-                    }
-                }, 5000);
-            }
+            const toastType = type === 'warning' ? 'warning' : type;
+            window.AppUI?.showToast({
+                id: 'dbSaveMessage',
+                type: toastType,
+                title: message,
+                message: detailsText || undefined,
+                duration: 5000,
+            });
         }
         
         // Export sessions to JSON file
@@ -163,63 +176,21 @@ function isPersistableTrial(trial) {
         
         // Show export message
         function showExportMessage(message, type) {
-            const existingMsg = document.getElementById('exportMessage');
-            if (existingMsg) {
-                existingMsg.remove();
-            }
-            
-            const msg = document.createElement('div');
-            msg.id = 'exportMessage';
-            msg.className = `export-message export-message--${type}`;
-            msg.textContent = message;
-            
-            const sessionSidebar = document.querySelector('.session-sidebar');
-            if (sessionSidebar) {
-                sessionSidebar.insertBefore(msg, sessionSidebar.firstChild);
-                setTimeout(() => {
-                    if (msg.parentElement) {
-                        msg.remove();
-                    }
-                }, 3000);
-            }
+            window.AppUI?.showToast({
+                id: 'exportMessage',
+                type,
+                title: message,
+                duration: 3000,
+            });
         }
         
         // Show session start success message
         function showSessionStartMessage(sessionId, patternCount) {
-            // Remove any existing message
-            const existingMessage = document.getElementById('sessionStartMessage');
-            if (existingMessage) {
-                existingMessage.remove();
-            }
-            
-            // Create message element
-            const message = document.createElement('div');
-            message.id = 'sessionStartMessage';
-            message.className = 'session-start-message';
-            message.innerHTML = `
-                <div class="session-start-message__content">
-                    <div class="session-start-message__icon">✓</div>
-                    <div class="session-start-message__text">
-                        <strong>Session ${sessionId} started</strong>
-                        <span>${patternCount} ${patternCount === 1 ? 'pattern' : 'patterns'} in queue</span>
-                    </div>
-                    <button class="session-start-message__close" onclick="this.parentElement.parentElement.remove()">×</button>
-                </div>
-            `;
-            
-            // Append to body so it overlays everything
-            document.body.appendChild(message);
-            
-            // Auto-remove after 5 seconds
-            setTimeout(() => {
-                if (message.parentElement) {
-                    message.style.opacity = '0';
-                    message.style.transform = 'translateY(-10px)';
-                    setTimeout(() => {
-                        if (message.parentElement) {
-                            message.remove();
-                        }
-                    }, 300);
-                }
-            }, 5000);
+            window.AppUI?.showToast({
+                id: 'sessionStartMessage',
+                type: 'success',
+                title: `Session ${sessionId} started`,
+                message: `${patternCount} ${patternCount === 1 ? 'pattern' : 'patterns'} in queue`,
+                duration: 5000,
+            });
         }

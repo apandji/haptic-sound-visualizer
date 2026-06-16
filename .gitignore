@@ -1,6 +1,15 @@
 # Dependencies
 node_modules/
 
+# SQLite databases — never commit participant data
+haptic_research.db
+haptic_research_v2.db
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+backups/
+
 # Audio files (user uploads) - commented out to allow pushing to GitHub
 # uploads/
 # audio_files/*

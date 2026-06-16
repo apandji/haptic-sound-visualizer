@@ -445,6 +445,19 @@
                 onError: handleTestError
             });
 
+            if (!window.__testSessionUnloadGuard) {
+                window.__testSessionUnloadGuard = true;
+                window.addEventListener('beforeunload', (event) => {
+                    if (testSession?.isActive) {
+                        if (typeof checkpointActiveSession === 'function') {
+                            checkpointActiveSession();
+                        }
+                        event.preventDefault();
+                        event.returnValue = '';
+                    }
+                });
+            }
+
             // Create TestExecutionOverlay (requires testExecutionOverlay.js to load before this script in test.html)
             if (typeof window.TestExecutionOverlay === 'undefined') {
                 console.error('TestExecutionOverlay not loaded. Ensure js/components/base/testExecutionOverlay.js is loaded before js/test/testExecution.js in test.html.');
@@ -756,8 +769,9 @@
                     markerCount: testerMarkerCount
                 });
             }
-            // Trial data is already stored in testSession
-            // We'll save everything when session completes
+            if (typeof checkpointActiveSession === 'function') {
+                checkpointActiveSession();
+            }
         }
 
         function handleTesterNoteAdded(text) {

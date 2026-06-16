@@ -157,9 +157,277 @@
     --color-success-border: #4caf50;
     --color-error-bg: #fff5f5;
     --color-error-border: #ffcdd2;
+    --color-warning-bg: #fff8e6;
+    --color-warning-border: #f0dfa8;
+    --color-warning-text: #7a5b00;
+    --color-destructive-subtle-bg: #fdecec;
+    --color-destructive-subtle-border: #f1b4ae;
+    --color-destructive-subtle-text: #b42318;
     /* Data viz: physiology vs subjective */
     --color-data-physio: #3b5bdb;
     --color-data-subjective: var(--color-accent);
+    --color-data-new: #007aff;
+    /* Visualizer canvas background */
+    --color-visualizer-bg: #fafafa;
+    /* Heatmap empty cell base for color-mix */
+    --color-heatmap-base: #ffffff;
+
+    /* Aliases used by overlay components */
+    --color-text-secondary: var(--color-text-muted);
+
+    /* Signal / device status */
+    --color-status-good: #2e7d32;
+    --color-status-good-bg: #e9f7ef;
+    --color-status-good-border: #9fd0ae;
+    --color-status-good-text: #1f5d34;
+    --color-status-ok: #e65100;
+    --color-status-ok-bg: #fff5de;
+    --color-status-ok-border: #e5bd61;
+    --color-status-ok-text: #7a5a12;
+    --color-status-poor: #c62828;
+    --color-status-poor-bg: #fdecec;
+    --color-status-poor-border: #d19a9a;
+    --color-status-poor-text: #8d2d2d;
+    --color-status-info-bg: #edf4fb;
+    --color-status-info-border: #bfd2e5;
+    --color-status-info-text: #24496c;
+
+    /* Test overlay — experimenter progress panel */
+    --color-overlay-panel-bg: color-mix(in srgb, var(--color-bg-elevated) 96%, transparent);
+    --color-overlay-panel-border: var(--color-border-subtle);
+    --color-overlay-panel-footer-fade: linear-gradient(
+        to top,
+        color-mix(in srgb, var(--color-bg-elevated) 98%, transparent),
+        color-mix(in srgb, var(--color-bg-elevated) 88%, transparent)
+    );
+    --color-progress-track: #d8dee6;
+    --color-progress-done: #6a8fb5;
+    --color-progress-active: #244f7e;
+    --color-progress-active-ring: rgba(36, 79, 126, 0.2);
+    --color-progress-label: #7a8695;
+    --color-progress-meta: #5c6f85;
+    --color-progress-eta: #1f3a5f;
+    --color-progress-chip-bg: #f8fafc;
+    --color-progress-chip-border: #cfd7e1;
+    --color-progress-chip-text: #495a6f;
+    --color-progress-chip-active-bg: #e9f0f8;
+    --color-progress-chip-active-border: #2c5f94;
+    --color-progress-chip-active-text: #153e66;
+    --color-progress-chip-done-bg: #f0f5fa;
+    --color-progress-chip-done-border: #a7bfd7;
+    --color-progress-chip-done-text: #385978;
+    --color-overlay-section-bg: #f9fbfd;
+    --color-overlay-section-border: #dfe5ec;
+    --color-overlay-section-title: #41556d;
+    --color-overlay-badge-bg: #edf3f9;
+    --color-overlay-badge-border: #c7d4e2;
+    --color-overlay-badge-text: #1f456e;
+    --color-overlay-device-bg: #f7fafc;
+    --color-overlay-device-border: #d7e1eb;
+    --color-overlay-device-label: #647689;
+    --color-overlay-device-title: #20384f;
+    --color-overlay-device-detail: #536578;
+    --color-overlay-signal-bg: #f6f7f8;
+    --color-overlay-signal-text: var(--color-text-muted);
+    --color-overlay-toggle-bg: #f4f8fc;
+    --color-overlay-toggle-border: #cad4df;
+    --color-overlay-toggle-text: #2f4d6d;
+    --color-overlay-telemetry-border: #dbe3ed;
+    --color-overlay-canvas-bg: #fbfdff;
+    --color-overlay-marker-pulse: rgba(44, 95, 148, 0.15);
+
+    /* Test phase backgrounds */
+    --color-phase-calibration-bg: #f5f6f9;
+    --color-phase-baseline-bg: #f4f5f7;
+    --color-phase-stimulation-bg: #f0f5f0;
+    --color-phase-stimulation-accent: #4caf50;
+    --color-phase-survey-bg: #faf8f5;
+    --color-phase-survey-container-bg: #fafafa;
+    --color-phase-pattern-complete-bg: #f6f6f8;
+    --color-countdown-urgent: #ff9800;
+    --color-countdown-critical: #d32f2f;
+
+    /* Trial survey cards */
+    --color-survey-section-bg: #111827;
+    --color-survey-section-border: rgba(75, 85, 99, 0.8);
+    --color-survey-section-title: #f9fafb;
+    --color-survey-section-subtitle: #d1d5db;
+    --color-survey-field-label: #e5e7eb;
+    --color-survey-slider-value: #fbbf24;
+    --color-survey-scale-text: #9ca3af;
+    --color-survey-option-bg: #0f172a;
+    --color-survey-option-border: #4b5563;
+    --color-survey-option-text: #f3f4f6;
+    --color-survey-option-hover-bg: #1e293b;
+    --color-survey-option-hover-border: #94a3b8;
+    --color-survey-option-selected-bg: #2563eb;
+    --color-survey-option-selected-border: #60a5fa;
+    --color-survey-option-selected-text: #eff6ff;
+    --color-survey-input-bg: #0f172a;
+    --color-survey-input-border: #4b5563;
+    --color-survey-input-text: #f9fafb;
+    --color-survey-input-focus: #60a5fa;
+    --color-survey-accent: #2563eb;
+    --color-survey-accent-hover: #1d4ed8;
+    --color-survey-accent-active: #1e40af;
+    --color-survey-play-bg: #111827;
+    --color-survey-play-hover-bg: #1f2937;
+    --color-survey-play-border: #4b5563;
+    --color-survey-play-text: #f9fafb;
+    --color-survey-nav-secondary-bg: #ffffff;
+    --color-survey-nav-secondary-border: #cbd5e1;
+    --color-survey-nav-secondary-text: #1f2937;
+    --color-survey-nav-secondary-hover-bg: #f8fafc;
+    --color-survey-divider: rgba(148, 163, 184, 0.55);
+}
+
+/* ============== Dark theme ============== */
+[data-theme="dark"] {
+    color-scheme: dark;
+    --color-bg: #09090b;
+    --color-bg-elevated: #18181b;
+    --color-surface-muted: #27272a;
+    --color-surface-subtle: #1f1f23;
+    --color-border: rgba(255, 255, 255, 0.12);
+    --color-border-subtle: rgba(255, 255, 255, 0.08);
+    --color-border-strong: rgba(255, 255, 255, 0.18);
+    --color-text: #fafafa;
+    --color-text-muted: #a1a1aa;
+    --color-text-faint: #71717a;
+    --color-text-inverse: #18181b;
+    --color-accent: #e85a75;
+    --color-accent-hover: #f07a90;
+    --color-accent-subtle: rgba(232, 90, 117, 0.12);
+    --color-accent-muted: rgba(232, 90, 117, 0.2);
+    --color-destructive: #ef5350;
+    --color-destructive-hover: #ff7961;
+    --color-success-bg: rgba(76, 175, 80, 0.12);
+    --color-success-border: #66bb6a;
+    --color-error-bg: rgba(239, 83, 80, 0.12);
+    --color-error-border: rgba(239, 83, 80, 0.35);
+    --color-warning-bg: rgba(234, 179, 8, 0.12);
+    --color-warning-border: rgba(234, 179, 8, 0.35);
+    --color-warning-text: #fbbf24;
+    --color-destructive-subtle-bg: rgba(239, 83, 80, 0.12);
+    --color-destructive-subtle-border: rgba(239, 83, 80, 0.35);
+    --color-destructive-subtle-text: #fca5a5;
+    --color-data-physio: #748ffc;
+    --color-data-subjective: var(--color-accent);
+    --color-data-new: #0a84ff;
+    --color-visualizer-bg: #18181b;
+    --color-heatmap-base: #27272a;
+    --color-text-secondary: var(--color-text-muted);
+
+    --color-status-good: #66bb6a;
+    --color-status-good-bg: rgba(76, 175, 80, 0.12);
+    --color-status-good-border: rgba(102, 187, 106, 0.45);
+    --color-status-good-text: #86efac;
+    --color-status-ok: #ffb74d;
+    --color-status-ok-bg: rgba(255, 183, 77, 0.12);
+    --color-status-ok-border: rgba(255, 183, 77, 0.4);
+    --color-status-ok-text: #fcd34d;
+    --color-status-poor: #ef5350;
+    --color-status-poor-bg: rgba(239, 83, 80, 0.12);
+    --color-status-poor-border: rgba(239, 83, 80, 0.4);
+    --color-status-poor-text: #fca5a5;
+    --color-status-info-bg: rgba(116, 143, 252, 0.12);
+    --color-status-info-border: rgba(116, 143, 252, 0.35);
+    --color-status-info-text: #a5b4fc;
+
+    --color-overlay-panel-bg: color-mix(in srgb, var(--color-bg-elevated) 94%, transparent);
+    --color-overlay-panel-border: var(--color-border);
+    --color-overlay-panel-footer-fade: linear-gradient(
+        to top,
+        color-mix(in srgb, var(--color-bg-elevated) 98%, transparent),
+        color-mix(in srgb, var(--color-bg-elevated) 80%, transparent)
+    );
+    --color-progress-track: #3f3f46;
+    --color-progress-done: #5c7ea8;
+    --color-progress-active: #89b4e0;
+    --color-progress-active-ring: rgba(137, 180, 224, 0.25);
+    --color-progress-label: #a1a1aa;
+    --color-progress-meta: #71717a;
+    --color-progress-eta: #bfdbfe;
+    --color-progress-chip-bg: var(--color-surface-subtle);
+    --color-progress-chip-border: var(--color-border);
+    --color-progress-chip-text: var(--color-text-muted);
+    --color-progress-chip-active-bg: rgba(116, 143, 252, 0.15);
+    --color-progress-chip-active-border: rgba(116, 143, 252, 0.5);
+    --color-progress-chip-active-text: #c7d2fe;
+    --color-progress-chip-done-bg: rgba(116, 143, 252, 0.08);
+    --color-progress-chip-done-border: rgba(116, 143, 252, 0.3);
+    --color-progress-chip-done-text: #a5b4fc;
+    --color-overlay-section-bg: var(--color-surface-subtle);
+    --color-overlay-section-border: var(--color-border);
+    --color-overlay-section-title: var(--color-text-muted);
+    --color-overlay-badge-bg: rgba(116, 143, 252, 0.12);
+    --color-overlay-badge-border: rgba(116, 143, 252, 0.35);
+    --color-overlay-badge-text: #c7d2fe;
+    --color-overlay-device-bg: var(--color-surface-subtle);
+    --color-overlay-device-border: var(--color-border);
+    --color-overlay-device-label: var(--color-text-faint);
+    --color-overlay-device-title: var(--color-text);
+    --color-overlay-device-detail: var(--color-text-muted);
+    --color-overlay-signal-bg: var(--color-surface-muted);
+    --color-overlay-signal-text: var(--color-text-muted);
+    --color-overlay-toggle-bg: var(--color-surface-muted);
+    --color-overlay-toggle-border: var(--color-border);
+    --color-overlay-toggle-text: var(--color-text-muted);
+    --color-overlay-telemetry-border: var(--color-border);
+    --color-overlay-canvas-bg: var(--color-surface-subtle);
+    --color-overlay-marker-pulse: rgba(116, 143, 252, 0.2);
+
+    --color-phase-calibration-bg: var(--color-bg);
+    --color-phase-baseline-bg: var(--color-surface-subtle);
+    --color-phase-stimulation-bg: rgba(76, 175, 80, 0.08);
+    --color-phase-stimulation-accent: #66bb6a;
+    --color-phase-survey-bg: var(--color-bg);
+    --color-phase-survey-container-bg: var(--color-surface-subtle);
+    --color-phase-pattern-complete-bg: var(--color-surface-subtle);
+    --color-countdown-urgent: #ffb74d;
+    --color-countdown-critical: #ef5350;
+
+    --color-survey-section-bg: var(--color-bg-elevated);
+    --color-survey-section-border: var(--color-border);
+    --color-survey-section-title: var(--color-text);
+    --color-survey-section-subtitle: var(--color-text-muted);
+    --color-survey-field-label: var(--color-text);
+    --color-survey-slider-value: var(--color-warning-text);
+    --color-survey-scale-text: var(--color-text-faint);
+    --color-survey-option-bg: var(--color-surface-muted);
+    --color-survey-option-border: var(--color-border-strong);
+    --color-survey-option-text: var(--color-text);
+    --color-survey-option-hover-bg: var(--color-surface-subtle);
+    --color-survey-option-hover-border: var(--color-text-faint);
+    --color-survey-option-selected-bg: var(--color-data-physio);
+    --color-survey-option-selected-border: color-mix(in srgb, var(--color-data-physio) 65%, white);
+    --color-survey-option-selected-text: var(--color-text-inverse);
+    --color-survey-input-bg: var(--color-bg-elevated);
+    --color-survey-input-border: var(--color-border-strong);
+    --color-survey-input-text: var(--color-text);
+    --color-survey-input-focus: var(--color-data-physio);
+    --color-survey-accent: var(--color-data-physio);
+    --color-survey-accent-hover: color-mix(in srgb, var(--color-data-physio) 85%, white);
+    --color-survey-accent-active: color-mix(in srgb, var(--color-data-physio) 70%, black);
+    --color-survey-play-bg: var(--color-text);
+    --color-survey-play-hover-bg: var(--color-text-muted);
+    --color-survey-play-border: var(--color-border-strong);
+    --color-survey-play-text: var(--color-text-inverse);
+    --color-survey-nav-secondary-bg: var(--color-bg-elevated);
+    --color-survey-nav-secondary-border: var(--color-border);
+    --color-survey-nav-secondary-text: var(--color-text);
+    --color-survey-nav-secondary-hover-bg: var(--color-surface-subtle);
+    --color-survey-divider: var(--color-border);
+
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4), 0 1px 3px rgba(0, 0, 0, 0.35);
+    --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.45), 0 1px 2px rgba(0, 0, 0, 0.35);
+    --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.5), 0 2px 4px rgba(0, 0, 0, 0.35);
+    --shadow-inset-sidebar: 2px 0 8px rgba(0, 0, 0, 0.25);
+    --focus-ring: 0 0 0 2px var(--color-bg-elevated), 0 0 0 4px rgba(232, 90, 117, 0.45);
+}
+
+[data-theme="light"] {
+    color-scheme: light;
 }
 
 /* ============== Radii & shadows ============== */
@@ -207,4 +475,33 @@ a:not(.nav-link) {
 a:not(.nav-link):hover {
     color: var(--color-accent-hover);
     text-decoration: underline;
+}
+
+/* ============== Global scrollbars ============== */
+html {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-border) transparent;
+}
+
+* {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-border) transparent;
+}
+
+*::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+    background: var(--color-border);
+    border-radius: 4px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+    background: var(--color-text-faint);
 }

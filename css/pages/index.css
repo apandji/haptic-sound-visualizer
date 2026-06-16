@@ -45,7 +45,7 @@ body {
 /* Main Content Area */
 .main-content {
     flex: 1;
-    background: #fff;
+    background: var(--color-bg-elevated);
     display: flex;
     flex-direction: column;
     position: relative;
@@ -91,7 +91,7 @@ body {
 .main-content__visualizer {
     display: none;
     flex-direction: column;
-    background: #fafafa;
+    background: var(--color-visualizer-bg);
     width: 100%;
     height: 100%;
     position: absolute;

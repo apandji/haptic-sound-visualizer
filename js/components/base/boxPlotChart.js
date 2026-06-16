@@ -96,7 +96,15 @@ class BoxPlotChart {
         const layout = this._getLayout();
         layout.boxmode = 'group';
         layout.showlegend = true;
-        layout.legend = { font: { size: 10 }, x: 0, y: -0.2, orientation: 'h' };
+        layout.legend = {
+            font: {
+                size: 10,
+                color: (typeof PLOTLY_THEME !== 'undefined' && PLOTLY_THEME.fontColor) || '#666',
+            },
+            x: 0,
+            y: -0.2,
+            orientation: 'h',
+        };
 
         Plotly.react(this.plotDiv, traces, layout, this._getConfig());
     }
@@ -112,16 +120,16 @@ class BoxPlotChart {
             showlegend: false,
             height: 340,
             yaxis: {
-                title: { text: 'Change from baseline', font: { size: theme.titleFontSize || 10, family: font } },
+                title: { text: 'Change from baseline', font: { size: theme.titleFontSize || 10, family: font, color: theme.fontColor || '#666' } },
                 zeroline: true,
                 zerolinecolor: theme.lineColor || '#e0e0e0',
                 zerolinewidth: 1,
                 gridcolor: theme.gridColor || '#e8e8e8',
-                tickfont: { size: 9, family: font }
+                tickfont: { size: 9, family: font, color: theme.fontColor || '#666' }
             },
             xaxis: {
                 gridcolor: theme.gridColor || '#e8e8e8',
-                tickfont: { size: 10, family: font }
+                tickfont: { size: 10, family: font, color: theme.fontColor || '#666' }
             }
         };
     }

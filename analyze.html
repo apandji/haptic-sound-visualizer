@@ -4,60 +4,86 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SAIL Pattern Library - Analyze</title>
+    <script src="js/theme.js?v=2026-06-08.1"></script>
+    <script src="js/icons.js?v=2026-06-13.1"></script>
     <link rel="preconnect" href="https://cdn.plot.ly" crossorigin>
-    <link rel="stylesheet" href="css/design-tokens.css?v=2026-06-07.1">
-    <link rel="stylesheet" href="css/chrome.css?v=2026-06-07.5">
-    <link rel="stylesheet" href="css/pages/analyze.css?v=2026-06-07.1">
-    <link rel="stylesheet" href="css/components/base/patternExplorer.css?v=2026-06-05.3">
-    <link rel="stylesheet" href="css/components/variants/patternExplorerForAnalysis.css?v=2026-06-07.1">
+    <link rel="stylesheet" href="css/design-tokens.css?v=2026-06-09.3">
+    <link rel="stylesheet" href="css/chrome.css?v=2026-06-13.1">
+    <link rel="stylesheet" href="css/pages/analyze.css?v=2026-06-13.1">
+    <link rel="stylesheet" href="css/components/base/patternExplorer.css?v=2026-06-09.2">
+    <link rel="stylesheet" href="css/components/variants/patternExplorerForAnalysis.css?v=2026-06-12.5">
     <link rel="stylesheet" href="css/components/base/summaryStats.css?v=2026-06-07.1">
-    <link rel="stylesheet" href="css/components/base/radarChart.css?v=2026-06-05.3">
-    <link rel="stylesheet" href="css/components/base/boxPlotChart.css?v=2026-06-05.3">
-    <link rel="stylesheet" href="css/components/base/timeSeriesChart.css?v=2026-06-05.3">
-    <link rel="stylesheet" href="css/components/base/analyzeSidebarNav.css?v=2026-06-07.1">
+    <link rel="stylesheet" href="css/components/base/radarChart.css?v=2026-06-08.2">
+    <link rel="stylesheet" href="css/components/base/boxPlotChart.css?v=2026-06-08.2">
+    <link rel="stylesheet" href="css/components/base/timeSeriesChart.css?v=2026-06-08.2">
+    <link rel="stylesheet" href="css/components/base/analyzeSidebarNav.css?v=2026-06-12.1">
     <link rel="stylesheet" href="css/components/base/analyzeToolbar.css?v=2026-06-07.1">
-    <link rel="stylesheet" href="css/components/base/actionFrequencyChart.css?v=2026-06-05.3">
-    <link rel="stylesheet" href="css/components/base/trialsSidebarList.css?v=2026-06-05.3">
-    <link rel="stylesheet" href="css/components/base/trialsListView.css?v=2026-06-05.3">
-    <link rel="stylesheet" href="css/components/base/trialDetailView.css?v=2026-06-05.3">
-    <link rel="stylesheet" href="css/components/base/subjectiveProfile.css?v=2026-06-07.1">
+    <link rel="stylesheet" href="css/components/base/trialDetailView.css?v=2026-06-12.2">
+    <link rel="stylesheet" href="css/components/base/subjectiveProfile.css?v=2026-06-11.3">
+    <link rel="stylesheet" href="css/components/base/nadLandscape.css?v=2026-06-12.1">
+    <link rel="stylesheet" href="css/components/base/landscapePanels.css?v=2026-06-12.12">
+    <link rel="stylesheet" href="css/components/base/patternTags.css?v=2026-06-12.1">
+    <link rel="stylesheet" href="css/components/base/wordCloud.css?v=2026-06-11.1">
+    <link rel="stylesheet" href="css/components/base/trialsWorkbench.css?v=2026-06-12.1">
 </head>
 <body>
-    <header class="app-header">
-        <div class="app-header__start">
-            <span class="app-header__brand">SAIL</span>
-            <nav class="segmented-control segmented-control--nav" aria-label="Main navigation" data-app-nav>
-                <span class="segmented-control__indicator" aria-hidden="true"></span>
-                <a href="index.html" class="segmented-control__item">Explore</a>
-                <a href="test.html" class="segmented-control__item">Test</a>
-                <a href="analyze.html" class="segmented-control__item segmented-control__item--active" aria-current="page">Analyze</a>
-            </nav>
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+    <header class="app-header app-header--bar">
+        <span class="app-header__brand">SAIL</span>
+        <nav class="app-nav-links" aria-label="Main navigation" data-app-nav>
+            <a href="index.html" class="app-nav-links__item"><span class="icon" data-icon="compass"></span>Explore</a>
+            <a href="test.html" class="app-nav-links__item"><span class="icon" data-icon="flask"></span>Test</a>
+            <a href="analyze.html" class="app-nav-links__item app-nav-links__item--active" aria-current="page"><span class="icon" data-icon="chart"></span>Analyze</a>
+        </nav>
+        <div class="app-header__divider" aria-hidden="true"></div>
+        <div id="analyzeSidebarNav"></div>
+        <input type="search" class="input analyze-modebar__search" id="analyzeGlobalSearch" placeholder="Search patterns…" aria-label="Search">
+        <div class="analyze-modebar__sort" id="analyzeGlobalSortWrap">
+            <label class="analyze-modebar__sort-label" for="analyzeGlobalSort" title="Sort"><span class="icon" data-icon="sort"></span><span class="visually-hidden">Sort</span></label>
+            <select id="analyzeGlobalSort" class="select" aria-label="Sort patterns">
+                <option value="trials" selected># of Trials</option>
+                <option value="confidence">Confidence</option>
+                <option value="name">Name</option>
+            </select>
         </div>
-        <div class="app-header__center">
-            <span class="app-header__context" id="analyzeCorpusSummary">Loading…</span>
-        </div>
-        <div class="app-header__end" id="analyzeToolbar"></div>
+        <div id="analyzeToolbar"></div>
+        <span class="app-header__context app-header__context--end" id="analyzeCorpusSummary" aria-live="polite">Loading…</span>
+        <div data-theme-toggle-mount></div>
     </header>
 
     <div class="layout">
-        <aside class="analyze-sidebar">
-            <div id="analyzeSidebarNav"></div>
-            <div id="patternSidebarPanel" class="analyze-sidebar__panel analyze-sidebar__panel--active">
-                <div id="patternList"></div>
+        <aside class="analyze-sidebar" id="patternRail">
+            <div class="analyze-panel__title-row">
+                <h3 class="analyze-panel__title">Patterns</h3>
+                <span class="analyze-panel__meta" id="patternRailMeta"></span>
             </div>
-            <div id="trialSidebarPanel" class="analyze-sidebar__panel">
-                <div id="trialSidebarList"></div>
+            <div id="patternSidebarPanel">
+                <div id="patternList"></div>
             </div>
         </aside>
 
-        <main class="analyze-main">
-            <div class="analyze-main__placeholder app-loading" id="analyzePlaceholder">
+        <main class="analyze-main" id="main-content">
+            <div class="analyze-main__placeholder app-loading" id="analyzePlaceholder" role="status" aria-live="polite" aria-busy="true">
                 <div class="loading-spinner" aria-hidden="true"></div>
                 <p class="app-loading__text analyze-main__placeholder-text">Reading session data…</p>
             </div>
 
             <div class="analyze-main__content" id="analyzeContent">
-                <div id="patternView" class="analyze-view active">
+                <div id="patternsModeView" class="analyze-view">
+                    <section class="analyze-panel" id="landscapeFieldPanel">
+                        <div class="analyze-panel__title-row">
+                            <h3 class="analyze-panel__title">Intensity/Urgency Distribution</h3>
+                            <span class="analyze-panel__meta" id="landscapeFieldMeta"></span>
+                        </div>
+                        <div id="tagCohortsPanel"></div>
+                        <div id="nadLandscapeChart"></div>
+                    </section>
+
+                    <div id="patternView" class="analyze-pattern-details">
+                    <div class="analyze-main__empty-state" id="patternDetailsEmpty">
+                        Select a pattern from the list or click a dot on the map to see its details here.
+                    </div>
+                    <div id="patternDetailsContent" hidden>
                     <div class="analyze-sticky-context" id="analyzeStickyContext">
                         <header class="pattern-detail-header" id="patternDetailHeader" hidden>
                             <h2 class="pattern-detail-header__title font-mono" id="patternDetailTitle"></h2>
@@ -69,12 +95,20 @@
                         <div class="analyze-sample-note" id="analyzeSampleNote" hidden></div>
 
                         <div class="segmented-control segmented-control--sm" id="analyzePatternTabs" role="tablist" aria-label="Pattern feedback">
-                            <button type="button" class="segmented-control__item segmented-control__item--active" data-analyze-tab="physiological" role="tab" aria-selected="true">Physiological</button>
-                            <button type="button" class="segmented-control__item" data-analyze-tab="subjective" role="tab" aria-selected="false">Subjective</button>
+                            <button type="button" class="segmented-control__item segmented-control__item--active" id="analyzePatternTabs-tab-physio" data-analyze-tab="physiological" role="tab" aria-selected="true" aria-controls="analyzePhysioPanel">Quantitative</button>
+                            <button type="button" class="segmented-control__item" id="analyzePatternTabs-tab-subjective" data-analyze-tab="subjective" role="tab" aria-selected="false" aria-controls="analyzeSubjectivePanel" tabindex="-1">Qualitative</button>
                         </div>
                     </div>
 
-                    <div id="analyzePhysioPanel" class="analyze-pattern-tab-panel">
+                    <section class="analyze-panel" id="patternClassifySection">
+                        <div class="analyze-panel__title-row">
+                            <h3 class="analyze-panel__title">Classification &amp; notes</h3>
+                            <span class="analyze-panel__meta">tags + notes save to the research database</span>
+                        </div>
+                        <div id="patternTagsPanel"></div>
+                    </section>
+
+                    <div id="analyzePhysioPanel" class="analyze-pattern-tab-panel" role="tabpanel" aria-labelledby="analyzePatternTabs-tab-physio">
                         <section class="analyze-panel">
                             <div class="analyze-panel__title-row">
                                 <h3 class="analyze-panel__title">Brain response</h3>
@@ -94,14 +128,14 @@
                         </section>
                     </div>
 
-                    <div id="analyzeSubjectivePanel" class="analyze-pattern-tab-panel" hidden>
+                    <div id="analyzeSubjectivePanel" class="analyze-pattern-tab-panel" role="tabpanel" aria-labelledby="analyzePatternTabs-tab-subjective" hidden>
                         <div class="subjective-grid" id="subjectiveGrid">
                             <section class="analyze-panel analyze-panel--primary subjective-grid__actions">
                                 <div class="analyze-panel__title-row">
                                     <h3 class="analyze-panel__title">Reported actions</h3>
                                     <span class="analyze-panel__meta" id="actionsPanelMeta"></span>
                                 </div>
-                                <div id="actionFrequencyChart"></div>
+                                <div id="actionsWordCloud"></div>
                             </section>
 
                             <section class="analyze-panel analyze-panel--primary subjective-grid__scales">
@@ -115,20 +149,21 @@
                             <p class="survey-heatmap__hint subjective-grid__span" id="subjectiveBentoHint" hidden>Percentages show the share of responses within each row — among participants who answered that question.</p>
                             <div id="subjectiveBentoLegend" class="subjective-grid__legend subjective-grid__span" hidden></div>
 
-                            <section class="analyze-panel analyze-panel--bento subjective-grid__direction" id="subjectiveDirectionSection" hidden>
+                            <section class="analyze-panel analyze-panel--bento subjective-grid__binary" id="subjectiveBinarySection" hidden>
                                 <div class="analyze-panel__title-row">
-                                    <h3 class="analyze-panel__title">Perceived direction</h3>
-                                    <span class="analyze-panel__meta" id="directionPanelMeta"></span>
+                                    <h3 class="analyze-panel__title">Binary actions</h3>
+                                    <span class="analyze-panel__meta" id="binaryPanelMeta"></span>
                                 </div>
-                                <div id="subjectiveDirection" class="subjective-grid__heatmap"></div>
+                                <div id="subjectiveBinary" class="subjective-grid__heatmap"></div>
                             </section>
 
-                            <section class="analyze-panel analyze-panel--bento subjective-grid__texture" id="subjectiveTextureSection" hidden>
+                            <section class="analyze-panel analyze-panel--bento subjective-grid__vibes" id="subjectiveVibesSection" hidden>
                                 <div class="analyze-panel__title-row">
-                                    <h3 class="analyze-panel__title">Texture</h3>
-                                    <span class="analyze-panel__meta" id="texturePanelMeta"></span>
+                                    <h3 class="analyze-panel__title">Vibes</h3>
+                                    <span class="analyze-panel__meta" id="vibesPanelMeta"></span>
                                 </div>
-                                <div id="subjectiveTexture" class="subjective-grid__heatmap"></div>
+                                <div id="vibesWordCloud"></div>
+                                <div id="subjectiveVibes" class="subjective-grid__heatmap"></div>
                             </section>
 
                             <section class="analyze-panel analyze-panel--bento subjective-grid__emotion subjective-grid__span" id="subjectiveEmotionSection" hidden>
@@ -141,49 +176,75 @@
                         </div>
                     </div>
 
-                    <details class="analyze-panel analyze-panel--collapsible" id="patternTrialsPanel">
-                        <summary class="analyze-panel__title analyze-panel__summary" id="patternTrialsSummary">Trials</summary>
-                        <div id="patternTrialsListView"></div>
-                    </details>
-                </div>
+                    <section class="analyze-panel" id="patternTrialsPanel">
+                        <div class="analyze-panel__title-row">
+                            <h3 class="analyze-panel__title">Trials workbench</h3>
+                        </div>
+                        <div id="trialsWorkbench"></div>
+                    </section>
+                    </div><!-- /patternDetailsContent -->
+                    </div><!-- /patternView -->
+                </div><!-- /patternsModeView -->
 
                 <div id="trialsView" class="analyze-view">
-                    <div id="trialDetailPanel" hidden>
-                        <div id="trialDetailView"></div>
-                    </div>
-                    <div id="trialsEmptyState" class="analyze-main__empty-state">
-                        Select a trial from the list to inspect notes, survey, and EEG context.
+                    <div class="trials-split">
+                        <section class="analyze-panel trials-split__list" id="allTrialsPanel">
+                            <div class="analyze-panel__title-row">
+                                <h3 class="analyze-panel__title">Trials</h3>
+                            </div>
+                            <div id="allTrialsWorkbench"></div>
+                        </section>
+                        <section class="analyze-panel trials-split__detail" id="trialDetailPanel">
+                            <div class="analyze-panel__title-row">
+                                <h3 class="analyze-panel__title">Trial details</h3>
+                                <span class="analyze-panel__meta" id="trialDetailMeta"></span>
+                            </div>
+                            <div id="trialDetailView"></div>
+                        </section>
                     </div>
                 </div>
             </div>
         </main>
+
+        <aside class="analyze-attention-rail" id="attentionRail">
+            <section class="analyze-panel" id="landscapeAttentionPanel">
+                <div class="analyze-panel__title-row">
+                    <h3 class="analyze-panel__title">What needs attention</h3>
+                </div>
+                <div id="attentionQueuePanel"></div>
+            </section>
+        </aside>
     </div>
 
     <script src="https://cdn.plot.ly/plotly-2.35.2.min.js" charset="utf-8"></script>
-    <script src="js/dataCache.js?v=2026-06-07.5"></script>
-    <script src="js/analyze/constants.js?v=2026-06-06.2"></script>
+    <script src="js/uiHelpers.js?v=2026-06-13.1"></script>
+    <script src="js/dataCache.js?v=2026-06-07.6"></script>
+    <script src="js/analyze/constants.js?v=2026-06-10.1"></script>
     <script src="js/analyze/storage.js?v=2026-06-05.3"></script>
-    <script src="js/modules/analysisDataProcessor.js?v=2026-06-06.2"></script>
+    <script src="js/modules/analysisDataProcessor.js?v=2026-06-12.10"></script>
     <script src="js/components/base/patternExplorer.js?v=2026-06-05.3"></script>
-    <script src="js/components/base/analysisDataLoader.js?v=2026-06-07.5"></script>
-    <script src="js/components/base/analyzeSidebarNav.js?v=2026-06-07.1"></script>
+    <script src="js/components/base/analysisDataLoader.js?v=2026-06-07.6"></script>
+    <script src="js/components/base/analyzeSidebarNav.js?v=2026-06-13.1"></script>
     <script src="js/components/base/analyzeDateRangeCalendar.js?v=2026-06-05.6"></script>
-    <script src="js/components/base/analyzeToolbar.js?v=2026-06-07.1"></script>
-    <script src="js/components/variants/patternExplorerForAnalysis.js?v=2026-06-05.10"></script>
+    <script src="js/components/base/analyzeToolbar.js?v=2026-06-13.1"></script>
+    <script src="js/components/variants/patternExplorerForAnalysis.js?v=2026-06-12.2"></script>
     <script src="js/components/base/summaryStats.js?v=2026-06-07.1"></script>
-    <script src="js/components/base/actionFrequencyChart.js?v=2026-06-05.10"></script>
-    <script src="js/components/base/analyzePatternTabs.js?v=2026-06-07.1"></script>
-    <script src="js/components/base/subjectiveProfilePanel.js?v=2026-06-06.8"></script>
-    <script src="js/components/base/trialsSidebarList.js?v=2026-06-05.3"></script>
-    <script src="js/components/base/trialsListView.js?v=2026-06-06.1"></script>
-    <script src="js/components/base/trialDetailView.js?v=2026-06-05.3"></script>
-    <script src="js/components/base/radarChart.js?v=2026-06-05.3"></script>
-    <script src="js/components/base/boxPlotChart.js?v=2026-06-05.3"></script>
-    <script src="js/components/base/timeSeriesChart.js?v=2026-06-05.3"></script>
-    <script src="js/analyze/config.js?v=2026-06-05.3"></script>
-    <script src="js/analyze/state.js?v=2026-06-05.3"></script>
-    <script src="js/analyze/app.js?v=2026-06-06.7"></script>
-    <script src="js/analyze/bootstrap.js?v=2026-06-05.3"></script>
-    <script src="js/appNav.js?v=2026-06-07.5"></script>
+    <script src="js/components/base/analyzePatternTabs.js?v=2026-06-07.7"></script>
+    <script src="js/components/base/subjectiveProfilePanel.js?v=2026-06-09.1"></script>
+    <script src="js/components/base/trialDetailView.js?v=2026-06-13.1"></script>
+    <script src="js/components/base/radarChart.js?v=2026-06-08.3"></script>
+    <script src="js/components/base/boxPlotChart.js?v=2026-06-08.3"></script>
+    <script src="js/components/base/timeSeriesChart.js?v=2026-06-08.3"></script>
+    <script src="js/components/base/nadLandscapeChart.js?v=2026-06-11.3"></script>
+    <script src="js/components/base/attentionQueuePanel.js?v=2026-06-13.1"></script>
+    <script src="js/components/base/tagCohortsPanel.js?v=2026-06-11.3"></script>
+    <script src="js/components/base/patternTagsPanel.js?v=2026-06-12.1"></script>
+    <script src="js/components/base/wordCloudPanel.js?v=2026-06-11.1"></script>
+    <script src="js/components/base/trialsWorkbench.js?v=2026-06-12.1"></script>
+    <script src="js/analyze/config.js?v=2026-06-08.3"></script>
+    <script src="js/analyze/state.js?v=2026-06-12.1"></script>
+    <script src="js/analyze/app.js?v=2026-06-12.10"></script>
+    <script src="js/analyze/bootstrap.js?v=2026-06-12.1"></script>
+    <script src="js/appNav.js?v=2026-06-12.6"></script>
 </body>
 </html>

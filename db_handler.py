@@ -11,29 +11,19 @@ from datetime import datetime
 from typing import Optional, List, Dict, Any
 from pathlib import Path
 
-DB_PATH = Path(__file__).parent / 'haptic_research.db'
+from survey_taxonomy import (
+    SURVEY_BINARY_PAIRS,
+    SURVEY_VIBE_PAIRS,
+    SURVEY_ACTION_OPTIONS,
+    SURVEY_EMOTION_OPTIONS,
+    BINARY_PAIR_VALUES,
+    VIBE_PAIR_VALUES,
+    LEGACY_TEXTURE_FACET_TO_PAIR_ID,
+    is_valid_binary_pair_value,
+    is_valid_vibe_pair_value,
+)
 
-SURVEY_ACTION_OPTIONS = ('Lean', 'Slide', 'Turn', 'Twist', 'Run', 'Jump')
-SURVEY_DIRECTION_AXES = {
-    'left_right': ('Left', 'Right'),
-    'up_down': ('Up', 'Down'),
-    'forward_backward': ('Forward', 'Backward')
-}
-SURVEY_TEXTURE_FACETS = {
-    'temperature': ('Hot', 'Cold'),
-    'hardness': ('Hard', 'Soft'),
-    'surface': ('Smooth', 'Rough')
-}
-SURVEY_EMOTION_OPTIONS = {
-    'mood': ('Distressed', 'Sad', 'Balanced', 'Happy', 'Ecstatic', 'Unsure'),
-    'anxiety': ('Meditative', 'Relaxed', 'Steady', 'Cautious', 'Anxious', 'Unsure'),
-    'focus': ('Scattered', 'Distracted', 'Present', 'Engaged', 'Absorbed', 'Unsure'),
-    'body': ('Tense', 'Tight', 'Neutral', 'Loose', 'Grounded', 'Unsure'),
-    'energy': ('Depleted', 'Tired', 'Neutral', 'Energized', 'Charged', 'Unsure'),
-    'clarity': ('Confused', 'Foggy', 'Clear', 'Sharp', 'Lucid', 'Unsure'),
-    'social': ('Withdrawn', 'Reserved', 'Open', 'Connected', 'Expansive', 'Unsure'),
-    'motivation': ('Resistant', 'Reluctant', 'Willing', 'Driven', 'Compelled', 'Unsure')
-}
+DB_PATH = Path(__file__).parent / 'haptic_research_v2.db'
 
 
 def _slugify_fragment(value: str) -> str:
@@ -49,21 +39,17 @@ def flatten_survey_response_to_tags(survey_response: Optional[Dict[str, Any]]) -
 
     derived_tags: List[Dict[str, Any]] = []
 
-    direction = survey_response.get('direction') or {}
-    for axis_key, axis_label in (
-        ('leftRight', 'Direction'),
-        ('upDown', 'Direction'),
-        ('forwardBackward', 'Direction')
-    ):
-        value = direction.get(axis_key)
-        if not value:
-            continue
-        derived_tags.append({
-            'id': f"direction:{axis_key}:{_slugify_fragment(value)}",
-            'label': f"{axis_label}: {value}",
-            'category': 'direction',
-            'isCustom': False
-        })
+    binary_actions = survey_response.get('binaryActions') or {}
+    if isinstance(binary_actions, dict):
+        for pair_id, value in binary_actions.items():
+            if not value:
+                continue
+            derived_tags.append({
+                'id': f"binary:{pair_id}:{_slugify_fragment(value)}",
+                'label': f"Binary: {value}",
+                'category': 'binary_action',
+                'isCustom': False
+            })
 
     action_payload = survey_response.get('action') or {}
     for value in action_payload.get('predefined', []):
@@ -95,21 +81,17 @@ def flatten_survey_response_to_tags(survey_response: Optional[Dict[str, Any]]) -
             'isCustom': False
         })
 
-    texture = survey_response.get('texture') or {}
-    for facet, label in (
-        ('temperature', 'Temperature'),
-        ('hardness', 'Hardness'),
-        ('surface', 'Surface')
-    ):
-        value = texture.get(facet)
-        if not value:
-            continue
-        derived_tags.append({
-            'id': f"texture:{facet}:{_slugify_fragment(value)}",
-            'label': f"{label}: {value}",
-            'category': f"texture:{facet}",
-            'isCustom': False
-        })
+    vibes = survey_response.get('vibes') or {}
+    if isinstance(vibes, dict):
+        for pair_id, value in vibes.items():
+            if not value:
+                continue
+            derived_tags.append({
+                'id': f"vibe:{pair_id}:{_slugify_fragment(value)}",
+                'label': f"Vibe: {value}",
+                'category': 'vibe',
+                'isCustom': False
+            })
 
     return derived_tags
 
@@ -149,7 +131,7 @@ def normalize_optional_choice(value: Any, allowed_values: tuple, field_name: str
 
 
 def normalize_action_payload(action_payload: Any) -> Dict[str, Any]:
-    """Validate the action section and require at least one response."""
+    """Validate the other-actions section (optional)."""
     payload = action_payload or {}
     predefined_values = payload.get('predefined') or []
     custom_values = normalize_custom_action_values(payload.get('custom'))
@@ -165,13 +147,46 @@ def normalize_action_payload(action_payload: Any) -> Dict[str, Any]:
         if normalized not in unique_predefined:
             unique_predefined.append(normalized)
 
-    if not unique_predefined and not custom_values:
-        raise ValueError("At least one action response is required")
-
     return {
         'predefined': unique_predefined,
         'custom': custom_values
     }
+
+
+def normalize_binary_actions_payload(binary_payload: Any) -> Dict[str, str]:
+    """Validate binary action pair selections."""
+    if binary_payload is None:
+        return {}
+    if not isinstance(binary_payload, dict):
+        raise ValueError("binaryActions must be an object")
+
+    normalized: Dict[str, str] = {}
+    for pair_id, value in binary_payload.items():
+        if value is None or str(value).strip() == '':
+            continue
+        cleaned = str(value).strip()
+        if not is_valid_binary_pair_value(pair_id, cleaned):
+            raise ValueError(f"Unsupported binary action {pair_id!r}: {value!r}")
+        normalized[str(pair_id)] = cleaned
+    return normalized
+
+
+def normalize_vibes_payload(vibes_payload: Any) -> Dict[str, str]:
+    """Validate vibe pair selections."""
+    if vibes_payload is None:
+        return {}
+    if not isinstance(vibes_payload, dict):
+        raise ValueError("vibes must be an object")
+
+    normalized: Dict[str, str] = {}
+    for pair_id, value in vibes_payload.items():
+        if value is None or str(value).strip() == '':
+            continue
+        cleaned = str(value).strip()
+        if not is_valid_vibe_pair_value(pair_id, cleaned):
+            raise ValueError(f"Unsupported vibe {pair_id!r}: {value!r}")
+        normalized[str(pair_id)] = cleaned
+    return normalized
 
 
 def normalize_custom_action_values(value: Any) -> List[str]:
@@ -262,17 +277,28 @@ def create_trial_survey_response(conn, trial_id: int, survey_response: Dict[str,
 
     direction = survey_response.get('direction') or {}
     normalized_direction = {
-        'left_right': normalize_optional_choice(direction.get('leftRight'), SURVEY_DIRECTION_AXES['left_right'], 'direction.leftRight'),
-        'up_down': normalize_optional_choice(direction.get('upDown'), SURVEY_DIRECTION_AXES['up_down'], 'direction.upDown'),
-        'forward_backward': normalize_optional_choice(direction.get('forwardBackward'), SURVEY_DIRECTION_AXES['forward_backward'], 'direction.forwardBackward')
+        'left_right': normalize_optional_choice(direction.get('leftRight'), BINARY_PAIR_VALUES['left_right'], 'direction.leftRight'),
+        'up_down': normalize_optional_choice(direction.get('upDown'), BINARY_PAIR_VALUES['up_down'], 'direction.upDown'),
+        'forward_backward': normalize_optional_choice(direction.get('forwardBackward'), BINARY_PAIR_VALUES['forward_backward'], 'direction.forwardBackward')
     }
 
-    texture = survey_response.get('texture') or {}
-    normalized_texture = {
-        'temperature': normalize_optional_choice(texture.get('temperature'), SURVEY_TEXTURE_FACETS['temperature'], 'texture.temperature'),
-        'hardness': normalize_optional_choice(texture.get('hardness'), SURVEY_TEXTURE_FACETS['hardness'], 'texture.hardness'),
-        'surface': normalize_optional_choice(texture.get('surface'), SURVEY_TEXTURE_FACETS['surface'], 'texture.surface')
-    }
+    binary_actions = normalize_binary_actions_payload(survey_response.get('binaryActions'))
+    if not binary_actions:
+        for pair_id, value in normalized_direction.items():
+            if value:
+                binary_actions[pair_id] = value
+
+    vibes = normalize_vibes_payload(survey_response.get('vibes'))
+    if not vibes:
+        texture = survey_response.get('texture') or {}
+        for facet, pair_id in LEGACY_TEXTURE_FACET_TO_PAIR_ID.items():
+            value = normalize_optional_choice(
+                texture.get(facet),
+                VIBE_PAIR_VALUES[pair_id],
+                f'texture.{facet}'
+            )
+            if value:
+                vibes[pair_id] = value
 
     normalized_action = normalize_action_payload(survey_response.get('action'))
 
@@ -301,12 +327,10 @@ def create_trial_survey_response(conn, trial_id: int, survey_response: Dict[str,
 
     saved_selection_count = 0
 
-    for axis, value in normalized_direction.items():
-        if not value:
-            continue
+    for pair_id, value in binary_actions.items():
         cursor.execute(
-            "INSERT INTO trial_survey_directions (response_id, axis, value) VALUES (?, ?, ?)",
-            (response_id, axis, value)
+            "INSERT INTO trial_survey_binary_actions (response_id, pair_id, value) VALUES (?, ?, ?)",
+            (response_id, pair_id, value)
         )
         saved_selection_count += 1
 
@@ -324,12 +348,10 @@ def create_trial_survey_response(conn, trial_id: int, survey_response: Dict[str,
         )
         saved_selection_count += 1
 
-    for facet, value in normalized_texture.items():
-        if not value:
-            continue
+    for pair_id, value in vibes.items():
         cursor.execute(
-            "INSERT INTO trial_survey_textures (response_id, facet, value) VALUES (?, ?, ?)",
-            (response_id, facet, value)
+            "INSERT INTO trial_survey_vibes (response_id, pair_id, value) VALUES (?, ?, ?)",
+            (response_id, pair_id, value)
         )
         saved_selection_count += 1
 
@@ -350,6 +372,21 @@ def get_connection():
     return conn
 
 
+# Analyst classification tags. The three defaults match the NAD framing;
+# analysts can create more. Colors align with the frontend map legend.
+DEFAULT_ANALYSIS_TAGS = [
+    ('Neutral', '#5bb5a2'),
+    ('Attentive', '#d4a843'),
+    ('Disruptive', '#c75b7a'),
+]
+
+# Cycled through for analyst-created tags when no color is provided.
+CUSTOM_TAG_PALETTE = [
+    '#6b8fd4', '#b07fc7', '#d4845f', '#5fae5f',
+    '#c75b9b', '#8a8a4a', '#5fa8c7', '#a87f5f',
+]
+
+
 def ensure_analysis_schema(conn: sqlite3.Connection) -> None:
     """Apply lightweight schema updates for analysis features."""
     cursor = conn.cursor()
@@ -360,6 +397,100 @@ def ensure_analysis_schema(conn: sqlite3.Connection) -> None:
             "ALTER TABLE trials ADD COLUMN exclude_from_analysis INTEGER NOT NULL DEFAULT 0"
         )
         conn.commit()
+    if 'analyst_notes' not in columns:
+        cursor.execute("ALTER TABLE trials ADD COLUMN analyst_notes TEXT")
+        cursor.execute("ALTER TABLE trials ADD COLUMN analyst_notes_updated_at DATETIME")
+        conn.commit()
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS analysis_tags (
+            tag_id      INTEGER PRIMARY KEY AUTOINCREMENT,
+            name        TEXT NOT NULL UNIQUE COLLATE NOCASE,
+            color       TEXT NOT NULL,
+            is_default  INTEGER NOT NULL DEFAULT 0,
+            created_at  DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+        """
+    )
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS pattern_analysis_tags (
+            pattern_name  TEXT NOT NULL,
+            tag_id        INTEGER NOT NULL REFERENCES analysis_tags(tag_id) ON DELETE CASCADE,
+            PRIMARY KEY (pattern_name, tag_id)
+        )
+        """
+    )
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS pattern_annotations (
+            pattern_name  TEXT PRIMARY KEY,
+            notes         TEXT NOT NULL DEFAULT '',
+            updated_at    DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+        """
+    )
+
+    tag_count = cursor.execute("SELECT COUNT(*) FROM analysis_tags").fetchone()[0]
+    if tag_count == 0:
+        for name, color in DEFAULT_ANALYSIS_TAGS:
+            cursor.execute(
+                "INSERT INTO analysis_tags (name, color, is_default) VALUES (?, ?, 1)",
+                (name, color)
+            )
+
+    _migrate_legacy_classifications(cursor)
+    conn.commit()
+
+
+def _migrate_legacy_classifications(cursor: sqlite3.Cursor) -> None:
+    """One-time migration: boolean NAD classifications -> tag assignments + annotations."""
+    legacy_exists = cursor.execute(
+        "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'pattern_classifications'"
+    ).fetchone()
+    if not legacy_exists:
+        return
+
+    already_migrated = cursor.execute("SELECT COUNT(*) FROM pattern_analysis_tags").fetchone()[0]
+    has_annotations = cursor.execute("SELECT COUNT(*) FROM pattern_annotations").fetchone()[0]
+    if already_migrated or has_annotations:
+        return
+
+    default_tag_ids = {
+        row[0]: row[1] for row in cursor.execute(
+            "SELECT name, tag_id FROM analysis_tags WHERE is_default = 1"
+        ).fetchall()
+    }
+
+    rows = cursor.execute(
+        """
+        SELECT pattern_name, is_neutral, is_attentive, is_disruptive, notes, updated_at
+        FROM pattern_classifications
+        """
+    ).fetchall()
+
+    for row in rows:
+        flags = [
+            ('Neutral', row[1]),
+            ('Attentive', row[2]),
+            ('Disruptive', row[3]),
+        ]
+        for tag_name, flag in flags:
+            if flag and tag_name in default_tag_ids:
+                cursor.execute(
+                    "INSERT OR IGNORE INTO pattern_analysis_tags (pattern_name, tag_id) VALUES (?, ?)",
+                    (row[0], default_tag_ids[tag_name])
+                )
+        if row[4]:
+            cursor.execute(
+                """
+                INSERT INTO pattern_annotations (pattern_name, notes, updated_at)
+                VALUES (?, ?, COALESCE(?, CURRENT_TIMESTAMP))
+                ON CONFLICT(pattern_name) DO NOTHING
+                """,
+                (row[0], row[4], row[5])
+            )
 
 
 def get_pattern_metadata_catalog() -> Dict[str, Dict[str, Any]]:
@@ -405,6 +536,238 @@ def set_trial_exclude_from_analysis(trial_id: int, excluded: bool) -> Dict[str, 
             'success': True,
             'trialId': trial_id,
             'excludeFromAnalysis': bool(excluded)
+        }
+    except Exception as exc:
+        conn.rollback()
+        return {'success': False, 'error': str(exc)}
+    finally:
+        conn.close()
+
+
+def _tag_row_to_payload(row: sqlite3.Row) -> Dict[str, Any]:
+    return {
+        'id': row['tag_id'],
+        'name': row['name'],
+        'color': row['color'],
+        'isDefault': bool(row['is_default'])
+    }
+
+
+def get_analysis_tags() -> List[Dict[str, Any]]:
+    """Return the analyst tag vocabulary (defaults first, then custom by name)."""
+    conn = get_connection()
+    try:
+        rows = conn.execute(
+            """
+            SELECT tag_id, name, color, is_default
+            FROM analysis_tags
+            ORDER BY is_default DESC, name COLLATE NOCASE
+            """
+        ).fetchall()
+        return [_tag_row_to_payload(row) for row in rows]
+    finally:
+        conn.close()
+
+
+def create_analysis_tag(name: str, color: Optional[str] = None) -> Dict[str, Any]:
+    """Create a custom analyst tag. Color auto-assigned from a palette when omitted."""
+    cleaned_name = ' '.join(str(name or '').split())
+    if not cleaned_name:
+        return {'success': False, 'error': 'Tag name is required'}
+    if len(cleaned_name) > 40:
+        return {'success': False, 'error': 'Tag name must be 40 characters or fewer'}
+
+    conn = get_connection()
+    try:
+        existing = conn.execute(
+            "SELECT tag_id, name, color, is_default FROM analysis_tags WHERE name = ? COLLATE NOCASE",
+            (cleaned_name,)
+        ).fetchone()
+        if existing:
+            return {'success': True, 'tag': _tag_row_to_payload(existing), 'existed': True}
+
+        if not color:
+            custom_count = conn.execute(
+                "SELECT COUNT(*) FROM analysis_tags WHERE is_default = 0"
+            ).fetchone()[0]
+            color = CUSTOM_TAG_PALETTE[custom_count % len(CUSTOM_TAG_PALETTE)]
+
+        cursor = conn.execute(
+            "INSERT INTO analysis_tags (name, color, is_default) VALUES (?, ?, 0)",
+            (cleaned_name, color)
+        )
+        conn.commit()
+        row = conn.execute(
+            "SELECT tag_id, name, color, is_default FROM analysis_tags WHERE tag_id = ?",
+            (cursor.lastrowid,)
+        ).fetchone()
+        return {'success': True, 'tag': _tag_row_to_payload(row)}
+    except Exception as exc:
+        conn.rollback()
+        return {'success': False, 'error': str(exc)}
+    finally:
+        conn.close()
+
+
+def get_pattern_survey_counts(participant_id: Optional[int] = None) -> Dict[str, Any]:
+    """Per-pattern trial/survey counts for queue weighting on the Test page.
+
+    Returns, for every pattern that has trials, how many usable (non-excluded)
+    trials and surveyed trials exist, plus how many of those belong to the
+    given participant (0 when no participant is supplied).
+    """
+    conn = get_connection()
+    try:
+        rows = conn.execute(
+            """
+            SELECT p.name AS name,
+                   COUNT(t.trial_id) AS trial_count,
+                   SUM(CASE WHEN r.response_id IS NOT NULL THEN 1 ELSE 0 END) AS surveyed_count,
+                   SUM(CASE WHEN s.participant_id = ? THEN 1 ELSE 0 END) AS participant_trials
+            FROM patterns p
+            LEFT JOIN trials t
+                ON t.pattern_id = p.pattern_id
+                AND t.exclude_from_analysis = 0
+            LEFT JOIN sessions s ON s.session_id = t.session_id
+            LEFT JOIN trial_survey_responses r ON r.trial_id = t.trial_id
+            GROUP BY p.pattern_id
+            """,
+            (participant_id if participant_id is not None else -1,)
+        ).fetchall()
+
+        return {
+            'participantId': participant_id,
+            'patterns': [
+                {
+                    'name': row['name'],
+                    'trialCount': row['trial_count'] or 0,
+                    'surveyedCount': row['surveyed_count'] or 0,
+                    'participantTrials': row['participant_trials'] or 0,
+                }
+                for row in rows
+            ],
+        }
+    finally:
+        conn.close()
+
+
+def get_pattern_tag_state() -> Dict[str, Any]:
+    """Tag assignments and analyst notes for all patterns."""
+    conn = get_connection()
+    try:
+        pattern_tags: Dict[str, List[int]] = {}
+        for row in conn.execute(
+            "SELECT pattern_name, tag_id FROM pattern_analysis_tags ORDER BY pattern_name, tag_id"
+        ).fetchall():
+            pattern_tags.setdefault(row['pattern_name'], []).append(row['tag_id'])
+
+        annotations: Dict[str, Dict[str, Any]] = {}
+        for row in conn.execute(
+            "SELECT pattern_name, notes, updated_at FROM pattern_annotations"
+        ).fetchall():
+            annotations[row['pattern_name']] = {
+                'notes': row['notes'] or '',
+                'updatedAt': row['updated_at']
+            }
+
+        return {'patternTags': pattern_tags, 'annotations': annotations}
+    finally:
+        conn.close()
+
+
+def save_pattern_tag_state(pattern_name: str, tag_ids: List[int],
+                           notes: Optional[str] = None) -> Dict[str, Any]:
+    """Replace a pattern's tag assignments and upsert its analyst notes."""
+    cleaned_name = str(pattern_name or '').strip()
+    if not cleaned_name:
+        return {'success': False, 'error': 'patternName is required'}
+
+    try:
+        normalized_ids = sorted({int(tag_id) for tag_id in (tag_ids or [])})
+    except (TypeError, ValueError):
+        return {'success': False, 'error': 'tagIds must be a list of integers'}
+
+    cleaned_notes = str(notes).strip() if notes is not None else ''
+
+    conn = get_connection()
+    try:
+        if normalized_ids:
+            placeholders = ','.join('?' for _ in normalized_ids)
+            known = {
+                row[0] for row in conn.execute(
+                    f"SELECT tag_id FROM analysis_tags WHERE tag_id IN ({placeholders})",
+                    normalized_ids
+                ).fetchall()
+            }
+            unknown = [tag_id for tag_id in normalized_ids if tag_id not in known]
+            if unknown:
+                return {'success': False, 'error': f'Unknown tag ids: {unknown}'}
+
+        conn.execute("DELETE FROM pattern_analysis_tags WHERE pattern_name = ?", (cleaned_name,))
+        for tag_id in normalized_ids:
+            conn.execute(
+                "INSERT INTO pattern_analysis_tags (pattern_name, tag_id) VALUES (?, ?)",
+                (cleaned_name, tag_id)
+            )
+
+        conn.execute(
+            """
+            INSERT INTO pattern_annotations (pattern_name, notes, updated_at)
+            VALUES (?, ?, CURRENT_TIMESTAMP)
+            ON CONFLICT(pattern_name) DO UPDATE SET
+                notes = excluded.notes,
+                updated_at = CURRENT_TIMESTAMP
+            """,
+            (cleaned_name, cleaned_notes)
+        )
+        conn.commit()
+
+        annotation = conn.execute(
+            "SELECT notes, updated_at FROM pattern_annotations WHERE pattern_name = ?",
+            (cleaned_name,)
+        ).fetchone()
+        return {
+            'success': True,
+            'patternName': cleaned_name,
+            'tagIds': normalized_ids,
+            'notes': annotation['notes'],
+            'updatedAt': annotation['updated_at']
+        }
+    except Exception as exc:
+        conn.rollback()
+        return {'success': False, 'error': str(exc)}
+    finally:
+        conn.close()
+
+
+def set_trial_analyst_notes(trial_id: int, notes: Optional[str]) -> Dict[str, Any]:
+    """Persist the analyst's note on a trial (separate from original research notes)."""
+    cleaned_notes = str(notes).strip() if notes is not None else ''
+
+    conn = get_connection()
+    try:
+        cursor = conn.execute(
+            """
+            UPDATE trials
+            SET analyst_notes = ?, analyst_notes_updated_at = CURRENT_TIMESTAMP
+            WHERE trial_id = ?
+            """,
+            (cleaned_notes, trial_id)
+        )
+        if cursor.rowcount == 0:
+            conn.rollback()
+            return {'success': False, 'error': f'Trial {trial_id} not found'}
+        conn.commit()
+
+        row = conn.execute(
+            "SELECT analyst_notes, analyst_notes_updated_at FROM trials WHERE trial_id = ?",
+            (trial_id,)
+        ).fetchone()
+        return {
+            'success': True,
+            'trialId': trial_id,
+            'analystNotes': row['analyst_notes'] or '',
+            'analystNotesUpdatedAt': row['analyst_notes_updated_at']
         }
     except Exception as exc:
         conn.rollback()
@@ -601,10 +964,11 @@ def save_session_data(session_data: Dict[str, Any]) -> Dict[str, Any]:
                 "surveyResponse": {
                     "urgency": 0.72,
                     "intensity": 0.61,
-                    "direction": {
-                        "leftRight": "Left",
-                        "upDown": null,
-                        "forwardBackward": "Forward"
+                    "confidence": 0.88,
+                    "binaryActions": {
+                        "left_right": "Left",
+                        "forward_backward": "Forward",
+                        "relax_focus": "Focus"
                     },
                     "action": {
                         "predefined": ["Lean"],
@@ -620,12 +984,10 @@ def save_session_data(session_data: Dict[str, Any]) -> Dict[str, Any]:
                         "social": "Open",
                         "motivation": "Driven"
                     },
-                    "texture": {
-                        "temperature": "Hot",
-                        "hardness": null,
-                        "surface": "Smooth"
-                    },
-                    "confidence": 0.88
+                    "vibes": {
+                        "hot_cold": "Hot",
+                        "smooth_rough": "Smooth"
+                    }
                 },
                 "selectedTags": [...]
             }
@@ -871,6 +1233,8 @@ def get_analysis_sessions(limit: Optional[int] = None) -> List[Dict[str, Any]]:
                 t.end_time,
                 t.notes AS trial_notes,
                 t.exclude_from_analysis,
+                t.analyst_notes,
+                t.analyst_notes_updated_at,
                 p.name AS pattern_name,
                 p.file_path AS pattern_path
             FROM trials t
@@ -890,9 +1254,9 @@ def get_analysis_sessions(limit: Optional[int] = None) -> List[Dict[str, Any]]:
 
         readings_by_trial: Dict[int, Dict[str, List[Dict[str, Any]]]] = {}
         survey_rows_by_trial: Dict[int, Dict[str, Any]] = {}
-        directions_by_response: Dict[int, Dict[str, str]] = {}
+        binary_actions_by_response: Dict[int, Dict[str, str]] = {}
         actions_by_response: Dict[int, Dict[str, Any]] = {}
-        textures_by_response: Dict[int, Dict[str, str]] = {}
+        vibes_by_response: Dict[int, Dict[str, str]] = {}
         events_by_trial: Dict[int, List[Dict[str, Any]]] = {}
 
         if trial_ids:
@@ -968,16 +1332,16 @@ def get_analysis_sessions(limit: Optional[int] = None) -> List[Dict[str, Any]]:
 
                 cursor.execute(
                     f"""
-                    SELECT response_id, axis, value
-                    FROM trial_survey_directions
+                    SELECT response_id, pair_id, value
+                    FROM trial_survey_binary_actions
                     WHERE response_id IN ({response_placeholders})
-                    ORDER BY response_id, axis
+                    ORDER BY response_id, pair_id
                     """,
                     response_ids
                 )
 
                 for row in cursor.fetchall():
-                    directions_by_response.setdefault(row['response_id'], {})[row['axis']] = row['value']
+                    binary_actions_by_response.setdefault(row['response_id'], {})[row['pair_id']] = row['value']
 
                 cursor.execute(
                     f"""
@@ -1001,16 +1365,16 @@ def get_analysis_sessions(limit: Optional[int] = None) -> List[Dict[str, Any]]:
 
                 cursor.execute(
                     f"""
-                    SELECT response_id, facet, value
-                    FROM trial_survey_textures
+                    SELECT response_id, pair_id, value
+                    FROM trial_survey_vibes
                     WHERE response_id IN ({response_placeholders})
-                    ORDER BY response_id, facet
+                    ORDER BY response_id, pair_id
                     """,
                     response_ids
                 )
 
                 for row in cursor.fetchall():
-                    textures_by_response.setdefault(row['response_id'], {})[row['facet']] = row['value']
+                    vibes_by_response.setdefault(row['response_id'], {})[row['pair_id']] = row['value']
 
             cursor.execute(
                 f"""
@@ -1086,17 +1450,13 @@ def get_analysis_sessions(limit: Optional[int] = None) -> List[Dict[str, Any]]:
 
                 if survey_row:
                     response_id = survey_row['response_id']
-                    direction = directions_by_response.get(response_id, {})
+                    binary_actions = binary_actions_by_response.get(response_id, {})
                     action = actions_by_response.get(response_id, {'predefined': [], 'custom': []})
-                    texture = textures_by_response.get(response_id, {})
+                    vibes = vibes_by_response.get(response_id, {})
                     survey_response = {
                         'urgency': survey_row['urgency'],
                         'intensity': survey_row['intensity'],
-                        'direction': {
-                            'leftRight': direction.get('left_right'),
-                            'upDown': direction.get('up_down'),
-                            'forwardBackward': direction.get('forward_backward')
-                        },
+                        'binaryActions': dict(binary_actions),
                         'action': {
                             'predefined': list(action.get('predefined', [])),
                             'custom': normalize_custom_action_values(action.get('custom', []))
@@ -1111,11 +1471,7 @@ def get_analysis_sessions(limit: Optional[int] = None) -> List[Dict[str, Any]]:
                             'social': survey_row['social'],
                             'motivation': survey_row['motivation']
                         },
-                        'texture': {
-                            'temperature': texture.get('temperature'),
-                            'hardness': texture.get('hardness'),
-                            'surface': texture.get('surface')
-                        },
+                        'vibes': dict(vibes),
                         'confidence': survey_row['confidence']
                     }
                     selected_tags = flatten_survey_response_to_tags(survey_response)
@@ -1125,6 +1481,8 @@ def get_analysis_sessions(limit: Optional[int] = None) -> List[Dict[str, Any]]:
                     'trialId': f"{session_id}_trial_{trial_row['trial_order']}",
                     'dbTrialId': trial_id,
                     'excludeFromAnalysis': bool(trial_row['exclude_from_analysis']),
+                    'analystNotes': trial_row['analyst_notes'] or '',
+                    'analystNotesUpdatedAt': trial_row['analyst_notes_updated_at'],
                     'notesRaw': trial_notes_blob,
                     'pattern': {
                         'name': trial_row['pattern_name'],
@@ -1179,13 +1537,22 @@ def get_all_tags() -> List[Dict[str, Any]]:
             'description': 'Predefined action response'
         })
 
-    for axis_values in SURVEY_DIRECTION_AXES.values():
-        for value in axis_values:
+    for pair_id, (option_a, option_b) in SURVEY_BINARY_PAIRS:
+        for value in (option_a, option_b):
             tags.append({
-                'tag_id': f"direction:{_slugify_fragment(value)}",
+                'tag_id': f"binary:{pair_id}:{_slugify_fragment(value)}",
                 'tag_name': value,
-                'category': 'direction',
-                'description': 'Optional directional response'
+                'category': 'binary_action',
+                'description': f'Binary action pair {pair_id}'
+            })
+
+    for pair_id, (option_a, option_b) in SURVEY_VIBE_PAIRS:
+        for value in (option_a, option_b):
+            tags.append({
+                'tag_id': f"vibe:{pair_id}:{_slugify_fragment(value)}",
+                'tag_name': value,
+                'category': 'vibe',
+                'description': f'Vibe pair {pair_id}'
             })
 
     for facet, values in SURVEY_EMOTION_OPTIONS.items():
@@ -1197,16 +1564,123 @@ def get_all_tags() -> List[Dict[str, Any]]:
                 'description': f"{facet.capitalize()} response"
             })
 
-    for facet, values in SURVEY_TEXTURE_FACETS.items():
-        for value in values:
-            tags.append({
-                'tag_id': f"texture:{facet}:{_slugify_fragment(value)}",
-                'tag_name': value,
-                'category': f"texture:{facet}",
-                'description': 'Optional texture response'
-            })
-
     return tags
+
+
+# Sessions before the survey v2 migration used a different (shorter) survey
+# flow, so their trial durations don't represent the current protocol.
+TIMING_STATS_SINCE_DATE = '2026-06-08'
+
+# Plausibility bounds for a completed trial cycle (baseline + stimulation +
+# survey). Below the minimum the survey can't have been the real 12-step flow
+# (dev/aborted runs); above the maximum the session was likely left idle.
+TIMING_STATS_MIN_TRIAL_SEC = 70
+TIMING_STATS_MAX_TRIAL_SEC = 900
+
+# Cap on session start -> first trial gap; longer gaps mean the page sat idle.
+TIMING_STATS_MAX_SETUP_SEC = 600
+
+
+def _percentile(sorted_values: List[float], fraction: float) -> float:
+    """Linear-interpolated percentile of an already-sorted list."""
+    if not sorted_values:
+        return 0.0
+    if len(sorted_values) == 1:
+        return sorted_values[0]
+    position = fraction * (len(sorted_values) - 1)
+    lower = int(position)
+    upper = min(lower + 1, len(sorted_values) - 1)
+    weight = position - lower
+    return sorted_values[lower] * (1 - weight) + sorted_values[upper] * weight
+
+
+def _summarize_seconds(values: List[float]) -> Dict[str, Any]:
+    ordered = sorted(values)
+    return {
+        'n': len(ordered),
+        'medianSec': round(_percentile(ordered, 0.5), 1),
+        'p25Sec': round(_percentile(ordered, 0.25), 1),
+        'p75Sec': round(_percentile(ordered, 0.75), 1),
+    }
+
+
+def get_session_timing_stats() -> Dict[str, Any]:
+    """Empirical session timing derived from recorded trials.
+
+    Returns per-trial cycle stats (baseline start -> survey complete) and
+    setup stats (session start -> first trial start), filtered to sessions
+    using the current survey flow and excluding dev/test data.
+    """
+    empty = {
+        'trial': _summarize_seconds([]),
+        'setup': _summarize_seconds([]),
+        'maxObservedQueue': 0,
+        'filters': {
+            'sinceDate': TIMING_STATS_SINCE_DATE,
+            'minTrialSec': TIMING_STATS_MIN_TRIAL_SEC,
+            'maxTrialSec': TIMING_STATS_MAX_TRIAL_SEC,
+            'excludedParticipants': ['_test'],
+        },
+    }
+    if not DB_PATH.exists():
+        return empty
+
+    conn = get_connection()
+    try:
+        trial_rows = conn.execute(
+            """
+            SELECT (julianday(t.end_time) - julianday(t.start_time)) * 86400.0 AS duration_sec
+            FROM trials t
+            JOIN sessions s ON s.session_id = t.session_id
+            JOIN participants p ON p.participant_id = s.participant_id
+            WHERE t.end_time IS NOT NULL
+              AND p.participant_code != '_test'
+              AND s.session_date >= ?
+              AND (julianday(t.end_time) - julianday(t.start_time)) * 86400.0 BETWEEN ? AND ?
+            """,
+            (TIMING_STATS_SINCE_DATE, TIMING_STATS_MIN_TRIAL_SEC, TIMING_STATS_MAX_TRIAL_SEC),
+        ).fetchall()
+        trial_durations = [float(row['duration_sec']) for row in trial_rows]
+
+        setup_rows = conn.execute(
+            """
+            SELECT (julianday(MIN(t.start_time)) - julianday(s.session_date)) * 86400.0 AS setup_sec
+            FROM sessions s
+            JOIN trials t ON t.session_id = s.session_id
+            JOIN participants p ON p.participant_id = s.participant_id
+            WHERE p.participant_code != '_test'
+              AND s.session_date >= ?
+            GROUP BY s.session_id
+            HAVING setup_sec BETWEEN 0 AND ?
+            """,
+            (TIMING_STATS_SINCE_DATE, TIMING_STATS_MAX_SETUP_SEC),
+        ).fetchall()
+        setup_durations = [float(row['setup_sec']) for row in setup_rows]
+
+        max_queue_row = conn.execute(
+            """
+            SELECT MAX(trial_count) AS max_queue FROM (
+                SELECT COUNT(*) AS trial_count
+                FROM trials t
+                JOIN sessions s ON s.session_id = t.session_id
+                JOIN participants p ON p.participant_id = s.participant_id
+                WHERE p.participant_code != '_test'
+                  AND s.session_date >= ?
+                GROUP BY t.session_id
+            )
+            """,
+            (TIMING_STATS_SINCE_DATE,),
+        ).fetchone()
+        max_observed_queue = int(max_queue_row['max_queue'] or 0)
+    finally:
+        conn.close()
+
+    return {
+        'trial': _summarize_seconds(trial_durations),
+        'setup': _summarize_seconds(setup_durations),
+        'maxObservedQueue': max_observed_queue,
+        'filters': empty['filters'],
+    }
 
 
 def get_all_locations() -> List[Dict[str, Any]]:

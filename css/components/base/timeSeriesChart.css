@@ -9,7 +9,7 @@
 .time-series-chart__header {
     font-size: var(--font-size-xs);
     font-weight: var(--font-weight-semibold);
-    color: #999;
+    color: var(--color-text-faint);
     letter-spacing: 1px;
     text-transform: uppercase;
     flex-shrink: 0;
@@ -31,9 +31,9 @@
     font-size: var(--font-size-xs);
     font-weight: var(--font-weight-medium);
     padding: 3px 8px;
-    border: 1px solid #e0e0e0;
-    background: #fff;
-    color: #999;
+    border: 1px solid var(--color-border);
+    background: var(--color-bg-elevated);
+    color: var(--color-text-faint);
     cursor: pointer;
     transition: all 0.15s ease;
     text-transform: capitalize;
@@ -41,25 +41,25 @@
 }
 
 .time-series-chart__band-btn:hover {
-    color: #333;
-    border-color: #ccc;
+    color: var(--color-text);
+    border-color: var(--color-border-strong);
 }
 
 .time-series-chart__band-btn--active {
-    background: #333;
-    color: #fff;
-    border-color: #333;
+    background: var(--color-text);
+    color: var(--color-text-inverse);
+    border-color: var(--color-text);
 }
 
 .time-series-chart__band-btn--active:hover {
-    color: #fff;
+    color: var(--color-text-inverse);
 }
 
 /* Power mode toggle (ABS / REL) */
 .time-series-chart__power-toggle {
     display: flex;
     gap: 0;
-    border: 1px solid #e0e0e0;
+    border: 1px solid var(--color-border);
 }
 
 .time-series-chart__power-btn {
@@ -68,28 +68,28 @@
     font-weight: var(--font-weight-semibold);
     padding: 3px 8px;
     border: none;
-    background: #fff;
-    color: #bbb;
+    background: var(--color-bg-elevated);
+    color: var(--color-text-faint);
     cursor: pointer;
     transition: all 0.15s ease;
     letter-spacing: 0.5px;
 }
 
 .time-series-chart__power-btn + .time-series-chart__power-btn {
-    border-left: 1px solid #e0e0e0;
+    border-left: 1px solid var(--color-border);
 }
 
 .time-series-chart__power-btn:hover {
-    color: #666;
+    color: var(--color-text-muted);
 }
 
 .time-series-chart__power-btn--active {
-    background: #333;
-    color: #fff;
+    background: var(--color-text);
+    color: var(--color-text-inverse);
 }
 
 .time-series-chart__power-btn--active:hover {
-    color: #fff;
+    color: var(--color-text-inverse);
 }
 
 .time-series-chart__plot {

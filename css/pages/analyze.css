@@ -18,40 +18,180 @@ body {
     overflow: hidden;
 }
 
+/* Unified chrome bar: brand + nav links + mode toggle + search/sort/
+   filters, with the corpus readout beside the controls that shape it.
+   One type size/weight rhythm — hierarchy via color, not size jumps. */
+.app-header--bar {
+    gap: var(--space-3);
+    font-size: var(--text-sm);
+    line-height: var(--leading-tight);
+}
+
+.app-header--bar .app-header__brand {
+    font-size: inherit;
+    font-weight: var(--font-weight-semibold);
+    letter-spacing: 0.08em;
+}
+
+.app-header--bar .app-nav-links .app-nav-links__item {
+    font-size: inherit;
+    font-weight: var(--font-weight-normal);
+    padding: 5px 10px;
+}
+
+.app-header--bar .app-nav-links .app-nav-links__item--active {
+    font-weight: var(--font-weight-medium);
+}
+
+.app-header--bar .segmented-control--sm .segmented-control__item {
+    font-size: inherit;
+    font-weight: var(--font-weight-medium);
+    padding: 5px 10px;
+    gap: 6px;
+}
+
+.app-header--bar .input,
+.app-header--bar .select {
+    font-size: inherit;
+    min-height: 2rem;
+    padding: 4px 10px;
+    line-height: var(--leading-tight);
+}
+
+.app-header--bar .input::placeholder {
+    font-size: inherit;
+    color: var(--color-text-faint);
+}
+
+.app-header--bar .app-header__context {
+    font-size: inherit;
+    font-family: inherit;
+    font-weight: var(--font-weight-normal);
+    font-variant-numeric: tabular-nums;
+    color: var(--color-text-muted);
+}
+
+.app-header--bar .icon svg {
+    width: 15px;
+    height: 15px;
+}
+
+.analyze-modebar__search {
+    flex: 1;
+    min-width: 160px;
+    max-width: 480px;
+}
+
+.app-header__context--end {
+    margin-left: auto;
+    flex-shrink: 0;
+}
+
+.analyze-modebar__sort {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    flex: none;
+}
+
+.analyze-modebar__sort-label {
+    display: inline-flex;
+    align-items: center;
+    color: var(--color-text-muted);
+}
+
+.analyze-modebar__sort[hidden] {
+    display: none;
+}
+
+/* The layout owns the gutters: three columns share one top line and one
+   gap rhythm, so the rails and the center panels line up. */
 .layout {
     flex: 1;
     display: flex;
+    gap: var(--spacing-lg);
+    padding: var(--spacing-lg) var(--spacing-xl);
     overflow: hidden;
     min-height: 0;
 }
 
-/* Analyze Sidebar */
+/* Left rail: a panel card like everything else (header band + scrolling body). */
 .analyze-sidebar {
     width: 280px;
-    background: var(--color-bg-elevated);
-    border-right: none;
-    box-shadow: var(--shadow-inset-sidebar);
+    flex-shrink: 0;
     display: flex;
     flex-direction: column;
+    background: var(--color-bg-elevated);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-md);
+    padding: var(--spacing-lg);
     overflow: hidden;
-    flex-shrink: 0;
-    z-index: 2;
 }
 
-.analyze-sidebar #patternList,
-.analyze-sidebar #trialSidebarList {
+.analyze-sidebar[hidden] {
+    display: none;
+}
+
+.analyze-sidebar #patternSidebarPanel {
     flex: 1;
     min-height: 0;
     display: flex;
     flex-direction: column;
+    /* Let rows bleed into the card padding so hover states span the card. */
+    margin: 0 calc(-1 * var(--spacing-lg)) calc(-1 * var(--spacing-lg));
+}
+
+.analyze-sidebar #patternList {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.analyze-sidebar .pattern-explorer-analysis__search-row {
+    padding: var(--spacing-sm) var(--spacing-lg);
+}
+
+.analyze-sidebar .pattern-explorer-analysis__list {
+    padding: 0 var(--spacing-sm) var(--spacing-sm);
+}
+
+/* Right rail: the "What needs attention" queue, same panel card. */
+.analyze-attention-rail {
+    width: 320px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.analyze-attention-rail[hidden] {
+    display: none;
+}
+
+.analyze-attention-rail .analyze-panel {
+    margin-top: 0;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.analyze-attention-rail #attentionQueuePanel {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    margin: 0 calc(-1 * var(--spacing-lg)) calc(-1 * var(--spacing-lg));
+    padding: 0 var(--spacing-md) var(--spacing-md);
 }
 
 /* Main Content Area */
 .analyze-main {
     flex: 1;
+    min-width: 0;
     overflow-y: auto;
-    background: var(--color-bg);
-    padding: var(--spacing-lg) var(--spacing-xl);
+    padding: 0;
 }
 
 .analyze-main__placeholder {
@@ -66,7 +206,16 @@ body {
 }
 
 .analyze-main__content.active {
-    display: block;
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+}
+
+/* Trials mode pins the content to the viewport so the split panels
+   scroll internally instead of growing the page. */
+.analyze-main__content--viewport.active {
+    height: 100%;
+    min-height: 0;
 }
 
 .analyze-main__empty-state {
@@ -75,7 +224,7 @@ body {
     justify-content: center;
     min-height: 240px;
     color: var(--color-text-muted);
-    font-size: var(--font-size-sm);
+    font-size: var(--font-size-base);
     text-align: center;
     padding: var(--spacing-xl);
 }
@@ -86,6 +235,11 @@ body {
 
 .analyze-view.active {
     display: block;
+}
+
+/* First panel in the scroll column sits on the shared top line. */
+#landscapeFieldPanel {
+    margin-top: 0;
 }
 
 .analyze-sticky-context {
@@ -108,8 +262,9 @@ body {
 
 .pattern-detail-header__title {
     margin: 0 0 var(--spacing-xs);
-    font-size: var(--text-lg);
+    font-size: var(--text-xl);
     font-weight: var(--font-weight-semibold);
+    line-height: var(--leading-tight);
 }
 
 .pattern-detail-header__meta {
@@ -129,21 +284,41 @@ body {
     border: 1px solid var(--color-border-subtle);
 }
 
+/* Panel language harmonized with Test's panels: elevated card, distinct
+   header band (base-size semibold title, hairline below), padded body. */
 .analyze-panel {
     margin-top: var(--spacing-lg);
     background: var(--color-bg-elevated);
-    border: 1px solid var(--color-border-subtle);
+    border: 1px solid var(--color-border);
     border-radius: var(--radius-xl);
     padding: var(--spacing-lg);
-    box-shadow: var(--shadow-sm);
+    box-shadow: var(--shadow-md);
     transition: box-shadow var(--transition-fast);
+    overflow: hidden;
+}
+
+.analyze-panel__title-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--spacing-md);
+    margin: calc(-1 * var(--spacing-lg)) calc(-1 * var(--spacing-lg)) var(--spacing-lg);
+    padding: var(--spacing-md) var(--spacing-lg);
+    border-bottom: 1px solid var(--color-border);
 }
 
 .analyze-panel__title {
-    margin: 0 0 var(--spacing-md);
-    font-size: var(--font-size-sm);
+    margin: 0;
+    font-size: var(--font-size-md);
     font-weight: var(--font-weight-semibold);
+    line-height: var(--leading-tight);
     color: var(--color-text);
+}
+
+.analyze-panel__meta {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+    white-space: nowrap;
 }
 
 .analyze-panel__summary {
@@ -182,4 +357,75 @@ body {
 
 .analyze-pattern-tab-panel[hidden] {
     display: none;
+}
+
+/* Pattern details live directly below the map — one flattened screen. */
+.analyze-pattern-details {
+    margin-top: var(--spacing-lg);
+    scroll-margin-top: var(--spacing-md);
+}
+
+.analyze-pattern-details > #patternDetailsContent[hidden],
+#patternDetailsEmpty[hidden] {
+    display: none;
+}
+
+#patternDetailsEmpty {
+    background: var(--color-bg-elevated);
+    border: 1px dashed var(--color-border);
+    border-radius: var(--radius-xl);
+}
+
+/* Trials mode: list + persistent detail side by side, both full-height
+   cards with internal scrolling — bottoms align with the rails. */
+#trialsView.active {
+    flex: 1;
+    min-height: 0;
+}
+
+.trials-split {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 420px;
+    gap: var(--spacing-lg);
+    height: 100%;
+    min-height: 0;
+}
+
+.trials-split .analyze-panel {
+    margin-top: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.trials-split__list .trials-workbench {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    margin: 0 calc(-1 * var(--spacing-lg)) calc(-1 * var(--spacing-lg));
+    padding: 0 var(--spacing-lg) var(--spacing-lg);
+}
+
+/* The panel provides the scrolling here — undo the embedded-workbench cap. */
+.trials-split__list .trials-workbench__scroll {
+    max-height: none;
+    overflow: visible;
+}
+
+.trials-split__detail #trialDetailView {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    margin: 0 calc(-1 * var(--spacing-lg)) calc(-1 * var(--spacing-lg));
+    padding: 0 var(--spacing-lg) var(--spacing-lg);
+}
+
+.trials-split__detail .trial-detail-view__grid {
+    grid-template-columns: 1fr;
+}
+
+@media (max-width: 1100px) {
+    .trials-split {
+        grid-template-columns: 1fr;
+    }
 }

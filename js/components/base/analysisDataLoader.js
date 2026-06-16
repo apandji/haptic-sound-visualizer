@@ -29,6 +29,14 @@ class AnalysisDataLoader {
             console.error('AnalysisDataLoader: Error loading database sessions', err);
             if (!cached?.length) {
                 this.setErrorState(true);
+                if (window.AppUI) {
+                    AppUI.showBanner({
+                        type: 'error',
+                        message: 'Could not load session data from the database.',
+                        actionLabel: 'Retry',
+                        onAction: () => this.loadFromDatabase(),
+                    });
+                }
             }
         } finally {
             this.setLoading(false);
@@ -38,6 +46,9 @@ class AnalysisDataLoader {
     setSessions(newSessions) {
         this.sessions = Array.isArray(newSessions) ? [...newSessions] : [];
         this.setErrorState(false);
+        if (window.AppUI) {
+            AppUI.hideBanner();
+        }
         this.notifySessionsLoaded();
     }
 

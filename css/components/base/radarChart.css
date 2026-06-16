@@ -8,14 +8,14 @@
 .radar-chart__header {
     font-size: var(--font-size-xs);
     font-weight: var(--font-weight-semibold);
-    color: #999;
+    color: var(--color-text-faint);
     letter-spacing: 1px;
     text-transform: uppercase;
 }
 
 .radar-chart__time-label {
     font-size: var(--font-size-xs);
-    color: #999;
+    color: var(--color-text-faint);
     font-weight: var(--font-weight-medium);
 }
 
@@ -37,9 +37,9 @@
     font-size: var(--font-size-xs);
     width: 28px;
     height: 28px;
-    border: 1px solid #e0e0e0;
-    background: #fff;
-    color: #666;
+    border: 1px solid var(--color-border);
+    background: var(--color-bg-elevated);
+    color: var(--color-text-muted);
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -49,8 +49,8 @@
 }
 
 .radar-chart__play-btn:hover {
-    color: #333;
-    border-color: #ccc;
+    color: var(--color-text);
+    border-color: var(--color-border-strong);
 }
 
 .radar-chart__slider {
@@ -58,7 +58,7 @@
     -webkit-appearance: none;
     appearance: none;
     height: 4px;
-    background: #e0e0e0;
+    background: var(--color-border-strong);
     outline: none;
     cursor: pointer;
 }
@@ -68,7 +68,7 @@
     appearance: none;
     width: 12px;
     height: 12px;
-    background: #333;
+    background: var(--color-text);
     cursor: pointer;
     border: none;
 }
@@ -76,7 +76,7 @@
 .radar-chart__slider::-moz-range-thumb {
     width: 12px;
     height: 12px;
-    background: #333;
+    background: var(--color-text);
     cursor: pointer;
     border: none;
 }
@@ -84,17 +84,17 @@
 /* Phase labels under slider */
 .radar-chart__phase-labels {
     display: flex;
-    padding-left: 36px; /* align with slider (play btn width + gap) */
+    padding-left: 36px;
 }
 
 .radar-chart__phase-label {
     font-size: var(--text-2xs);
     font-weight: var(--font-weight-semibold);
-    color: #ccc;
+    color: var(--color-text-faint);
     text-transform: uppercase;
     letter-spacing: 0.5px;
     text-align: center;
-    border-right: 1px solid #eee;
+    border-right: 1px solid var(--color-border-subtle);
 }
 
 .radar-chart__phase-label:last-child {

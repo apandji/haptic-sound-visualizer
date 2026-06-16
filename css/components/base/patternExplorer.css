@@ -5,56 +5,26 @@
 [id*="fileList"] {
     position: relative;
     z-index: 1 !important; /* Below sticky wrapper */
-    background: #fff !important; /* Ensure background */
+    background: var(--color-bg-elevated) !important;
     padding: 0 var(--spacing-xl); /* Horizontal padding to match sticky wrapper */
     margin: 0; /* No margin */
     flex: 1; /* Take remaining space */
     overflow-y: auto; /* Only file list scrolls */
     overflow-x: hidden;
     min-height: 0; /* Important for flex children to scroll */
-    /* Ensure scrollbar styling */
-    scrollbar-width: thin;
-    scrollbar-color: #ccc transparent;
-}
-
-/* Webkit scrollbar styling for file list */
-#fileList::-webkit-scrollbar,
-[id*="fileList"]::-webkit-scrollbar {
-    width: 8px;
-}
-
-#fileList::-webkit-scrollbar-track,
-[id*="fileList"]::-webkit-scrollbar-track {
-    background: transparent;
-}
-
-#fileList::-webkit-scrollbar-thumb,
-[id*="fileList"]::-webkit-scrollbar-thumb {
-    background: #ccc;
-    border-radius: 4px;
-}
-
-#fileList::-webkit-scrollbar-thumb:hover,
-[id*="fileList"]::-webkit-scrollbar-thumb:hover {
-    background: #999;
 }
 
 .panel-header {
-    font-size: var(--font-size-base);
-    font-weight: var(--font-weight-medium);
-    margin-top: var(--spacing-lg); /* Add top margin for visual separation */
-    margin-bottom: var(--spacing-lg); /* Reduced from 24px for better spacing */
-    padding: var(--spacing-md) 0; /* Add vertical padding */
-    color: #999;
-    letter-spacing: 0.5px;
-    text-transform: uppercase;
+    margin-top: var(--spacing-lg);
+    margin-bottom: var(--spacing-lg);
+    padding: var(--spacing-md) 0;
     display: flex;
     align-items: center;
     justify-content: space-between;
     position: relative;
-    z-index: 2; /* Above drawer */
-    border-top: 1px solid #e0e0e0; /* Visual separation from filters */
-    background: #fafafa; /* Subtle background for header section */
+    z-index: 2;
+    border-top: 1px solid var(--color-border-subtle);
+    background: var(--color-surface-subtle);
     padding-left: 0;
     padding-right: 0;
 }
@@ -69,7 +39,7 @@
     padding: 0;
     background: transparent;
     border: none;
-    color: #999;
+    color: var(--color-text-faint);
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -80,12 +50,12 @@
 }
 
 .panel-header__filter-btn:hover {
-    background: #f5f5f5;
-    color: #333;
+    background: var(--color-surface-subtle);
+    color: var(--color-text);
 }
 
 .panel-header__filter-btn:active {
-    background: #e0e0e0;
+    background: var(--color-surface-muted);
 }
 
 .panel-header__filter-btn svg {
@@ -169,7 +139,7 @@
 }
 
 .file-item-play-btn:hover {
-    background: rgba(0, 0, 0, 0.1);
+    background: var(--color-accent-subtle);
     opacity: 1;
 }
 
@@ -191,7 +161,7 @@
     padding: 0;
     background: transparent;
     border: none;
-    color: #999;
+    color: var(--color-text-faint);
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -213,8 +183,8 @@
 
 .file-item-selection-icon:hover {
     opacity: 1;
-    color: #000;
-    background: rgba(0, 0, 0, 0.05);
+    color: var(--color-text);
+    background: var(--color-accent-subtle);
     transform: scale(1.1);
 }
 
@@ -223,13 +193,13 @@
 }
 
 .file-item-selection-icon:focus {
-    outline: 2px solid #000;
+    outline: 2px solid var(--color-text);
     outline-offset: 2px;
     border-radius: 2px;
 }
 
 .file-item-selection-icon--selected {
-    color: #000;
+    color: var(--color-text);
     opacity: 1;
 }
 
@@ -244,7 +214,7 @@
 }
 
 .file-item.active .file-item-selection-icon {
-    color: #fff;
+    color: var(--color-text-inverse);
     opacity: 1;
 }
 
@@ -259,7 +229,7 @@
     left: 0;
     right: 0;
     height: 2px;
-    background: rgba(0, 0, 0, 0.1);
+    background: var(--color-border-subtle);
     overflow: hidden;
     opacity: 0;
     transition: opacity 0.2s ease;
@@ -277,14 +247,14 @@
 }
 
 .file-item.active .file-item-progress-fill {
-    background: #fff;
+    background: var(--color-text-inverse);
 }
 
 /* Tooltip styles - positioned fixed to overlay entire interface */
 .file-tooltip {
     position: fixed;
-    background: #000;
-    color: #fff;
+    background: var(--color-text);
+    color: var(--color-text-inverse);
     padding: 6px 8px;
     border-radius: 3px;
     font-size: var(--text-3xs);
@@ -311,12 +281,12 @@
 
 .file-tooltip:not(.flipped)::before {
     right: 100%;
-    border-right-color: #000;
+    border-right-color: var(--color-text);
 }
 
 .file-tooltip.flipped::before {
     left: 100%;
-    border-left-color: #000;
+    border-left-color: var(--color-text);
 }
 
 .tooltip-row {

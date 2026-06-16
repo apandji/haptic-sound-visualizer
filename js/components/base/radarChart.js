@@ -179,7 +179,7 @@ class RadarChart {
 
         const layout = this._getLayout();
         layout.showlegend = true;
-        layout.legend = { font: { size: 10 }, x: 0, y: -0.15, orientation: 'h' };
+        layout.legend = { font: { size: 10, color: (PLOTLY_THEME && PLOTLY_THEME.fontColor) || '#666' }, x: 0, y: -0.15, orientation: 'h' };
 
         Plotly.react(this.plotDiv, traces, layout, this._getConfig());
     }
@@ -276,13 +276,15 @@ class RadarChart {
         // Ghost: baseline average
         if (this.baselineAvg) {
             const ghostClosed = [...this.baselineAvg, this.baselineAvg[0]];
+            const ghostLine = (PLOTLY_THEME && PLOTLY_THEME.ghostLineColor) || '#ddd';
+            const ghostFill = (PLOTLY_THEME && PLOTLY_THEME.ghostFillColor) || 'rgba(200, 200, 200, 0.06)';
             traces.push({
                 type: 'scatterpolar',
                 r: ghostClosed,
                 theta: categories,
                 fill: 'toself',
-                fillcolor: 'rgba(200, 200, 200, 0.06)',
-                line: { color: '#ddd', dash: 'dash', width: 1 },
+                fillcolor: ghostFill,
+                line: { color: ghostLine, dash: 'dash', width: 1 },
                 marker: { size: 0 },
                 name: 'Baseline avg',
                 hovertemplate: '%{theta}: %{r:.4f}<extra>Baseline avg</extra>'
@@ -290,13 +292,15 @@ class RadarChart {
         }
 
         // Current frame polygon
+        const seriesLine = (PLOTLY_THEME && PLOTLY_THEME.seriesLineColor) || '#333';
+        const seriesFill = (PLOTLY_THEME && PLOTLY_THEME.seriesFillColor) || 'rgba(51, 51, 51, 0.05)';
         traces.push({
             type: 'scatterpolar',
             r: currentClosed,
             theta: categories,
             fill: 'toself',
-            fillcolor: 'rgba(51, 51, 51, 0.05)',
-            line: { color: '#333', width: 2 },
+            fillcolor: seriesFill,
+            line: { color: seriesLine, width: 2 },
             marker: { size: 7, color: markerColorsClosed },
             name: `t = ${frame.t}s`,
             hovertemplate: '%{theta}: %{r:.4f}<extra>Current</extra>'
@@ -304,7 +308,7 @@ class RadarChart {
 
         const layout = this._getLayout();
         layout.showlegend = true;
-        layout.legend = { font: { size: 10 }, x: 0, y: -0.15, orientation: 'h' };
+        layout.legend = { font: { size: 10, color: (PLOTLY_THEME && PLOTLY_THEME.fontColor) || '#666' }, x: 0, y: -0.15, orientation: 'h' };
 
         Plotly.react(this.plotDiv, traces, layout, this._getConfig());
     }
@@ -327,14 +331,19 @@ class RadarChart {
         const categories = [...this.bandLabels, this.bandLabels[0]];
         const markerColorsClosed = [...markerColors, markerColors[0]];
 
+        const ghostLine = (PLOTLY_THEME && PLOTLY_THEME.ghostLineColor) || '#ccc';
+        const ghostFill = (PLOTLY_THEME && PLOTLY_THEME.ghostFillColor) || 'rgba(200, 200, 200, 0.1)';
+        const seriesLine = (PLOTLY_THEME && PLOTLY_THEME.baselineLineColor) || '#555';
+        const seriesFill = (PLOTLY_THEME && PLOTLY_THEME.seriesFillColor) || 'rgba(51, 51, 51, 0.05)';
+
         const traces = [
             {
                 type: 'scatterpolar',
                 r: [...baselineValues, baselineValues[0]],
                 theta: categories,
                 fill: 'toself',
-                fillcolor: 'rgba(200, 200, 200, 0.1)',
-                line: { color: '#ccc', dash: 'dash', width: 1 },
+                fillcolor: ghostFill,
+                line: { color: ghostLine, dash: 'dash', width: 1 },
                 marker: { size: 5, color: markerColorsClosed },
                 name: 'Baseline',
                 hovertemplate: '%{theta}: %{r:.4f}<extra>Baseline</extra>'
@@ -344,8 +353,8 @@ class RadarChart {
                 r: [...stimValues, stimValues[0]],
                 theta: categories,
                 fill: 'toself',
-                fillcolor: 'rgba(51, 51, 51, 0.05)',
-                line: { color: '#555', width: 2 },
+                fillcolor: seriesFill,
+                line: { color: seriesLine, width: 2 },
                 marker: { size: 7, color: markerColorsClosed },
                 name: 'Stimulation',
                 hovertemplate: '%{theta}: %{r:.4f}<extra>Stimulation</extra>'
@@ -354,7 +363,7 @@ class RadarChart {
 
         const layout = this._getLayout();
         layout.showlegend = true;
-        layout.legend = { font: { size: 10 }, x: 0, y: -0.15, orientation: 'h' };
+        layout.legend = { font: { size: 10, color: (PLOTLY_THEME && PLOTLY_THEME.fontColor) || '#666' }, x: 0, y: -0.15, orientation: 'h' };
         Plotly.react(this.plotDiv, traces, layout, this._getConfig());
     }
 
@@ -488,23 +497,29 @@ class RadarChart {
 
     _getLayout() {
         const font = typeof PLOTLY_THEME !== 'undefined' ? PLOTLY_THEME.fontFamily : 'sans-serif';
-        const gridColor = (typeof PLOTLY_THEME !== 'undefined' && PLOTLY_THEME.gridColor) || '#e8e8e8';
+        const theme = typeof PLOTLY_THEME !== 'undefined' ? PLOTLY_THEME : {};
+        const gridColor = theme.gridColor || '#e8e8e8';
+        const lineColor = theme.lineColor || '#e0e0e0';
+        const fontColor = theme.fontColor || '#666';
         return {
             polar: {
+                bgcolor: theme.polarBg || 'transparent',
                 radialaxis: {
                     visible: true,
                     range: [0, undefined],
-                    tickfont: { size: 9, family: font },
-                    gridcolor: gridColor
+                    tickfont: { size: 9, family: font, color: fontColor },
+                    gridcolor: gridColor,
+                    linecolor: lineColor,
                 },
                 angularaxis: {
-                    tickfont: { size: 10, family: font },
-                    gridcolor: gridColor
+                    tickfont: { size: 10, family: font, color: fontColor },
+                    gridcolor: gridColor,
+                    linecolor: lineColor,
                 }
             },
-            font: { family: font, size: (PLOTLY_THEME && PLOTLY_THEME.fontSize) || 11, color: (PLOTLY_THEME && PLOTLY_THEME.fontColor) || '#666' },
-            paper_bgcolor: (PLOTLY_THEME && PLOTLY_THEME.paperBg) || 'transparent',
-            plot_bgcolor: (PLOTLY_THEME && PLOTLY_THEME.plotBg) || 'transparent',
+            font: { family: font, size: theme.fontSize || 11, color: fontColor },
+            paper_bgcolor: theme.paperBg || 'transparent',
+            plot_bgcolor: theme.plotBg || 'transparent',
             margin: { l: 60, r: 60, t: 20, b: 40 },
             showlegend: false,
             height: 300

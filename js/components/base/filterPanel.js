@@ -184,7 +184,7 @@ class FilterPanel {
         const searchHTML = this.includeSearch ? `
             <div class="filter-panel__search">
                 <input type="text" 
-                       class="filter-panel__search-input" 
+                       class="input filter-panel__search-input" 
                        id="${this.containerId}_search" 
                        placeholder="${this.searchPlaceholder}" 
                        autocomplete="off">
@@ -196,7 +196,7 @@ class FilterPanel {
             <div class="filter-panel__content" id="${this.containerId}_content">
                 ${searchHTML}
                 <div class="filter-panel__sliders" id="${this.containerId}_sliders"></div>
-                <button class="filter-panel__reset" id="${this.containerId}_reset">RESET</button>
+                <button type="button" class="btn btn--secondary btn--block btn--upper filter-panel__reset" id="${this.containerId}_reset">RESET</button>
             </div>
         `;
     }

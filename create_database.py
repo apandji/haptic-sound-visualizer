@@ -2,8 +2,8 @@ import sqlite3
 from pathlib import Path
 
 ROOT = Path(__file__).parent
-DB_PATH = ROOT / 'haptic_research.db'
-SCHEMA_PATH = ROOT / 'schema.sql'
+DB_PATH = ROOT / 'haptic_research_v2.db'
+SCHEMA_PATH = ROOT / 'schema_v2.sql'
 
 if DB_PATH.exists():
     DB_PATH.unlink()

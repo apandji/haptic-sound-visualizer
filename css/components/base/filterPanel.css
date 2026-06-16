@@ -4,13 +4,13 @@
 .pattern-explorer-sticky-wrapper {
     position: sticky;
     top: 0;
-    background: #fff !important; /* Ensure solid background */
-    z-index: 1000 !important; /* Much higher z-index to prevent files from showing behind */
-    padding: var(--spacing-lg) var(--spacing-xl) var(--spacing-sm) var(--spacing-xl); /* Top padding for header, horizontal padding, bottom padding */
-    margin-bottom: var(--spacing-sm); /* More condensed */
-    border-bottom: 1px solid #e0e0e0; /* Border separates from file list */
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05); /* Subtle shadow to ensure it's above content */
-    flex-shrink: 0; /* Don't shrink - fixed height */
+    background: var(--color-bg-elevated) !important;
+    z-index: 1000 !important;
+    padding: var(--spacing-lg) var(--spacing-xl) var(--spacing-sm) var(--spacing-xl);
+    margin-bottom: var(--spacing-sm);
+    border-bottom: 1px solid var(--color-border-subtle);
+    box-shadow: var(--shadow-sm);
+    flex-shrink: 0;
 }
 
 /* Ensure parent container (sidebar) doesn't scroll - only file list does */
@@ -25,14 +25,9 @@
 
 /* Pattern Explorer Header (inside sticky wrapper, no longer sticky itself) */
 .pattern-explorer-header {
-    font-size: var(--font-size-base);
-    font-weight: var(--font-weight-medium);
     margin-bottom: var(--spacing-lg);
     margin-top: 0;
-    padding: 0; /* No padding - wrapper handles it */
-    color: #000;
-    letter-spacing: 0.5px;
-    text-transform: uppercase;
+    padding: 0;
     display: flex;
     align-items: baseline;
     gap: var(--spacing-sm);
@@ -45,7 +40,7 @@
 .pattern-explorer-header__count {
     font-size: var(--font-size-sm);
     font-weight: var(--font-weight-normal);
-    color: #999;
+    color: var(--color-text-faint);
     text-transform: none;
     letter-spacing: 0;
 }
@@ -88,13 +83,13 @@ input.pattern-explorer-search-input:focus,
 }
 
 .pattern-explorer-search-input::placeholder {
-    color: #999;
+    color: var(--color-text-faint);
 }
 
 /* Filter Panel Well (contained box for collapsible filters) - inside sticky wrapper */
 /* Brutalistic design: no rounded corners, minimal padding, sharp edges */
 .filter-panel--collapsible {
-    background: #fff !important; /* White background, not gray well */
+    background: var(--color-bg-elevated) !important;
     border: none !important;
     border-bottom: none !important; /* No border - wrapper has border-bottom */
     border-top: none !important; /* No top border */
@@ -119,11 +114,11 @@ input.pattern-explorer-search-input:focus,
 [id*="filterPanel"]:not(.filter-panel--collapsible) {
     position: sticky;
     top: 0;
-    background: #fff;
+    background: var(--color-bg-elevated);
     z-index: 10;
     padding-bottom: 12px;
     margin-bottom: 12px;
-    border-bottom: 1px solid #e0e0e0;
+    border-bottom: 1px solid var(--color-border-subtle);
 }
 
 /* Remove border-bottom from filter panel when inside sticky wrapper */
@@ -137,25 +132,10 @@ input.pattern-explorer-search-input:focus,
 }
 
 .filter-panel__search-input {
-    width: 100%;
+    max-width: 100%;
     padding: 6px 8px;
-    border: 1px solid #e0e0e0;
     border-radius: 2px;
     font-size: var(--font-size-sm);
-    font-family: inherit;
-    color: #333;
-    background: #fff;
-    box-sizing: border-box;
-    max-width: 100%; /* Prevent overflow */
-}
-
-.filter-panel__search-input:focus {
-    outline: none;
-    border-color: #000;
-}
-
-.filter-panel__search-input::placeholder {
-    color: #999;
 }
 
 .filter-panel__sliders {
@@ -200,7 +180,7 @@ input.pattern-explorer-search-input:focus,
 .filter-panel__label {
     display: block;
     font-size: var(--font-size-xs);
-    color: #333; /* Darker for better legibility */
+    color: var(--color-text); /* Darker for better legibility */
     margin-bottom: 6px; /* Slightly more space for legibility */
     cursor: pointer;
     position: relative;
@@ -213,7 +193,7 @@ input.pattern-explorer-search-input:focus,
 }
 
 .filter-panel__display {
-    color: #555; /* Darker for better legibility */
+    color: var(--color-text-muted); /* Darker for better legibility */
     font-weight: 400; /* Normal weight */
     font-size: var(--font-size-xs);
     margin-left: 6px; /* Slightly more space */
@@ -223,36 +203,8 @@ input.pattern-explorer-search-input:focus,
 .filter-panel__reset {
     margin-top: 2px !important;
     margin-bottom: 0 !important;
-    width: 100%;
-    padding: var(--spacing-sm) var(--spacing-md);
-    min-height: 2.25rem;
-    background: var(--color-bg);
-    border: 1px solid var(--color-border) !important;
-    border-radius: var(--radius-md);
-    cursor: pointer;
-    font-size: var(--font-size-sm);
-    font-family: inherit;
-    color: var(--color-text-muted);
-    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
-    font-weight: var(--font-weight-medium);
 }
 
-.filter-panel__reset:focus-visible {
-    outline: none;
-    box-shadow: var(--focus-ring);
-}
-
-.filter-panel__reset:hover {
-    background: var(--color-border);
-    border-color: var(--color-border-strong) !important;
-    color: var(--color-text);
-}
-
-.filter-panel__reset:active {
-    background: var(--color-border-strong);
-}
-
-/* Enhanced RESET button when filters are active */
 .filter-panel__reset.has-active-filters {
     background: var(--color-text);
     border-color: var(--color-text);
@@ -260,7 +212,7 @@ input.pattern-explorer-search-input:focus,
     font-weight: var(--font-weight-semibold);
 }
 
-.filter-panel__reset.has-active-filters:hover {
+.filter-panel__reset.has-active-filters:hover:not(:disabled) {
     background: var(--color-accent-hover);
     border-color: var(--color-accent-hover);
 }
@@ -268,8 +220,8 @@ input.pattern-explorer-search-input:focus,
 /* Collapsible variant - well styling */
 .filter-panel--collapsible {
     /* Well styling - contained box */
-    background: #f9f9f9;
-    border: 1px solid #e0e0e0;
+    background: var(--color-surface-subtle);
+    border: 1px solid var(--color-border-subtle);
     border-radius: 4px;
     padding: 8px 12px;
     margin-bottom: 12px;
@@ -295,7 +247,7 @@ input.pattern-explorer-search-input:focus,
     font-family: inherit;
     font-size: var(--text-3xs);
     font-weight: 500;
-    color: #333; /* Darker for brutalistic */
+    color: var(--color-text); /* Darker for brutalistic */
     text-transform: uppercase;
     letter-spacing: 0.5px;
     transition: none; /* No transitions - brutalistic */
@@ -303,7 +255,7 @@ input.pattern-explorer-search-input:focus,
 }
 
 .filter-panel__toggle:hover {
-    color: #333;
+    color: var(--color-text);
 }
 
 .filter-panel__toggle-icon {
@@ -313,7 +265,7 @@ input.pattern-explorer-search-input:focus,
     transition: none; /* No transitions - brutalistic */
     width: 14px;
     text-align: center;
-    color: #000; /* Black for brutalistic */
+    color: var(--color-text); /* Black for brutalistic */
     line-height: 1;
 }
 
@@ -376,14 +328,14 @@ input.pattern-explorer-search-input:focus,
     font-size: var(--text-3xs); /* Slightly larger for better legibility */
     margin-bottom: 6px; /* Slightly more space for legibility */
     font-weight: 500; /* Slightly bolder for readability */
-    color: #333; /* Darker for better legibility */
+    color: var(--color-text); /* Darker for better legibility */
     line-height: 1.5; /* Better line height for readability */
 }
 
 .filter-panel--compact .filter-panel__display {
     font-size: var(--text-3xs); /* Slightly larger for legibility */
     font-weight: 400; /* Normal weight */
-    color: #555; /* Darker for better legibility */
+    color: var(--color-text-muted); /* Darker for better legibility */
     margin-left: 6px; /* Slightly more space */
     letter-spacing: 0.3px; /* Slight letter spacing for readability */
 }
@@ -420,7 +372,7 @@ input.pattern-explorer-search-input:focus,
     align-items: center;
     gap: 6px;
     font-family: inherit;
-    color: #666;
+    color: var(--color-text-muted);
     font-size: var(--font-size-xs);
     font-weight: 500;
     letter-spacing: 0.5px;
@@ -435,7 +387,7 @@ input.pattern-explorer-search-input:focus,
 }
 
 .filter-panel__toggle:hover {
-    color: #000;
+    color: var(--color-text);
 }
 
 .filter-panel__toggle-icon {
@@ -474,8 +426,8 @@ input.pattern-explorer-search-input:focus,
 /* Filter label tooltips */
 .filter-label-tooltip {
     position: fixed;
-    background: #000;
-    color: #fff;
+    background: var(--color-text);
+    color: var(--color-text-inverse);
     padding: 8px 10px;
     border-radius: 3px;
     font-size: var(--font-size-xs);
@@ -504,10 +456,108 @@ input.pattern-explorer-search-input:focus,
 
 .filter-label-tooltip:not(.flipped)::before {
     right: 100%;
-    border-right-color: #000;
+    border-right-color: var(--color-text);
 }
 
 .filter-label-tooltip.flipped::before {
     left: 100%;
-    border-left-color: #000;
+    border-left-color: var(--color-text);
+}
+
+/* ============== Filter popover mode (Test) ============== */
+.pattern-explorer-search-row {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    width: 100%;
+    margin-bottom: var(--spacing-sm);
+}
+
+.pattern-explorer-sticky-wrapper--popover .pattern-explorer-search {
+    flex: 1;
+    min-width: 0;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+.filter-popover {
+    position: relative;
+    flex-shrink: 0;
+}
+
+.filter-popover__trigger {
+    flex-shrink: 0;
+    width: 2.25rem;
+    height: 2.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    background: var(--color-bg-elevated);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    color: var(--color-text-muted);
+    cursor: pointer;
+    transition: color var(--transition-fast), border-color var(--transition-fast), background var(--transition-fast);
+}
+
+.filter-popover__trigger:hover {
+    color: var(--color-text);
+    border-color: var(--color-border-strong);
+}
+
+.filter-popover__trigger--active,
+.filter-popover__trigger[aria-expanded="true"] {
+    background: var(--color-accent-subtle);
+    border-color: var(--color-accent);
+    color: var(--color-accent);
+}
+
+.filter-popover__content {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    margin-top: var(--spacing-sm);
+    min-width: 280px;
+    max-width: 90vw;
+    background: var(--color-bg-elevated);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    padding: var(--spacing-lg);
+    z-index: 1001;
+    display: none;
+}
+
+.filter-popover__content.is-open {
+    display: block;
+}
+
+/* Sliders only inside popover — no nested collapsible toggle */
+.filter-popover__content .filter-panel__toggle {
+    display: none;
+}
+
+.filter-popover__content.filter-panel--collapsible,
+.filter-popover__content > .filter-panel--collapsible {
+    border: none;
+    box-shadow: none;
+    padding: 0;
+}
+
+.filter-popover .filter-panel--collapsible {
+    border: none;
+    background: transparent;
+    padding: 0;
+}
+
+.filter-popover .filter-panel__content {
+    max-height: none;
+    overflow: visible;
+    opacity: 1;
+    padding: 0;
+}
+
+.filter-popover .filter-panel--collapsed .filter-panel__content {
+    display: block;
 }

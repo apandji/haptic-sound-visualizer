@@ -1,8 +1,16 @@
 /**
- * AppNav — sliding pill indicator + prefetch for main header navigation.
+ * AppNav — prefetch + (for segmented navs) active-tab pill positioning.
+ * Works with both the pill nav (.segmented-control--nav) and the quiet
+ * text-link nav (.app-nav-links).
  */
 (function initAppNav() {
-    const NAV_SELECTOR = '.segmented-control--nav[data-app-nav]';
+    const NAV_SELECTOR = '[data-app-nav]';
+    const ITEM_SELECTOR = '.segmented-control__item, .app-nav-links__item';
+
+    function isActive(item) {
+        return item.classList.contains('segmented-control__item--active')
+            || item.classList.contains('app-nav-links__item--active');
+    }
 
     const PAGE_WARMUP = {
         'index.html': [
@@ -65,91 +73,60 @@
         };
     }
 
-    function moveIndicator(indicator, metrics) {
+    function positionActiveIndicator(nav, indicator, activeItem) {
+        const metrics = measureItem(nav, activeItem);
         indicator.style.width = `${metrics.w}px`;
         indicator.style.height = `${metrics.h}px`;
         indicator.style.transform = `translate3d(${metrics.x}px, ${metrics.y}px, 0)`;
     }
 
-    function setHighlightedItem(items, item) {
-        items.forEach(el => {
-            el.classList.toggle('segmented-control__item--highlighted', el === item);
-        });
-    }
-
     function getActiveItem(items) {
-        return items.find(item => item.classList.contains('segmented-control__item--active')) || items[0];
+        return items.find(isActive) || items[0];
     }
 
     function bindNav(nav) {
         const indicator = nav.querySelector('.segmented-control__indicator');
-        const items = [...nav.querySelectorAll('.segmented-control__item')];
-        if (!indicator || !items.length) return;
+        const items = [...nav.querySelectorAll(ITEM_SELECTOR)];
+        if (!items.length) return;
 
-        const activeItem = getActiveItem(items);
-        let hoveredItem = null;
+        if (indicator) {
+            const activeItem = getActiveItem(items);
 
-        const syncIndicator = () => {
-            const target = hoveredItem || activeItem;
-            moveIndicator(indicator, measureItem(nav, target));
-            setHighlightedItem(items, target);
-            nav.classList.add('segmented-control--nav-ready');
-        };
+            const syncActiveIndicator = () => {
+                positionActiveIndicator(nav, indicator, activeItem);
+                nav.classList.add('segmented-control--nav-ready');
+            };
 
-        syncIndicator();
+            syncActiveIndicator();
+            window.addEventListener('resize', syncActiveIndicator);
+
+            if (typeof ResizeObserver !== 'undefined') {
+                const ro = new ResizeObserver(syncActiveIndicator);
+                ro.observe(nav);
+                items.forEach(item => ro.observe(item));
+            }
+
+            if (document.fonts && document.fonts.ready) {
+                document.fonts.ready.then(syncActiveIndicator);
+            }
+        }
 
         items.forEach(item => {
             item.addEventListener('pointerenter', () => {
-                hoveredItem = item;
-                syncIndicator();
-                if (item.href && !item.classList.contains('segmented-control__item--active')) {
+                if (item.href && !isActive(item)) {
                     warmupPage(item.href);
                 }
             });
 
             item.addEventListener('pointerdown', () => {
-                if (item.classList.contains('segmented-control__item--active')) return;
+                if (isActive(item)) return;
                 item.classList.add('segmented-control__item--pending');
                 document.documentElement.classList.add('app-nav-pending');
             });
         });
 
-        nav.addEventListener('pointerleave', () => {
-            hoveredItem = null;
-            syncIndicator();
-        });
-
-        nav.addEventListener('focusin', (event) => {
-            const item = event.target.closest('.segmented-control__item');
-            if (!item || !nav.contains(item)) return;
-            hoveredItem = item;
-            syncIndicator();
-            if (item.href && !item.classList.contains('segmented-control__item--active')) {
-                warmupPage(item.href);
-            }
-        });
-
-        nav.addEventListener('focusout', (event) => {
-            if (nav.contains(event.relatedTarget)) return;
-            hoveredItem = null;
-            syncIndicator();
-        });
-
-        window.addEventListener('resize', syncIndicator);
-
-        if (typeof ResizeObserver !== 'undefined') {
-            const ro = new ResizeObserver(syncIndicator);
-            ro.observe(nav);
-            items.forEach(item => ro.observe(item));
-        }
-
-        if (document.fonts && document.fonts.ready) {
-            document.fonts.ready.then(syncIndicator);
-        }
-
-        // Warm the other two pages shortly after idle — helps first click without hover.
         const otherPages = items
-            .filter(item => !item.classList.contains('segmented-control__item--active'))
+            .filter(item => !isActive(item) && item.href)
             .map(item => item.href);
 
         if (otherPages.length && 'requestIdleCallback' in window) {

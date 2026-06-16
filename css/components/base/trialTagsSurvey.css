@@ -1,24 +1,28 @@
 .trial-tags-survey {
     display: flex;
     flex-direction: column;
-    gap: 18px;
+    gap: 0;
+    width: 100%;
     max-width: 760px;
+    min-height: 0;
     margin: 0 auto;
-    color: #1f2937;
+    color: var(--color-text);
 }
 
 .trial-tags-survey__header {
+    flex-shrink: 0;
     display: flex;
     flex-direction: column;
     gap: 10px;
+    padding-bottom: 16px;
 }
 
 .trial-tags-survey__step-label {
-    font-size: 13px;
-    font-weight: 700;
+    font-size: var(--text-sm);
+    font-weight: var(--font-weight-bold);
     letter-spacing: 0.06em;
     text-transform: uppercase;
-    color: #374151;
+    color: var(--color-text-muted);
 }
 
 .trial-tags-survey__header-row {
@@ -29,37 +33,40 @@
 }
 
 .trial-tags-survey__instructions {
-    font-size: 14px;
+    font-size: var(--text-sm);
     line-height: 1.5;
-    color: #475569;
+    color: var(--color-text-muted);
 }
 
 .trial-tags-survey__play-btn {
-    border: 1px solid #4b5563;
-    background: #111827;
-    color: #f9fafb;
-    border-radius: 10px;
+    border: 1px solid var(--color-survey-play-border);
+    background: var(--color-survey-play-bg);
+    color: var(--color-survey-play-text);
+    border-radius: var(--radius-lg);
     padding: 10px 14px;
-    font-size: 13px;
-    font-weight: 600;
+    font-size: var(--text-sm);
+    font-weight: var(--font-weight-semibold);
     cursor: pointer;
     white-space: nowrap;
 }
 
 .trial-tags-survey__play-btn:hover {
-    background: #1f2937;
+    background: var(--color-survey-play-hover-bg);
 }
 
 .trial-tags-survey__feedback {
-    min-height: 20px;
-    font-size: 13px;
-    color: #334155;
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+    text-align: center;
+    line-height: 1.4;
 }
 
 .trial-tags-survey__content {
+    flex: 0 0 auto;
     display: flex;
     flex-direction: column;
     gap: 16px;
+    padding: 0 2px 8px;
 }
 
 .trial-tags-survey__section {
@@ -67,22 +74,136 @@
     flex-direction: column;
     gap: 14px;
     padding: 18px;
-    background: rgba(17, 24, 39, 0.88);
-    border: 1px solid rgba(75, 85, 99, 0.8);
-    border-radius: 16px;
+    background: var(--color-survey-section-bg);
+    border: 1px solid var(--color-survey-section-border);
+    border-radius: var(--radius-xl);
 }
 
 .trial-tags-survey__section-title {
     margin: 0;
-    font-size: 24px;
-    font-weight: 700;
-    color: #f9fafb;
+    font-size: var(--text-xl);
+    font-weight: var(--font-weight-bold);
+    color: var(--color-survey-section-title);
 }
 
 .trial-tags-survey__section-subtitle {
     margin: 0;
-    font-size: 14px;
-    color: #d1d5db;
+    font-size: var(--text-base);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-survey-section-title);
+    line-height: 1.35;
+}
+
+.trial-tags-survey__block {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding-top: 4px;
+}
+
+.trial-tags-survey__block + .trial-tags-survey__block {
+    margin-top: 6px;
+    padding-top: 18px;
+    border-top: 1px solid var(--color-survey-section-border);
+}
+
+.trial-tags-survey__block-title {
+    margin: 0;
+    font-size: var(--text-xs);
+    font-weight: var(--font-weight-bold);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+}
+
+.trial-tags-survey__block-hint {
+    margin: 0;
+    font-size: var(--text-sm);
+    color: var(--color-survey-scale-text);
+    line-height: 1.4;
+}
+
+.trial-tags-survey__segmented-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.trial-tags-survey__segmented {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    min-width: 0;
+    border: 1px solid var(--color-survey-option-border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    background: var(--color-survey-option-bg);
+}
+
+.trial-tags-survey__segmented-btn {
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    color: var(--color-survey-option-text);
+    padding: 10px 8px;
+    font-size: var(--text-sm);
+    font-weight: var(--font-weight-semibold);
+    text-align: center;
+    cursor: pointer;
+    transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.trial-tags-survey__segmented-btn + .trial-tags-survey__segmented-btn {
+    border-left: 1px solid var(--color-survey-option-border);
+}
+
+.trial-tags-survey__segmented-btn:hover {
+    background: var(--color-survey-option-hover-bg);
+}
+
+.trial-tags-survey__segmented-btn.selected {
+    background: var(--color-survey-option-selected-bg);
+    color: var(--color-survey-option-selected-text);
+}
+
+.trial-tags-survey__segmented-btn:focus-visible {
+    outline: 2px solid var(--color-survey-input-focus);
+    outline-offset: -2px;
+    z-index: 1;
+}
+
+.trial-tags-survey__chip-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.trial-tags-survey__chip-grid .trial-tags-survey__option-btn {
+    border-radius: var(--radius-pill);
+    padding: 8px 14px;
+    font-size: var(--text-sm);
+}
+
+.trial-tags-survey__chip-grid .trial-tags-survey__option-btn--custom {
+    padding: 8px 36px 8px 14px;
+}
+
+.trial-tags-survey__inline-add {
+    display: flex;
+    align-items: stretch;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+.trial-tags-survey__inline-add .trial-tags-survey__text-input {
+    flex: 1;
+    min-width: 0;
+    border-radius: var(--radius-pill);
+    padding: 10px 14px;
+}
+
+.trial-tags-survey__inline-add .trial-tags-survey__add-btn {
+    border-radius: var(--radius-pill);
+    flex-shrink: 0;
 }
 
 .trial-tags-survey__slider-field {
@@ -99,15 +220,39 @@
 }
 
 .trial-tags-survey__field-label {
-    font-size: 14px;
-    font-weight: 600;
-    color: #e5e7eb;
+    font-size: var(--text-sm);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-survey-field-label);
 }
 
 .trial-tags-survey__slider-value {
-    font-size: 14px;
-    font-weight: 700;
-    color: #fbbf24;
+    display: inline-flex;
+    align-items: baseline;
+    gap: 8px;
+}
+
+.trial-tags-survey__value-word {
+    font-size: var(--text-base);
+    font-weight: var(--font-weight-bold);
+    transition: color 0.15s ease;
+}
+
+.trial-tags-survey__value-num {
+    font-size: var(--text-xs);
+    font-variant-numeric: tabular-nums;
+    color: var(--color-text-faint);
+}
+
+/* Color ramp: muted -> warm as the value climbs */
+.trial-tags-survey__value-word[data-band="0"] { color: var(--color-text-faint); }
+.trial-tags-survey__value-word[data-band="1"] { color: var(--color-text-muted); }
+.trial-tags-survey__value-word[data-band="2"] { color: var(--color-text); }
+.trial-tags-survey__value-word[data-band="3"] { color: var(--color-warning-text); }
+.trial-tags-survey__value-word[data-band="4"] { color: var(--color-accent); }
+
+/* High confidence is good news, not an alarm — cap its ramp at amber */
+.trial-tags-survey__slider-field--confidence .trial-tags-survey__value-word[data-band="4"] {
+    color: var(--color-warning-text);
 }
 
 .trial-tags-survey__slider {
@@ -117,8 +262,33 @@
 .trial-tags-survey__slider-scale {
     display: flex;
     justify-content: space-between;
-    font-size: 12px;
-    color: #9ca3af;
+    font-size: var(--text-xs);
+    color: var(--color-survey-scale-text);
+}
+
+.trial-tags-survey__slider-help {
+    margin: 0;
+    font-size: var(--text-sm);
+    line-height: var(--leading-normal);
+    color: var(--color-text-muted);
+}
+
+.trial-tags-survey__anchor {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 6px;
+    font-size: var(--text-xs);
+    color: var(--color-survey-scale-text);
+}
+
+.trial-tags-survey__anchor--high {
+    text-align: right;
+}
+
+.trial-tags-survey__anchor-num {
+    font-family: var(--font-mono);
+    font-size: var(--text-3xs);
+    color: var(--color-text-faint);
 }
 
 .trial-tags-survey__option-group {
@@ -128,9 +298,9 @@
 }
 
 .trial-tags-survey__group-label {
-    font-size: 14px;
-    font-weight: 600;
-    color: #e5e7eb;
+    font-size: var(--text-sm);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-survey-field-label);
 }
 
 .trial-tags-survey__button-grid {
@@ -139,7 +309,6 @@
     gap: 10px;
 }
 
-/* Emotion steps: one row, scale choices + divider + Unsure */
 .trial-tags-survey__button-grid--emotion-scale {
     display: flex;
     flex-direction: row;
@@ -170,34 +339,34 @@
     background: linear-gradient(
         180deg,
         transparent 0%,
-        rgba(148, 163, 184, 0.55) 15%,
-        rgba(148, 163, 184, 0.55) 85%,
+        var(--color-survey-divider) 15%,
+        var(--color-survey-divider) 85%,
         transparent 100%
     );
 }
 
 .trial-tags-survey__option-btn {
-    border: 1px solid #4b5563;
-    background: #0f172a;
-    color: #f3f4f6;
-    border-radius: 12px;
+    border: 1px solid var(--color-survey-option-border);
+    background: var(--color-survey-option-bg);
+    color: var(--color-survey-option-text);
+    border-radius: var(--radius-xl);
     padding: 12px 14px;
-    font-size: 14px;
-    font-weight: 600;
+    font-size: var(--text-sm);
+    font-weight: var(--font-weight-semibold);
     text-align: center;
     cursor: pointer;
-    transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+    transition: background-color var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast);
 }
 
 .trial-tags-survey__option-btn:hover {
-    background: #1e293b;
-    border-color: #94a3b8;
+    background: var(--color-survey-option-hover-bg);
+    border-color: var(--color-survey-option-hover-border);
 }
 
 .trial-tags-survey__option-btn.selected {
-    background: #2563eb;
-    border-color: #60a5fa;
-    color: #eff6ff;
+    background: var(--color-survey-option-selected-bg);
+    border-color: var(--color-survey-option-selected-border);
+    color: var(--color-survey-option-selected-text);
 }
 
 .trial-tags-survey__option-btn:active {
@@ -206,16 +375,16 @@
 
 .trial-tags-survey__text-input {
     width: 100%;
-    border: 1px solid #4b5563;
-    background: #0f172a;
-    color: #f9fafb;
-    border-radius: 12px;
+    border: 1px solid var(--color-survey-input-border);
+    background: var(--color-survey-input-bg);
+    color: var(--color-survey-input-text);
+    border-radius: var(--radius-xl);
     padding: 12px 14px;
-    font-size: 14px;
+    font-size: var(--text-sm);
 }
 
 .trial-tags-survey__text-input:focus {
-    outline: 2px solid #60a5fa;
+    outline: 2px solid var(--color-survey-input-focus);
     outline-offset: 2px;
 }
 
@@ -226,20 +395,20 @@
 }
 
 .trial-tags-survey__add-btn {
-    border: 1px solid #2563eb;
-    background: #2563eb;
-    color: #eff6ff;
-    border-radius: 12px;
+    border: 1px solid var(--color-survey-accent);
+    background: var(--color-survey-accent);
+    color: var(--color-survey-option-selected-text);
+    border-radius: var(--radius-xl);
     padding: 0 16px;
-    font-size: 14px;
-    font-weight: 700;
+    font-size: var(--text-sm);
+    font-weight: var(--font-weight-bold);
     cursor: pointer;
     white-space: nowrap;
 }
 
 .trial-tags-survey__add-btn:hover:not(:disabled) {
-    background: #1d4ed8;
-    border-color: #1d4ed8;
+    background: var(--color-survey-accent-hover);
+    border-color: var(--color-survey-accent-hover);
 }
 
 .trial-tags-survey__add-btn:disabled {
@@ -271,18 +440,18 @@
     position: absolute;
     top: 50%;
     right: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.4);
-    background: rgba(15, 23, 42, 0.22);
-    color: #eff6ff;
-    border-radius: 999px;
+    border: 1px solid color-mix(in srgb, var(--color-survey-option-selected-text) 40%, transparent);
+    background: color-mix(in srgb, var(--color-survey-option-bg) 22%, transparent);
+    color: var(--color-survey-option-selected-text);
+    border-radius: var(--radius-pill);
     width: 24px;
     height: 24px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     padding: 0;
-    font-size: 13px;
-    font-weight: 700;
+    font-size: var(--text-sm);
+    font-weight: var(--font-weight-bold);
     line-height: 1;
     transform: translateY(-50%);
     cursor: pointer;
@@ -290,72 +459,99 @@
 }
 
 .trial-tags-survey__option-btn-remove:hover {
-    background: rgba(15, 23, 42, 0.4);
+    background: color-mix(in srgb, var(--color-survey-option-bg) 40%, transparent);
 }
 
 .trial-tags-survey__hint {
-    font-size: 13px;
-    color: #9ca3af;
+    font-size: var(--text-sm);
+    color: var(--color-survey-scale-text);
+}
+
+.trial-tags-survey__hint--prompt {
+    margin: 0 0 12px;
+    line-height: 1.45;
 }
 
 .trial-tags-survey__footer {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 8px;
+    padding: 16px 0 calc(16px + env(safe-area-inset-bottom, 0px));
+    border-top: 1px solid var(--color-survey-section-border);
+    background: var(--color-phase-survey-container-bg);
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+}
+
+.trial-tags-survey__footer-nav {
     display: flex;
     justify-content: space-between;
     align-items: center;
     gap: 12px;
+    padding-top: 2px;
 }
 
-/* Overlay Next/Finish shares footer with Back — match primary nav, not header accent */
 .trial-tags-survey__footer .test-execution-overlay__next-btn {
     text-transform: none;
     letter-spacing: normal;
     align-items: center;
     justify-content: center;
     min-height: unset;
+    background: var(--color-survey-accent);
+    border-color: var(--color-survey-accent);
+    color: var(--color-survey-option-selected-text);
 }
 
 .trial-tags-survey__footer .test-execution-overlay__next-btn:hover:not(:disabled) {
-    background: #1d4ed8;
-    border-color: #1d4ed8;
+    background: var(--color-survey-accent-hover);
+    border-color: var(--color-survey-accent-hover);
 }
 
 .trial-tags-survey__footer .test-execution-overlay__next-btn:active:not(:disabled) {
-    background: #1e40af;
-    border-color: #1e40af;
+    background: var(--color-survey-accent-active);
+    border-color: var(--color-survey-accent-active);
 }
 
 .trial-tags-survey__footer .test-execution-overlay__next-btn:disabled {
-    background: #2563eb;
-    border-color: #2563eb;
-    color: #eff6ff;
+    background: var(--color-survey-accent);
+    border-color: var(--color-survey-accent);
+    color: var(--color-survey-option-selected-text);
     opacity: 0.45;
     cursor: not-allowed;
 }
 
 .trial-tags-survey__nav-btn {
-    border-radius: 12px;
+    border-radius: var(--radius-xl);
     padding: 12px 18px;
-    font-size: 14px;
-    font-weight: 700;
+    font-size: var(--text-sm);
+    font-weight: var(--font-weight-bold);
     cursor: pointer;
 }
 
 .trial-tags-survey__nav-btn--secondary {
-    border: 1px solid #cbd5e1;
-    background: #ffffff;
-    color: #1f2937;
+    border: 1px solid var(--color-survey-nav-secondary-border);
+    background: var(--color-survey-nav-secondary-bg);
+    color: var(--color-survey-nav-secondary-text);
 }
 
 .trial-tags-survey__nav-btn--secondary:hover:not(:disabled) {
-    background: #f8fafc;
-    border-color: #94a3b8;
+    background: var(--color-survey-nav-secondary-hover-bg);
+    border-color: var(--color-survey-option-hover-border);
 }
 
 .trial-tags-survey__nav-btn--primary {
-    border: 1px solid #2563eb;
-    background: #2563eb;
-    color: #eff6ff;
+    border: 1px solid var(--color-survey-accent);
+    background: var(--color-survey-accent);
+    color: var(--color-survey-option-selected-text);
     margin-left: auto;
+}
+
+.trial-tags-survey__nav-btn--primary:hover:not(:disabled) {
+    background: var(--color-survey-accent-hover);
+    border-color: var(--color-survey-accent-hover);
 }
 
 .trial-tags-survey__nav-btn:disabled {
@@ -369,17 +565,23 @@
         align-items: stretch;
     }
 
+    .trial-tags-survey__segmented-grid {
+        grid-template-columns: 1fr;
+    }
+
     .trial-tags-survey__button-grid:not(.trial-tags-survey__button-grid--emotion-scale) {
         grid-template-columns: 1fr 1fr;
     }
 
     .trial-tags-survey__button-grid--emotion-scale .trial-tags-survey__option-btn {
         min-width: 5rem;
-    .trial-tags-survey__input-row {
+    }
+
+    .trial-tags-survey__inline-add {
         flex-direction: column;
     }
 
-    .trial-tags-survey__footer {
+    .trial-tags-survey__footer-nav {
         flex-direction: column;
     }
 

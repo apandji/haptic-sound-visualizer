@@ -7,12 +7,12 @@ class SubjectiveProfilePanel {
         this.gridEl = document.getElementById(options.gridId || 'subjectiveGrid');
         this.bentoHintEl = document.getElementById(options.bentoHintId || 'subjectiveBentoHint');
         this.bentoLegendEl = document.getElementById(options.bentoLegendId || 'subjectiveBentoLegend');
-        this.directionEl = document.getElementById(options.directionId || 'subjectiveDirection');
-        this.directionSection = document.getElementById(options.directionSectionId || 'subjectiveDirectionSection');
+        this.binaryEl = document.getElementById(options.binaryId || 'subjectiveBinary');
+        this.binarySection = document.getElementById(options.binarySectionId || 'subjectiveBinarySection');
         this.emotionEl = document.getElementById(options.emotionId || 'subjectiveEmotion');
         this.emotionSection = document.getElementById(options.emotionSectionId || 'subjectiveEmotionSection');
-        this.textureEl = document.getElementById(options.textureId || 'subjectiveTexture');
-        this.textureSection = document.getElementById(options.textureSectionId || 'subjectiveTextureSection');
+        this.vibesEl = document.getElementById(options.vibesId || 'subjectiveVibes');
+        this.vibesSection = document.getElementById(options.vibesSectionId || 'subjectiveVibesSection');
     }
 
     update(subjective = null) {
@@ -27,14 +27,14 @@ class SubjectiveProfilePanel {
 
     _clear() {
         if (this.scalesEl) this.scalesEl.innerHTML = '';
-        [this.directionEl, this.emotionEl, this.textureEl, this.bentoLegendEl].forEach(el => {
+        [this.binaryEl, this.emotionEl, this.vibesEl, this.bentoLegendEl].forEach(el => {
             if (el) el.innerHTML = '';
         });
-        [this.bentoHintEl, this.bentoLegendEl, this.directionSection, this.textureSection, this.emotionSection]
+        [this.bentoHintEl, this.bentoLegendEl, this.binarySection, this.vibesSection, this.emotionSection]
             .forEach(el => {
                 if (el) el.hidden = true;
             });
-        if (this.gridEl) this.gridEl.classList.remove('subjective-grid--no-direction');
+        if (this.gridEl) this.gridEl.classList.remove('subjective-grid--no-binary');
     }
 
     _heatmapLegend() {
@@ -139,12 +139,12 @@ class SubjectiveProfilePanel {
     _renderBento(subjective) {
         const surveyedCount = subjective.surveyedCount || 0;
         const emotion = subjective.emotion || [];
-        const textureRows = subjective.textureRows || [];
-        const directionVisible = subjective.directionVisible;
-        const directionRows = directionVisible ? (subjective.direction || []) : [];
+        const vibeRows = subjective.vibeRows || [];
+        const binaryVisible = subjective.binaryVisible;
+        const binaryRows = binaryVisible ? (subjective.binaryRows || []) : [];
 
         const hasBento = surveyedCount > 0 && (
-            emotion.length > 0 || textureRows.length > 0 || directionRows.length > 0
+            emotion.length > 0 || vibeRows.length > 0 || binaryRows.length > 0
         );
 
         if (!hasBento) {
@@ -160,32 +160,32 @@ class SubjectiveProfilePanel {
         }
 
         if (this.gridEl) {
-            this.gridEl.classList.toggle('subjective-grid--no-direction', !directionVisible);
+            this.gridEl.classList.toggle('subjective-grid--no-binary', !binaryVisible);
         }
 
-        if (this.directionSection) {
-            if (directionVisible) {
-                this.directionSection.hidden = false;
+        if (this.binarySection) {
+            if (binaryVisible) {
+                this.binarySection.hidden = false;
                 this._renderHeatmapPanel(
-                    this.directionEl,
-                    directionRows,
-                    'direction',
-                    'No direction responses yet.',
+                    this.binaryEl,
+                    binaryRows,
+                    'binary',
+                    'No binary action responses yet.',
                     surveyedCount
                 );
             } else {
-                this.directionSection.hidden = true;
-                if (this.directionEl) this.directionEl.innerHTML = '';
+                this.binarySection.hidden = true;
+                if (this.binaryEl) this.binaryEl.innerHTML = '';
             }
         }
 
-        if (this.textureSection) {
-            this.textureSection.hidden = false;
+        if (this.vibesSection) {
+            this.vibesSection.hidden = false;
             this._renderHeatmapPanel(
-                this.textureEl,
-                textureRows,
-                'texture',
-                'No texture responses yet.',
+                this.vibesEl,
+                vibeRows,
+                'vibes',
+                'No vibe responses yet.',
                 surveyedCount
             );
         }

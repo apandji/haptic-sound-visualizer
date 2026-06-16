@@ -45,21 +45,6 @@ class PatternExplorer {
      * Create panel header
      */
     createHeader() {
-        // Check if header already exists
-        let header = this.container.parentElement?.querySelector('.panel-header');
-        if (!header && this.container.parentElement) {
-            header = document.createElement('div');
-            header.className = 'panel-header';
-            header.textContent = 'PATTERN LIBRARY';
-            // Insert before the file list container
-            this.container.parentElement.insertBefore(header, this.container);
-        }
-    }
-    
-    /**
-     * Create panel header
-     */
-    createHeader() {
         // Check if header already exists in parent
         if (!this.container || !this.container.parentElement) {
             return;
@@ -72,7 +57,7 @@ class PatternExplorer {
             
             // Create header content wrapper
             const headerContent = document.createElement('div');
-            headerContent.className = 'panel-header__content';
+            headerContent.className = 'panel-header__content section-label';
             headerContent.textContent = 'PATTERN LIBRARY';
             
             header.appendChild(headerContent);

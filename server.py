@@ -15,6 +15,7 @@ import os
 from urllib.parse import urlparse, parse_qs
 
 PORT = 8000
+HOST = '127.0.0.1'  # localhost only — avoids exposing PII APIs on the lab LAN
 AUDIO_DIR = 'audio_files'
 
 # Import database handler
@@ -27,7 +28,14 @@ try:
         get_all_tags,
         get_all_locations,
         get_all_participants,
-        get_known_custom_actions
+        get_known_custom_actions,
+        get_session_timing_stats,
+        get_analysis_tags,
+        create_analysis_tag,
+        get_pattern_tag_state,
+        save_pattern_tag_state,
+        set_trial_analyst_notes,
+        get_pattern_survey_counts
     )
     DB_AVAILABLE = True
 except ImportError as e:
@@ -37,22 +45,11 @@ except ImportError as e:
 
 class Handler(http.server.SimpleHTTPRequestHandler):
     def send_json_response(self, data, status=200):
-        """Send JSON response with CORS headers."""
+        """Send JSON response."""
         self.send_response(status)
         self.send_header('Content-Type', 'application/json')
-        self.send_header('Access-Control-Allow-Origin', '*')
-        self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
         self.end_headers()
         self.wfile.write(json.dumps(data).encode())
-
-    def do_OPTIONS(self):
-        """Handle CORS preflight requests."""
-        self.send_response(200)
-        self.send_header('Access-Control-Allow-Origin', '*')
-        self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
-        self.end_headers()
 
     def do_GET(self):
         """Handle GET requests."""
@@ -117,6 +114,37 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                     return
                 sessions = get_analysis_sessions(limit=limit)
                 self.send_json_response(sessions)
+            else:
+                self.send_json_response({'error': 'Database not available'}, 500)
+
+        elif path == '/api/analysis/tags':
+            if DB_AVAILABLE:
+                self.send_json_response({'tags': get_analysis_tags()})
+            else:
+                self.send_json_response({'error': 'Database not available'}, 500)
+
+        elif path == '/api/analysis/pattern-tags':
+            if DB_AVAILABLE:
+                self.send_json_response(get_pattern_tag_state())
+            else:
+                self.send_json_response({'error': 'Database not available'}, 500)
+
+        elif path == '/api/timing-stats':
+            if DB_AVAILABLE:
+                self.send_json_response(get_session_timing_stats())
+            else:
+                self.send_json_response({'error': 'Database not available'}, 500)
+
+        elif path == '/api/pattern-stats':
+            if DB_AVAILABLE:
+                query_params = parse_qs(parsed_path.query)
+                participant_param = query_params.get('participant_id', [None])[0]
+                try:
+                    participant_id = int(participant_param) if participant_param else None
+                except (TypeError, ValueError):
+                    self.send_json_response({'error': 'Invalid participant_id parameter'}, 400)
+                    return
+                self.send_json_response(get_pattern_survey_counts(participant_id))
             else:
                 self.send_json_response({'error': 'Database not available'}, 500)
 
@@ -186,6 +214,49 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             status = 200 if result.get('success') else 404
             self.send_json_response(result, status)
 
+        elif path == '/api/analysis/tags':
+            if not DB_AVAILABLE:
+                self.send_json_response({'error': 'Database not available'}, 500)
+                return
+
+            result = create_analysis_tag(data.get('name'), data.get('color'))
+            status = 200 if result.get('success') else 400
+            self.send_json_response(result, status)
+
+        elif path == '/api/analysis/pattern-tags':
+            if not DB_AVAILABLE:
+                self.send_json_response({'error': 'Database not available'}, 500)
+                return
+
+            pattern_name = data.get('patternName')
+            if not pattern_name or not str(pattern_name).strip():
+                self.send_json_response({'error': 'patternName is required'}, 400)
+                return
+
+            result = save_pattern_tag_state(
+                pattern_name=str(pattern_name),
+                tag_ids=data.get('tagIds') or [],
+                notes=data.get('notes')
+            )
+            status = 200 if result.get('success') else 400
+            self.send_json_response(result, status)
+
+        elif path == '/api/analysis/trials/notes':
+            if not DB_AVAILABLE:
+                self.send_json_response({'error': 'Database not available'}, 500)
+                return
+
+            trial_id = data.get('trialId')
+            try:
+                trial_id_int = int(trial_id)
+            except (TypeError, ValueError):
+                self.send_json_response({'error': 'Invalid trialId'}, 400)
+                return
+
+            result = set_trial_analyst_notes(trial_id_int, data.get('analystNotes'))
+            status = 200 if result.get('success') else 404
+            self.send_json_response(result, status)
+
         elif path == '/api/sessions/bulk':
             # Save multiple sessions (for syncing localStorage data)
             if not DB_AVAILABLE:
@@ -228,7 +299,7 @@ if __name__ == '__main__':
     print(f"Database available: {DB_AVAILABLE}")
     print()
 
-    with socketserver.TCPServer(("", PORT), Handler) as httpd:
+    with socketserver.TCPServer((HOST, PORT), Handler) as httpd:
         print(f"Server running at http://localhost:{PORT}/")
         print()
         print("API Endpoints:")
@@ -239,6 +310,13 @@ if __name__ == '__main__':
         print(f"  GET  /api/survey/custom-actions - Known custom survey actions")
         print(f"  GET  /api/analysis/pattern-metadata - Pattern audio metadata for Analyze")
         print(f"  GET  /api/analysis/sessions - Get sessions for Analyze page")
+        print(f"  GET  /api/analysis/tags     - Analyst classification tag vocabulary")
+        print(f"  POST /api/analysis/tags     - Create a custom analyst tag")
+        print(f"  GET  /api/analysis/pattern-tags - Tag assignments + notes per pattern")
+        print(f"  POST /api/analysis/pattern-tags - Save tags + notes for a pattern")
+        print(f"  POST /api/analysis/trials/notes - Save analyst note on a trial")
+        print(f"  GET  /api/timing-stats      - Empirical session timing stats")
+        print(f"  GET  /api/pattern-stats     - Per-pattern trial counts for queue weighting")
         print(f"  POST /api/analysis/trials/exclude - Exclude/include trial in analysis")
         print(f"  GET  /api/status            - Server status")
         print(f"  POST /api/session           - Save session data")

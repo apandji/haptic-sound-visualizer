@@ -60,8 +60,11 @@ class TestExecutionOverlay {
         this.contentContainer.className = 'test-execution-overlay__content';
         this.container.appendChild(this.contentContainer);
 
-        // Tester info bar (for experimenter; subject does not see screen)
-        this.testerBar = document.createElement('div');
+        // Tester drawer — panel + tab slide together
+        this.testerDrawer = document.createElement('div');
+        this.testerDrawer.className = 'test-execution-overlay__tester-drawer';
+
+        this.testerBar = document.createElement('aside');
         this.testerBar.className = 'test-execution-overlay__tester-bar';
         this.testerBar.setAttribute('aria-label', 'Tester information');
         this.testerBar.innerHTML = `
@@ -109,17 +112,23 @@ class TestExecutionOverlay {
 
             <div class="test-execution-overlay__tester-footer" id="testerFooterActions"></div>
         `;
-        this.container.appendChild(this.testerBar);
         this.bindTesterPanelEvents();
+
         this.testerPanelToggle = document.createElement('button');
         this.testerPanelToggle.className = 'test-execution-overlay__tester-toggle-btn';
         this.testerPanelToggle.type = 'button';
         this.testerPanelToggle.textContent = '❯';
         this.testerPanelToggle.setAttribute('aria-expanded', 'true');
+        this.testerPanelToggle.setAttribute('aria-controls', 'testerPanel');
+        this.testerPanelToggle.setAttribute('aria-label', 'Hide tester panel');
         this.testerPanelToggle.addEventListener('click', () => {
             this.setTesterPanelCollapsed(!this.testerPanelCollapsed);
         });
-        this.container.appendChild(this.testerPanelToggle);
+
+        this.testerBar.id = 'testerPanel';
+        this.testerDrawer.appendChild(this.testerBar);
+        this.testerDrawer.appendChild(this.testerPanelToggle);
+        this.container.appendChild(this.testerDrawer);
         requestAnimationFrame(() => {
             this.drawLiveSignalSparkline();
         });
@@ -168,8 +177,8 @@ class TestExecutionOverlay {
         const nextEl = this.testerBar.querySelector('#testerNextStep');
         const instEl = this.testerBar.querySelector('#testerInstruction');
         if (stepEl) stepEl.textContent = stepLabel;
-        if (this.testerBar) {
-            this.testerBar.classList.toggle('test-execution-overlay__tester-bar--compact', Boolean(progress?.compactMode));
+        if (this.testerDrawer) {
+            this.testerDrawer.classList.toggle('test-execution-overlay__tester-drawer--compact', Boolean(progress?.compactMode));
         }
         if (progressMetaEl) {
             const stepIndex = progress?.stepIndex || null;
@@ -375,26 +384,18 @@ class TestExecutionOverlay {
      * Hide tester info bar (e.g. on complete/aborted screens).
      */
     hideTesterBar() {
-        if (this.testerBar) {
-            this.testerBar.classList.add('test-execution-overlay__tester-bar--hidden');
+        if (this.testerDrawer) {
+            this.testerDrawer.classList.add('test-execution-overlay__tester-drawer--hidden');
         }
-        if (this.testerPanelToggle) {
-            this.testerPanelToggle.classList.add('test-execution-overlay__tester-toggle-btn--hidden');
-        }
-        this.syncOverlayLayoutState();
     }
 
     /**
      * Show tester panel and toggle.
      */
     showTesterBar() {
-        if (this.testerBar) {
-            this.testerBar.classList.remove('test-execution-overlay__tester-bar--hidden');
+        if (this.testerDrawer) {
+            this.testerDrawer.classList.remove('test-execution-overlay__tester-drawer--hidden');
         }
-        if (this.testerPanelToggle) {
-            this.testerPanelToggle.classList.remove('test-execution-overlay__tester-toggle-btn--hidden');
-        }
-        this.syncOverlayLayoutState();
         this.drawLiveSignalSparkline();
     }
 
@@ -404,14 +405,17 @@ class TestExecutionOverlay {
      */
     setTesterPanelCollapsed(collapsed) {
         this.testerPanelCollapsed = Boolean(collapsed);
-        if (this.testerBar) {
-            this.testerBar.classList.toggle('test-execution-overlay__tester-bar--collapsed', this.testerPanelCollapsed);
+        if (this.testerDrawer) {
+            this.testerDrawer.classList.toggle('test-execution-overlay__tester-drawer--collapsed', this.testerPanelCollapsed);
         }
         if (this.testerPanelToggle) {
-            this.testerPanelToggle.textContent = this.testerPanelCollapsed ? '❮' : '❯';
+            this.testerPanelToggle.textContent = this.testerPanelCollapsed ? '❯' : '❮';
             this.testerPanelToggle.setAttribute('aria-expanded', this.testerPanelCollapsed ? 'false' : 'true');
+            this.testerPanelToggle.setAttribute(
+                'aria-label',
+                this.testerPanelCollapsed ? 'Show tester panel' : 'Hide tester panel'
+            );
         }
-        this.syncOverlayLayoutState();
     }
 
     /**
@@ -424,16 +428,6 @@ class TestExecutionOverlay {
             return;
         }
         this.hideTesterBar();
-    }
-
-    /**
-     * Keep content offset in sync with tester panel visibility/collapse state.
-     */
-    syncOverlayLayoutState() {
-        if (!this.container || !this.testerBar) return;
-        const hidden = this.testerBar.classList.contains('test-execution-overlay__tester-bar--hidden');
-        this.container.classList.toggle('test-execution-overlay--with-tester-panel', !hidden);
-        this.container.classList.toggle('test-execution-overlay--with-collapsed-tester-panel', !hidden && this.testerPanelCollapsed);
     }
 
     /**
@@ -1035,6 +1029,11 @@ class TestExecutionOverlay {
         return null;
     }
 
+    _overlayCssColor(token, fallback) {
+        const raw = getComputedStyle(document.documentElement).getPropertyValue(token).trim();
+        return raw || fallback;
+    }
+
     /**
      * Draw sparkline inside telemetry canvas.
      */
@@ -1055,11 +1054,11 @@ class TestExecutionOverlay {
         const width = canvas.width;
         const height = canvas.height;
         ctx.clearRect(0, 0, width, height);
-        ctx.fillStyle = '#fbfdff';
+        ctx.fillStyle = this._overlayCssColor('--color-overlay-canvas-bg', '#fbfdff');
         ctx.fillRect(0, 0, width, height);
 
         // Grid baseline for easier trend reading.
-        ctx.strokeStyle = '#e5ebf2';
+        ctx.strokeStyle = this._overlayCssColor('--color-overlay-telemetry-border', '#e5ebf2');
         ctx.lineWidth = 1;
         ctx.beginPath();
         ctx.moveTo(0, height - 1);
@@ -1067,7 +1066,7 @@ class TestExecutionOverlay {
         ctx.stroke();
 
         if (this.liveSignalBuffer.length < 2) {
-            ctx.fillStyle = '#7a8695';
+            ctx.fillStyle = this._overlayCssColor('--color-progress-label', '#7a8695');
             ctx.font = '12px sans-serif';
             ctx.fillText('Waiting for live telemetry...', 10, Math.floor(height / 2));
             return;
@@ -1077,7 +1076,7 @@ class TestExecutionOverlay {
         const max = Math.max(...this.liveSignalBuffer);
         const range = Math.max(1e-6, max - min);
 
-        ctx.strokeStyle = '#2b5f94';
+        ctx.strokeStyle = this._overlayCssColor('--color-progress-active', '#2b5f94');
         ctx.lineWidth = 2;
         ctx.beginPath();
         this.liveSignalBuffer.forEach((value, index) => {

@@ -37,12 +37,53 @@
     flex-direction: column;
 }
 
-.test-execution-overlay--with-tester-panel .test-execution-overlay__content {
-    padding-left: min(460px, 44vw);
+.test-execution-overlay__content:has(.test-execution-overlay__phase--survey) {
+    align-items: stretch;
+    justify-content: stretch;
 }
 
-.test-execution-overlay--with-collapsed-tester-panel .test-execution-overlay__content {
-    padding-left: 84px;
+.test-execution-overlay__content:has(.test-execution-overlay__phase--survey) .test-execution-overlay__phase--survey {
+    min-height: 0;
+    flex: 1;
+}
+
+/* Tester drawer — panel + tab slide off-screen together */
+.test-execution-overlay__tester-drawer {
+    --tester-panel-width: 420px;
+    position: fixed;
+    top: var(--spacing-lg);
+    left: var(--spacing-lg);
+    bottom: var(--spacing-lg);
+    z-index: 10001;
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    transform: translateX(0);
+    transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.test-execution-overlay__tester-drawer--collapsed {
+    transform: translateX(calc(-1 * var(--tester-panel-width)));
+}
+
+.test-execution-overlay__tester-drawer--hidden {
+    display: none;
+}
+
+.test-execution-overlay__tester-drawer--compact {
+    --tester-panel-width: 360px;
+}
+
+@media (max-width: 860px) {
+    .test-execution-overlay__tester-drawer {
+        --tester-panel-width: min(360px, calc(100vw - var(--spacing-lg) * 2));
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .test-execution-overlay__tester-drawer {
+        transition: none;
+    }
 }
 
 /* Phase transition when switching (e.g. calibration → baseline) */
@@ -50,30 +91,30 @@
     transition: opacity 0.25s ease, transform 0.25s ease;
 }
 
-/* Tester info bar – for experimenter only (subject does not see screen) */
+/* Tester panel (inside drawer) */
 .test-execution-overlay__tester-bar {
-    position: fixed;
-    top: var(--spacing-lg);
-    left: var(--spacing-lg);
-    width: 420px;
-    height: calc(100vh - var(--spacing-lg) * 2);
-    max-height: calc(100vh - var(--spacing-lg) * 2);
-    max-width: calc(100vw - var(--spacing-lg) * 2);
+    position: relative;
+    flex: 0 0 var(--tester-panel-width);
+    width: var(--tester-panel-width);
+    height: 100%;
+    max-width: none;
+    max-height: none;
     padding: var(--spacing-lg);
-    background: rgba(255, 255, 255, 0.96);
-    border: 1px solid rgba(0, 0, 0, 0.08);
-    border-radius: var(--radius-lg);
+    background: var(--color-bg-elevated);
+    border: 1px solid var(--color-border);
+    border-right: none;
+    border-radius: var(--radius-lg) 0 0 var(--radius-lg);
     box-shadow: var(--shadow-lg);
-    z-index: 10001;
     font-family: var(--font-sans);
     font-size: var(--font-size-xs);
-    color: var(--color-text-secondary, #555);
+    color: var(--color-text-secondary);
     line-height: var(--line-height-relaxed);
     pointer-events: auto;
     display: flex;
     flex-direction: column;
     gap: var(--spacing-md);
     overflow-y: auto;
+    overflow-x: hidden;
 }
 
 .test-execution-overlay__tester-progress-row {
@@ -85,7 +126,7 @@
 
 .test-execution-overlay__tester-progress-meta {
     font-size: var(--text-3xs, 0.625rem);
-    color: var(--color-text-secondary, #666);
+    color: var(--color-text-secondary);
     font-family: var(--font-mono);
 }
 
@@ -93,7 +134,7 @@
     margin-top: 2px;
     margin-bottom: var(--spacing-xs);
     font-size: var(--text-3xs, 0.625rem);
-    color: #5c6f85;
+    color: var(--color-progress-meta);
     font-family: var(--font-mono);
 }
 
@@ -103,7 +144,7 @@
     font-size: var(--font-size-sm);
     font-family: var(--font-mono);
     font-weight: var(--font-weight-semibold);
-    color: #1f3a5f;
+    color: var(--color-progress-eta);
 }
 
 .test-execution-overlay__tester-trial-rail {
@@ -115,7 +156,7 @@
     font-size: var(--text-3xs, 0.625rem);
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    color: #7a8695;
+    color: var(--color-progress-label);
     margin-bottom: 4px;
 }
 
@@ -131,16 +172,16 @@
     width: 100%;
     height: 8px;
     border-radius: 99px;
-    background: #d8dee6;
+    background: var(--color-progress-track);
 }
 
 .test-execution-overlay__trial-segment--done {
-    background: #6a8fb5;
+    background: var(--color-progress-done);
 }
 
 .test-execution-overlay__trial-segment--active {
-    background: #244f7e;
-    box-shadow: 0 0 0 1px rgba(36, 79, 126, 0.2);
+    background: var(--color-progress-active);
+    box-shadow: 0 0 0 1px var(--color-progress-active-ring);
 }
 
 .test-execution-overlay__tester-phase-sequence {
@@ -157,62 +198,53 @@
     display: inline-flex;
     align-items: center;
     border-radius: 999px;
-    border: 1px solid #cfd7e1;
-    background: #f8fafc;
-    color: #495a6f;
+    border: 1px solid var(--color-progress-chip-border);
+    background: var(--color-progress-chip-bg);
+    color: var(--color-progress-chip-text);
     font-size: var(--font-size-xs);
     padding: 3px 10px;
 }
 
 .test-execution-overlay__phase-chip--active {
-    border-color: #2c5f94;
-    background: #e9f0f8;
-    color: #153e66;
+    border-color: var(--color-progress-chip-active-border);
+    background: var(--color-progress-chip-active-bg);
+    color: var(--color-progress-chip-active-text);
     font-weight: var(--font-weight-semibold);
 }
 
 .test-execution-overlay__phase-chip--done {
-    border-color: #a7bfd7;
-    background: #f0f5fa;
-    color: #385978;
+    border-color: var(--color-progress-chip-done-border);
+    background: var(--color-progress-chip-done-bg);
+    color: var(--color-progress-chip-done-text);
 }
 
-.test-execution-overlay__tester-bar--hidden {
-    display: none;
-}
-
-.test-execution-overlay__tester-bar--compact {
-    width: 360px;
-}
-
-.test-execution-overlay__tester-bar--compact .test-execution-overlay__tester-instruction,
-.test-execution-overlay__tester-bar--compact .test-execution-overlay__tester-note-row,
-.test-execution-overlay__tester-bar--compact .test-execution-overlay__tester-markers,
-.test-execution-overlay__tester-bar--compact .test-execution-overlay__tester-phase-sequence {
+.test-execution-overlay__tester-drawer--compact .test-execution-overlay__tester-instruction,
+.test-execution-overlay__tester-drawer--compact .test-execution-overlay__tester-note-row,
+.test-execution-overlay__tester-drawer--compact .test-execution-overlay__tester-markers,
+.test-execution-overlay__tester-drawer--compact .test-execution-overlay__tester-phase-sequence {
     display: none;
 }
 
 .test-execution-overlay__tester-step {
     font-weight: var(--font-weight-semibold);
-    color: var(--color-text, #333);
+    color: var(--color-text);
     font-size: var(--font-size-base);
     margin-bottom: var(--spacing-xs);
     letter-spacing: 0.02em;
 }
 
 .test-execution-overlay__tester-section {
-    border: 1px solid #dfe5ec;
+    border: 1px solid var(--color-overlay-section-border);
     border-radius: var(--radius-md);
-    background: #f9fbfd;
+    background: var(--color-overlay-section-bg);
     padding: var(--spacing-sm);
 }
 
 .test-execution-overlay__tester-footer {
     margin-top: auto;
-    position: sticky;
-    bottom: 0;
     padding-top: var(--spacing-sm);
-    background: linear-gradient(to top, rgba(255, 255, 255, 0.98), rgba(255, 255, 255, 0.9));
+    border-top: 1px solid var(--color-border-subtle);
+    background: var(--color-bg-elevated);
 }
 
 .test-execution-overlay__tester-section-title {
@@ -220,7 +252,7 @@
     font-weight: var(--font-weight-semibold);
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    color: #41556d;
+    color: var(--color-overlay-section-title);
     margin-bottom: var(--spacing-xs);
 }
 
@@ -232,9 +264,9 @@
     display: inline-flex;
     align-items: center;
     border-radius: 999px;
-    border: 1px solid #c7d4e2;
-    background: #edf3f9;
-    color: #1f456e;
+    border: 1px solid var(--color-overlay-badge-border);
+    background: var(--color-overlay-badge-bg);
+    color: var(--color-overlay-badge-text);
     font-size: var(--font-size-xs);
     padding: 3px 10px;
     font-weight: var(--font-weight-medium);
@@ -248,7 +280,7 @@
 }
 
 .test-execution-overlay__tester-instruction {
-    color: var(--color-text-secondary, #666);
+    color: var(--color-text-secondary);
     font-size: var(--font-size-xs);
     line-height: 1.4;
 }
@@ -260,8 +292,8 @@
     border: 1px solid var(--color-border);
     font-size: var(--text-3xs, 0.625rem);
     font-weight: var(--font-weight-medium);
-    background: #f6f7f8;
-    color: #444;
+    background: var(--color-overlay-signal-bg);
+    color: var(--color-overlay-signal-text);
     display: inline-block;
 }
 
@@ -269,8 +301,8 @@
     margin-top: var(--spacing-sm);
     padding: 10px 12px;
     border-radius: var(--radius-sm);
-    border: 1px solid #d7e1eb;
-    background: #f7fafc;
+    border: 1px solid var(--color-overlay-device-border);
+    background: var(--color-overlay-device-bg);
 }
 
 .test-execution-overlay__tester-device-status[hidden] {
@@ -282,89 +314,89 @@
     font-weight: var(--font-weight-semibold);
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    color: #647689;
+    color: var(--color-overlay-device-label);
 }
 
 .test-execution-overlay__tester-device-status-title {
     margin-top: 4px;
     font-size: var(--font-size-xs);
     font-weight: var(--font-weight-semibold);
-    color: #20384f;
+    color: var(--color-overlay-device-title);
 }
 
 .test-execution-overlay__tester-device-status-detail {
     margin-top: 4px;
     font-size: var(--font-size-xs);
     line-height: 1.45;
-    color: #536578;
+    color: var(--color-overlay-device-detail);
 }
 
 .test-execution-overlay__tester-device-status--info {
-    background: #edf4fb;
-    border-color: #bfd2e5;
+    background: var(--color-status-info-bg);
+    border-color: var(--color-status-info-border);
 }
 
 .test-execution-overlay__tester-device-status--info .test-execution-overlay__tester-device-status-label,
 .test-execution-overlay__tester-device-status--info .test-execution-overlay__tester-device-status-title,
 .test-execution-overlay__tester-device-status--info .test-execution-overlay__tester-device-status-detail {
-    color: #24496c;
+    color: var(--color-status-info-text);
 }
 
 .test-execution-overlay__tester-device-status--connected {
-    background: #e9f7ef;
-    border-color: #9fd0ae;
+    background: var(--color-status-good-bg);
+    border-color: var(--color-status-good-border);
 }
 
 .test-execution-overlay__tester-device-status--connected .test-execution-overlay__tester-device-status-label,
 .test-execution-overlay__tester-device-status--connected .test-execution-overlay__tester-device-status-title,
 .test-execution-overlay__tester-device-status--connected .test-execution-overlay__tester-device-status-detail {
-    color: #1f5d34;
+    color: var(--color-status-good-text);
 }
 
 .test-execution-overlay__tester-device-status--warning {
-    background: #fff5df;
-    border-color: #e5c06c;
+    background: var(--color-status-ok-bg);
+    border-color: var(--color-status-ok-border);
 }
 
 .test-execution-overlay__tester-device-status--warning .test-execution-overlay__tester-device-status-label,
 .test-execution-overlay__tester-device-status--warning .test-execution-overlay__tester-device-status-title,
 .test-execution-overlay__tester-device-status--warning .test-execution-overlay__tester-device-status-detail {
-    color: #73530e;
+    color: var(--color-status-ok-text);
 }
 
 .test-execution-overlay__tester-device-status--error {
-    background: #fdecec;
-    border-color: #d7a0a0;
+    background: var(--color-status-poor-bg);
+    border-color: var(--color-status-poor-border);
 }
 
 .test-execution-overlay__tester-device-status--error .test-execution-overlay__tester-device-status-label,
 .test-execution-overlay__tester-device-status--error .test-execution-overlay__tester-device-status-title,
 .test-execution-overlay__tester-device-status--error .test-execution-overlay__tester-device-status-detail {
-    color: #8a2e2e;
+    color: var(--color-status-poor-text);
 }
 
 .test-execution-overlay__tester-signal--good {
-    background: #e7f6ea;
-    border-color: #8ac79a;
-    color: #1f6d31;
+    background: var(--color-status-good-bg);
+    border-color: var(--color-status-good-border);
+    color: var(--color-status-good-text);
 }
 
 .test-execution-overlay__tester-signal--ok {
-    background: #fff5de;
-    border-color: #e5bd61;
-    color: #7a5a12;
+    background: var(--color-status-ok-bg);
+    border-color: var(--color-status-ok-border);
+    color: var(--color-status-ok-text);
 }
 
 .test-execution-overlay__tester-signal--poor {
-    background: #fdecec;
-    border-color: #d19a9a;
-    color: #8d2d2d;
+    background: var(--color-status-poor-bg);
+    border-color: var(--color-status-poor-border);
+    color: var(--color-status-poor-text);
 }
 
 .test-execution-overlay__tester-metrics {
     margin-top: var(--spacing-sm);
     font-size: var(--font-size-xs);
-    color: var(--color-text-secondary, #666);
+    color: var(--color-text-secondary);
     font-family: var(--font-mono);
 }
 
@@ -378,8 +410,8 @@
 .test-execution-overlay__tester-markers button {
     border: 1px solid var(--color-border);
     border-radius: var(--radius-sm);
-    background: #fff;
-    color: var(--color-text-secondary, #555);
+    background: var(--color-bg-elevated);
+    color: var(--color-text-secondary);
     font-size: var(--font-size-xs);
     padding: 6px 10px;
     cursor: pointer;
@@ -387,7 +419,7 @@
 
 .test-execution-overlay__tester-markers .test-execution-overlay__tester-marker--pulse {
     transform: translateY(-1px);
-    box-shadow: 0 0 0 2px rgba(44, 95, 148, 0.15);
+    box-shadow: 0 0 0 2px var(--color-overlay-marker-pulse);
 }
 
 .test-execution-overlay__tester-note-row {
@@ -416,85 +448,44 @@
     cursor: pointer;
 }
 
-.test-execution-overlay__tester-bar--collapsed {
-    width: 56px;
-    height: 56px;
-    min-height: 0;
-    padding: 0;
-    overflow: hidden;
-    border-radius: 999px;
-}
-
-.test-execution-overlay__tester-bar--collapsed .test-execution-overlay__tester-next,
-.test-execution-overlay__tester-bar--collapsed .test-execution-overlay__tester-instruction,
-.test-execution-overlay__tester-bar--collapsed .test-execution-overlay__tester-signal,
-.test-execution-overlay__tester-bar--collapsed .test-execution-overlay__tester-metrics,
-.test-execution-overlay__tester-bar--collapsed .test-execution-overlay__tester-markers,
-.test-execution-overlay__tester-bar--collapsed .test-execution-overlay__tester-note-row,
-.test-execution-overlay__tester-bar--collapsed .test-execution-overlay__tester-trial-rail,
-.test-execution-overlay__tester-bar--collapsed .test-execution-overlay__tester-phase-sequence,
-.test-execution-overlay__tester-bar--collapsed .test-execution-overlay__tester-section-title,
-.test-execution-overlay__tester-bar--collapsed .test-execution-overlay__tester-section,
-.test-execution-overlay__tester-bar--collapsed .test-execution-overlay__tester-progress-row,
-.test-execution-overlay__tester-bar--collapsed .test-execution-overlay__tester-progress-meta,
-.test-execution-overlay__tester-bar--collapsed .test-execution-overlay__tester-eta,
-.test-execution-overlay__tester-bar--collapsed .test-execution-overlay__tester-trial-meta,
-.test-execution-overlay__tester-bar--collapsed .test-execution-overlay__tester-step-progress,
-.test-execution-overlay__tester-bar--collapsed .test-execution-overlay__tester-footer {
-    display: none;
-}
-
+/* Drawer tab — attached to panel edge, slides with drawer */
 .test-execution-overlay__tester-toggle-btn {
-    position: fixed;
-    top: calc(var(--spacing-lg) + 56px);
-    left: calc(var(--spacing-lg) + 420px - 1px);
-    z-index: 10002;
-    border: 1px solid #cad4df;
-    border-left: none;
-    border-radius: 0 10px 10px 0;
-    background: #f4f8fc;
-    color: #2f4d6d;
-    width: 22px;
-    height: 42px;
+    flex: 0 0 28px;
+    width: 28px;
+    align-self: center;
+    height: 64px;
+    margin: 0;
     padding: 0;
+    border: 1px solid var(--color-border);
+    border-left: none;
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
+    background: var(--color-bg-elevated);
+    color: var(--color-text-muted);
     font-size: var(--font-size-sm);
     font-weight: var(--font-weight-semibold);
     cursor: pointer;
-    box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.08);
+    box-shadow: var(--shadow-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
 }
 
-.test-execution-overlay__tester-toggle-btn--hidden {
-    display: none;
+.test-execution-overlay__tester-toggle-btn:hover {
+    background: var(--color-surface-subtle);
+    color: var(--color-text);
 }
 
-.test-execution-overlay__tester-bar--collapsed + .test-execution-overlay__tester-toggle-btn {
-    left: calc(var(--spacing-lg) + 56px - 1px);
-}
-
-@media (max-width: 1100px) {
-    .test-execution-overlay--with-tester-panel .test-execution-overlay__content {
-        padding-left: min(420px, 46vw);
-    }
-}
-
-@media (max-width: 860px) {
-    .test-execution-overlay__tester-bar {
-        width: min(360px, calc(100vw - var(--spacing-lg) * 2));
-    }
-
-    .test-execution-overlay__tester-toggle-btn {
-        left: calc(var(--spacing-lg) + min(360px, calc(100vw - var(--spacing-lg) * 2)) - 1px);
-    }
-
-    .test-execution-overlay--with-tester-panel .test-execution-overlay__content {
-        padding-left: min(390px, 52vw);
-    }
+.test-execution-overlay__tester-toggle-btn:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
 }
 
 @media (max-width: 700px) {
-    .test-execution-overlay--with-tester-panel .test-execution-overlay__content,
-    .test-execution-overlay--with-collapsed-tester-panel .test-execution-overlay__content {
-        padding-left: 0;
+    .test-execution-overlay__tester-drawer {
+        top: var(--spacing-sm);
+        left: var(--spacing-sm);
+        bottom: var(--spacing-sm);
     }
 }
 
@@ -502,8 +493,8 @@
     margin-top: var(--spacing-sm);
     min-height: 220px;
     border-radius: var(--radius-sm);
-    border: 1px solid #dbe3ed;
-    background: #fff;
+    border: 1px solid var(--color-overlay-telemetry-border);
+    background: var(--color-bg-elevated);
     padding: var(--spacing-xs);
 }
 
@@ -534,8 +525,8 @@
     height: 96px;
     margin-top: var(--spacing-sm);
     border-radius: var(--radius-sm);
-    border: 1px solid #dbe3ed;
-    background: #fbfdff;
+    border: 1px solid var(--color-overlay-telemetry-border);
+    background: var(--color-overlay-canvas-bg);
     display: block;
 }
 
@@ -572,9 +563,9 @@
 }
 
 .test-execution-overlay__next-btn:disabled {
-    background: #f5f5f5;
-    color: #999;
-    border-color: #e0e0e0;
+    background: var(--color-surface-muted);
+    color: var(--color-text-faint);
+    border-color: var(--color-border);
     cursor: not-allowed;
     opacity: 0.5;
 }
@@ -643,7 +634,7 @@
 
 /* Calibration Phase – two-column: flightlist left, Start/Exit right */
 .test-execution-overlay__phase--calibration {
-    background: #f5f6f9;
+    background: var(--color-phase-calibration-bg);
     display: grid;
     grid-template-columns: minmax(320px, 600px) 1fr;
     gap: var(--spacing-2xl);
@@ -735,13 +726,13 @@
 }
 
 .test-execution-overlay__calibration-gate--waiting {
-    color: #8a6d1f;
-    border-color: #d2b36e;
-    background: #fffaf0;
+    color: var(--color-status-ok-text);
+    border-color: var(--color-status-ok-border);
+    background: var(--color-status-ok-bg);
 }
 
 .test-execution-overlay__calibration-gate--ready {
-    color: #1b5e20;
+    color: var(--color-status-good-text);
     border-color: var(--color-success-border);
     background: var(--color-success-bg);
 }
@@ -817,14 +808,14 @@
     align-items: center;
     justify-content: center;
     transition: background 0.25s ease, color 0.25s ease, transform 0.2s ease, box-shadow 0.25s ease;
-    box-shadow: 0 0 0 0 rgba(186, 12, 47, 0);
+    box-shadow: none;
 }
 
 .test-execution-overlay__calibration-start-circle:hover {
     background: var(--color-accent);
     color: var(--color-text-inverse);
     transform: scale(1.03);
-    box-shadow: 0 4px 20px rgba(186, 12, 47, 0.35);
+    box-shadow: 0 4px 20px color-mix(in srgb, var(--color-accent) 35%, transparent);
 }
 
 .test-execution-overlay__calibration-start-circle:active {
@@ -903,7 +894,7 @@
 
 /* Baseline Phase – neutral light */
 .test-execution-overlay__phase--baseline {
-    background: #f4f5f7;
+    background: var(--color-phase-baseline-bg);
 }
 
 .test-execution-overlay__phase--baseline .test-execution-overlay__phase-label {
@@ -911,21 +902,21 @@
     font-weight: var(--font-weight-semibold);
     text-transform: uppercase;
     letter-spacing: 2px;
-    color: #666;
+    color: var(--color-text-muted);
     margin-bottom: var(--spacing-2xl);
 }
 
 .test-execution-overlay__phase--baseline .test-execution-overlay__countdown {
     font-size: var(--text-5xl);
     font-weight: var(--font-weight-normal);
-    color: #333;
+    color: var(--color-text);
     margin-bottom: var(--spacing-xl);
     animation: subtlePulse 2s ease-in-out infinite;
 }
 
 /* Stimulation Phase – soft green tint */
 .test-execution-overlay__phase--stimulation {
-    background: #f0f5f0;
+    background: var(--color-phase-stimulation-bg);
 }
 
 .test-execution-overlay__phase--stimulation .test-execution-overlay__phase-label {
@@ -933,14 +924,14 @@
     font-weight: var(--font-weight-semibold);
     text-transform: uppercase;
     letter-spacing: 2px;
-    color: #4caf50;
+    color: var(--color-phase-stimulation-accent);
     margin-bottom: var(--spacing-2xl);
 }
 
 .test-execution-overlay__phase--stimulation .test-execution-overlay__countdown {
     font-size: var(--text-5xl);
     font-weight: var(--font-weight-normal);
-    color: #4caf50;
+    color: var(--color-phase-stimulation-accent);
     margin-bottom: var(--spacing-xl);
     animation: subtlePulse 2s ease-in-out infinite;
 }
@@ -957,12 +948,12 @@
 
 /* Countdown color transitions for urgency */
 .test-execution-overlay__countdown.urgent {
-    color: #ff9800 !important;
+    color: var(--color-countdown-urgent) !important;
     animation: subtlePulse 1s ease-in-out infinite, urgentPulse 0.5s ease-in-out infinite;
 }
 
 .test-execution-overlay__countdown.critical {
-    color: #d32f2f !important;
+    color: var(--color-countdown-critical) !important;
     animation: subtlePulse 0.5s ease-in-out infinite, urgentPulse 0.3s ease-in-out infinite;
 }
 
@@ -987,8 +978,8 @@
 
 /* Pattern Info Card */
 .test-execution-overlay__pattern-card {
-    background: #fff;
-    border: 1px solid #e0e0e0;
+    background: var(--color-bg-elevated);
+    border: 1px solid var(--color-border);
     padding: var(--spacing-md) var(--spacing-lg);
     margin-top: var(--spacing-xl);
     display: inline-block;
@@ -997,7 +988,7 @@
 
 .test-execution-overlay__pattern-info {
     font-size: var(--font-size-md);
-    color: #333;
+    color: var(--color-text);
     text-transform: uppercase;
     letter-spacing: 1px;
     margin-bottom: var(--spacing-xs);
@@ -1006,7 +997,7 @@
 
 .test-execution-overlay__pattern-name {
     font-size: var(--font-size-md);
-    color: #333;
+    color: var(--color-text);
     margin-top: var(--spacing-xs);
     font-weight: var(--font-weight-medium);
     font-family: var(--font-mono);
@@ -1014,22 +1005,22 @@
 
 /* Pattern Complete Phase (after survey) */
 .test-execution-overlay__phase--pattern-complete {
-    background: #f6f6f8;
+    background: var(--color-phase-pattern-complete-bg);
 }
 
 .test-execution-overlay__pattern-complete-content {
     max-width: 600px;
     padding: var(--spacing-3xl);
     text-align: center;
-    background: #fff;
-    border: 1px solid #e0e0e0;
+    background: var(--color-bg-elevated);
+    border: 1px solid var(--color-border);
 }
 
 .test-execution-overlay__pattern-complete-message {
     font-size: var(--font-size-lg);
     font-weight: var(--font-weight-medium);
     margin-bottom: var(--spacing-2xl);
-    color: #333;
+    color: var(--color-text);
     line-height: var(--line-height-relaxed);
 }
 
@@ -1061,64 +1052,74 @@
 }
 
 .test-execution-overlay__continue-btn {
-    background: #000;
-    color: #fff;
-    border-color: #000;
+    background: var(--color-text);
+    color: var(--color-text-inverse);
+    border-color: var(--color-text);
 }
 
 .test-execution-overlay__continue-btn:hover {
-    background: #333;
-    border-color: #333;
+    background: var(--color-text-muted);
+    border-color: var(--color-text-muted);
 }
 
 .test-execution-overlay__continue-btn:active {
-    background: #000;
-    border-color: #000;
+    background: var(--color-text);
+    border-color: var(--color-text);
 }
 
 .test-execution-overlay__continue-btn:focus {
     outline: none;
-    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--focus-ring);
 }
 
 .test-execution-overlay__leave-btn {
-    background: #fff;
-    color: #666;
-    border-color: #e0e0e0;
+    background: var(--color-bg-elevated);
+    color: var(--color-text-muted);
+    border-color: var(--color-border);
 }
 
 .test-execution-overlay__leave-btn:hover {
-    background: #f5f5f5;
-    color: #333;
-    border-color: #d0d0d0;
+    background: var(--color-surface-subtle);
+    color: var(--color-text);
+    border-color: var(--color-border-strong);
 }
 
 .test-execution-overlay__leave-btn:active {
-    background: #fff;
+    background: var(--color-bg-elevated);
 }
 
 .test-execution-overlay__leave-btn:focus {
     outline: none;
-    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.05);
+    box-shadow: var(--focus-ring);
 }
 
 /* Survey Phase – soft warm tint */
 .test-execution-overlay__phase--survey {
-    background: #faf8f5;
+    background: var(--color-phase-survey-bg);
     opacity: 1;
     transition: opacity 0.2s ease;
+    align-items: stretch;
+    justify-content: stretch;
+    text-align: left;
 }
 
 .test-execution-overlay__survey-container {
     width: 100%;
     height: 100%;
+    min-height: 0;
     display: flex;
-    align-items: flex-start;
-    justify-content: center;
-    background: #fafafa;
-    padding: var(--spacing-xl);
-    overflow-y: auto;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    background: var(--color-phase-survey-container-bg);
+    padding:
+        calc(var(--spacing-xl) + env(safe-area-inset-top, 0px))
+        var(--spacing-xl)
+        calc(var(--spacing-lg) + env(safe-area-inset-bottom, 0px));
     overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    box-sizing: border-box;
 }
 
 /* Complete Phase / Aborted */
@@ -1132,8 +1133,8 @@
     max-width: 600px;
     padding: var(--spacing-3xl);
     text-align: center;
-    background: #fff;
-    border: 1px solid #e0e0e0;
+    background: var(--color-bg-elevated);
+    border: 1px solid var(--color-border);
 }
 
 .test-execution-overlay__complete-title,
@@ -1141,7 +1142,7 @@
     font-size: var(--font-size-lg);
     font-weight: var(--font-weight-semibold);
     margin-bottom: var(--spacing-lg);
-    color: #333;
+    color: var(--color-text);
     text-transform: uppercase;
     letter-spacing: 1px;
 }
@@ -1149,16 +1150,16 @@
 .test-execution-overlay__complete-message,
 .test-execution-overlay__aborted-message {
     font-size: var(--font-size-base);
-    color: #666;
+    color: var(--color-text-muted);
     margin-bottom: var(--spacing-2xl);
     line-height: var(--line-height-relaxed);
 }
 
 .test-execution-overlay__close-btn {
     padding: 6px var(--spacing-md);
-    background: #000;
-    color: #fff;
-    border: 1px solid #000;
+    background: var(--color-text);
+    color: var(--color-text-inverse);
+    border: 1px solid var(--color-text);
     border-radius: 0;
     font-size: var(--font-size-sm);
     font-weight: var(--font-weight-medium);
@@ -1170,16 +1171,16 @@
 }
 
 .test-execution-overlay__close-btn:hover {
-    background: #333;
-    border-color: #333;
+    background: var(--color-text-muted);
+    border-color: var(--color-text-muted);
 }
 
 .test-execution-overlay__close-btn:active {
-    background: #000;
-    border-color: #000;
+    background: var(--color-text);
+    border-color: var(--color-text);
 }
 
 .test-execution-overlay__close-btn:focus {
     outline: none;
-    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--focus-ring);
 }

@@ -7,6 +7,9 @@ class AnalysisDataProcessor {
     constructor(options = {}) {
         this.sessions = options.sessions || [];
         this.patternMetadata = options.patternMetadata || {};
+        // The full pattern library under study ([{name, path}]) — defines the
+        // universe of patterns even when some have never been tested.
+        this.patternCatalog = options.patternCatalog || [];
         this.bands = ['delta', 'theta', 'alpha', 'beta', 'gamma'];
         this.filters = this._defaultFilters();
     }
@@ -22,11 +25,26 @@ class AnalysisDataProcessor {
     }
 
     loadSessions(sessions) {
-        this.sessions = sessions || [];
+        this.sessions = (sessions || []).map(session => ({
+            ...session,
+            trials: (session.trials || []).map(trial => ({
+                ...trial,
+                surveyResponse: trial.surveyResponse
+                    ? this._normalizeSurveyResponse(trial.surveyResponse)
+                    : trial.surveyResponse
+            }))
+        }));
     }
 
     setPatternMetadata(catalog) {
         this.patternMetadata = catalog || {};
+    }
+
+    setPatternCatalog(files) {
+        this.patternCatalog = (files || []).map(file => ({
+            name: file.name,
+            path: file.path || `audio_files/${file.name}`
+        }));
     }
 
     setFilters(filters = {}) {
@@ -43,11 +61,17 @@ class AnalysisDataProcessor {
         const included = this._getFlatTrials();
         const participants = new Set(sessions.map(s => s.participant_id).filter(Boolean));
 
+        let allTrialCount = 0;
+        for (const session of this.sessions || []) {
+            allTrialCount += (session.trials || []).length;
+        }
+
         return {
             sessionCount: sessions.length,
             trialCount: included.length,
             excludedTrialCount: trials.length - included.length,
-            participantCount: participants.size
+            participantCount: participants.size,
+            allTrialCount
         };
     }
 
@@ -88,7 +112,10 @@ class AnalysisDataProcessor {
                     sessionIds: new Set(),
                     participantIds: new Set(),
                     latestEndTime: null,
-                    surveyedCount: 0
+                    surveyedCount: 0,
+                    urgencyValues: [],
+                    intensityValues: [],
+                    reportedValues: []
                 };
             }
             const stats = statsByName[name];
@@ -101,23 +128,39 @@ class AnalysisDataProcessor {
             }
             if (this._trialHasSurvey(trial)) {
                 stats.surveyedCount += 1;
+                stats.urgencyValues.push(trial.surveyResponse?.urgency);
+                stats.intensityValues.push(trial.surveyResponse?.intensity);
+                stats.reportedValues.push(trial.surveyResponse?.confidence);
             }
         }
 
-        const catalogNames = new Set(Object.keys(this.patternMetadata));
+        // The pattern library defines the sidebar universe — not the audio
+        // metadata catalog, which spans far more files than this study uses.
+        const catalogPaths = new Map(this.patternCatalog.map(entry => [entry.name, entry.path]));
+        const catalogNames = new Set(catalogPaths.keys());
         Object.keys(statsByName).forEach(name => catalogNames.add(name));
 
         const items = Array.from(catalogNames).map(name => {
             const metadata = this.patternMetadata[name] || null;
             const stats = statsByName[name] || {
                 name,
-                path: metadata?.path || (name ? `audio_files/${name}` : ''),
+                path: catalogPaths.get(name) || metadata?.path || (name ? `audio_files/${name}` : ''),
                 trialCount: 0,
                 sessionIds: new Set(),
                 participantIds: new Set(),
                 latestEndTime: null,
-                surveyedCount: 0
+                surveyedCount: 0,
+                urgencyValues: [],
+                intensityValues: [],
+                reportedValues: []
             };
+
+            const confidence = this._computePlacementConfidence(
+                stats.surveyedCount,
+                this._computeSpreadStats(stats.urgencyValues),
+                this._computeSpreadStats(stats.intensityValues),
+                stats.reportedValues
+            );
 
             return {
                 name,
@@ -126,6 +169,7 @@ class AnalysisDataProcessor {
                 sessionCount: stats.sessionIds.size,
                 uniqueParticipants: stats.participantIds.size,
                 surveyedCount: stats.surveyedCount,
+                confidence: confidence.value,
                 hasNewData: typeof analyzePatternHasNewData === 'function'
                     ? analyzePatternHasNewData(name, stats.latestEndTime)
                     : false,
@@ -166,6 +210,471 @@ class AnalysisDataProcessor {
             subjective,
             eegTrialCount: eegTrials.length,
             trials: this.getTrials({ patternName })
+        };
+    }
+
+    /**
+     * Corpus-wide per-pattern aggregates for the NAD landscape view.
+     * Aggregates respect the active global filters; trialPoints additionally
+     * include excluded trials (flagged) so the bloom can render them hollow.
+     */
+    getCorpusLandscape() {
+        const trialsByPattern = new Map();
+        for (const trial of this._getFlatTrials({ includeExcluded: true })) {
+            const name = trial.pattern?.name;
+            if (!name) continue;
+            if (!trialsByPattern.has(name)) trialsByPattern.set(name, []);
+            trialsByPattern.get(name).push(trial);
+        }
+
+        const patterns = [];
+        trialsByPattern.forEach((allTrials, name) => {
+            // Trials counted toward aggregates follow the hideExcluded filter.
+            const trials = this.filters.hideExcluded
+                ? allTrials.filter(t => !t.excludeFromAnalysis)
+                : allTrials;
+            if (!trials.length) return;
+
+            const surveyed = this._getSurveyedTrials(trials);
+            const participantIds = new Set(trials.map(t => t.participantId));
+
+            const urgency = this._computeSpreadStats(surveyed.map(t => t.surveyResponse?.urgency));
+            const intensity = this._computeSpreadStats(surveyed.map(t => t.surveyResponse?.intensity));
+            const vibeLeanings = this._computePairLeanings(
+                surveyed, 'vibes',
+                typeof ANALYZE_NAD_VIBE_PAIR_IDS !== 'undefined' ? ANALYZE_NAD_VIBE_PAIR_IDS : [],
+                typeof ANALYZE_VIBE_PAIRS !== 'undefined' ? ANALYZE_VIBE_PAIRS : []
+            );
+            const binaryLeanings = this._computePairLeanings(
+                surveyed, 'binaryActions',
+                typeof ANALYZE_NAD_BINARY_PAIR_IDS !== 'undefined' ? ANALYZE_NAD_BINARY_PAIR_IDS : [],
+                typeof ANALYZE_BINARY_PAIRS !== 'undefined' ? ANALYZE_BINARY_PAIRS : []
+            );
+
+            const trialPoints = this._getSurveyedTrials(allTrials).map(trial => ({
+                dbTrialId: trial.dbTrialId,
+                trialOrder: trial.trialOrder,
+                urgency: trial.surveyResponse?.urgency,
+                intensity: trial.surveyResponse?.intensity,
+                excluded: Boolean(trial.excludeFromAnalysis),
+                dbSessionId: trial.dbSessionId,
+                participantCode: trial.participantCode,
+                startTime: trial.startTime
+            }));
+
+            let latestEndTime = null;
+            for (const trial of trials) {
+                const endTime = trial.endTime || trial.startTime;
+                if (endTime && (!latestEndTime || endTime > latestEndTime)) {
+                    latestEndTime = endTime;
+                }
+            }
+
+            patterns.push({
+                eeg: this._computeEegEffect(trials),
+                name,
+                path: allTrials[0].pattern?.path || '',
+                metadata: this.patternMetadata[name] || null,
+                trialCount: trials.length,
+                surveyedCount: surveyed.length,
+                participantCount: participantIds.size,
+                latestEndTime,
+                hasNewData: typeof analyzePatternHasNewData === 'function'
+                    ? analyzePatternHasNewData(name, latestEndTime)
+                    : false,
+                urgency,
+                intensity,
+                trialPoints,
+                topActions: this._computeActionFrequency(surveyed).slice(0, 3),
+                vibeLeanings,
+                binaryLeanings,
+                confidence: this._computePlacementConfidence(
+                    surveyed.length, urgency, intensity,
+                    surveyed.map(t => t.surveyResponse?.confidence)
+                ),
+                suggestion: this._computeNadSuggestion({
+                    urgency, intensity, vibeLeanings, binaryLeanings,
+                    surveyedCount: surveyed.length
+                })
+            });
+        });
+
+        // Patterns in the library that have never produced a usable trial
+        // still belong on the landscape (as never-tested entries).
+        const seen = new Set(patterns.map(p => p.name));
+        for (const entry of this.patternCatalog) {
+            if (seen.has(entry.name)) continue;
+            seen.add(entry.name);
+            patterns.push({
+                name: entry.name,
+                path: entry.path,
+                metadata: this.patternMetadata[entry.name] || null,
+                eeg: { trialCount: 0, topBand: null, topDelta: null, maxAbsDelta: null },
+                trialCount: 0,
+                surveyedCount: 0,
+                participantCount: 0,
+                latestEndTime: null,
+                hasNewData: false,
+                urgency: this._computeSpreadStats([]),
+                intensity: this._computeSpreadStats([]),
+                trialPoints: [],
+                topActions: [],
+                vibeLeanings: [],
+                binaryLeanings: [],
+                confidence: this._computePlacementConfidence(0, { median: null }, { median: null }),
+                suggestion: this._computeNadSuggestion({
+                    urgency: { median: null }, intensity: { median: null },
+                    vibeLeanings: [], binaryLeanings: [], surveyedCount: 0
+                })
+            });
+        }
+
+        patterns.sort((a, b) => b.surveyedCount - a.surveyedCount || a.name.localeCompare(b.name));
+
+        return {
+            patterns,
+            mappablePatternCount: patterns.filter(p => p.surveyedCount > 0).length,
+            testedPatternCount: patterns.filter(p => p.trialCount > 0).length,
+            totalPatternCount: patterns.length
+        };
+    }
+
+    /**
+     * Per-pattern electrophysiological effect summary: the band whose mean
+     * baseline->stimulation delta is largest in magnitude. A pattern whose
+     * maxAbsDelta stays near zero is producing no measurable brain response.
+     */
+    _computeEegEffect(trials) {
+        const eegTrials = (trials || []).filter(t => this._trialHasEeg(t));
+        if (!eegTrials.length) {
+            return { trialCount: 0, topBand: null, topDelta: null, maxAbsDelta: null };
+        }
+
+        const deltas = eegTrials.map(t => this._computeDelta(t));
+        let topBand = null;
+        let topDelta = 0;
+        for (const band of this.bands) {
+            const avg = deltas.reduce((sum, d) => sum + (d[band] || 0), 0) / deltas.length;
+            if (topBand === null || Math.abs(avg) > Math.abs(topDelta)) {
+                topBand = band;
+                topDelta = avg;
+            }
+        }
+
+        return {
+            trialCount: eegTrials.length,
+            topBand,
+            topDelta,
+            maxAbsDelta: Math.abs(topDelta)
+        };
+    }
+
+    /**
+     * Confidence in a pattern's map placement (0-1).
+     * evidence:    surveyed-trial count saturating at 5.
+     * consistency: 1 - avg urgency/intensity IQR normalized against 0.5
+     *              (an IQR of 0.5 on the 0-1 scale means opinions are split).
+     * reported:    mean of participants' self-reported confidence (0-1).
+     *
+     * value blends the statistical score (evidence × consistency) with the
+     * reported score; reported is itself discounted by evidence so one very
+     * sure participant can't inflate a single-trial pattern.
+     */
+    _computePlacementConfidence(surveyedCount, urgency, intensity, reportedValues = []) {
+        if (!surveyedCount || urgency.median == null || intensity.median == null) {
+            return { value: 0, evidence: 0, consistency: 0, avgIqr: null, reported: null };
+        }
+
+        const evidence = Math.min(1, surveyedCount / 5);
+
+        const iqrs = [];
+        if (urgency.q1 != null && urgency.q3 != null) iqrs.push(urgency.q3 - urgency.q1);
+        if (intensity.q1 != null && intensity.q3 != null) iqrs.push(intensity.q3 - intensity.q1);
+        const avgIqr = iqrs.length ? iqrs.reduce((sum, v) => sum + v, 0) / iqrs.length : null;
+        const consistency = avgIqr == null
+            ? 1
+            : Math.max(0, Math.min(1, 1 - avgIqr / 0.5));
+
+        const reportedNums = (reportedValues || [])
+            .filter(v => v != null && Number.isFinite(Number(v)))
+            .map(Number);
+        const reported = reportedNums.length
+            ? reportedNums.reduce((sum, v) => sum + v, 0) / reportedNums.length
+            : null;
+
+        const statistical = evidence * consistency;
+        const value = reported == null
+            ? statistical
+            : statistical * 0.7 + (reported * evidence) * 0.3;
+
+        return { value, evidence, consistency, avgIqr, reported };
+    }
+
+    /**
+     * Research health lists for the landscape home: which patterns need
+     * more trials, which placements are unstable, which data is oldest.
+     * Operates on an already-computed getCorpusLandscape() result.
+     */
+    getResearchHealth(landscape, options = {}) {
+        const {
+            minSurveyed = 3,
+            consistencyThreshold = 0.5,
+            staleLimit = 5,
+            minEegTrials = 2,
+            flatEegThreshold = 0.03,
+            digInConfidence = 0.45,
+            surveySignalThreshold = 0.2
+        } = options;
+        const patterns = landscape?.patterns || [];
+
+        // Patterns that demonstrably do something AND have data we can trust:
+        // a measurable EEG shift or a distinct placement away from the map's
+        // indifferent center, backed by enough consistent trials. These are
+        // the candidates worth digging into (and elevating).
+        const digIn = patterns
+            .map(p => {
+                const measuredEeg = p.eeg
+                    && p.eeg.trialCount >= minEegTrials
+                    && p.eeg.maxAbsDelta != null;
+                const eegEffect = measuredEeg && p.eeg.maxAbsDelta >= flatEegThreshold;
+                // Measured-and-flat disqualifies: that pattern belongs in the
+                // retire list, not the elevate list, however distinct its
+                // survey placement reads.
+                const eegFlat = measuredEeg && !eegEffect;
+                const surveySignal = (p.urgency?.median != null && p.intensity?.median != null)
+                    ? Math.hypot(p.urgency.median - 0.5, p.intensity.median - 0.5)
+                    : null;
+                return { p, eegEffect, eegFlat, surveySignal };
+            })
+            .filter(({ p, eegEffect, eegFlat, surveySignal }) =>
+                p.surveyedCount >= minSurveyed
+                && (p.confidence?.value ?? 0) >= digInConfidence
+                && !eegFlat
+                && (eegEffect || (surveySignal != null && surveySignal >= surveySignalThreshold)))
+            .sort((a, b) => (b.p.confidence?.value ?? 0) - (a.p.confidence?.value ?? 0))
+            .map(({ p, eegEffect, surveySignal }) => ({
+                name: p.name,
+                score: p.confidence.value,
+                reported: p.confidence.reported,
+                consistency: p.confidence.consistency,
+                surveyedCount: p.surveyedCount,
+                eegEffect,
+                eegTrialCount: p.eeg?.trialCount ?? 0,
+                topBand: p.eeg?.topBand ?? null,
+                topDelta: p.eeg?.topDelta ?? null,
+                surveyDistinct: surveySignal != null && surveySignal >= surveySignalThreshold
+            }));
+
+        const underTested = patterns
+            .filter(p => p.surveyedCount < minSurveyed)
+            .sort((a, b) => a.surveyedCount - b.surveyedCount || a.name.localeCompare(b.name))
+            .map(p => ({
+                name: p.name,
+                trialCount: p.trialCount,
+                surveyedCount: p.surveyedCount,
+                needed: minSurveyed - p.surveyedCount
+            }));
+
+        const unstable = patterns
+            .filter(p => p.surveyedCount >= minSurveyed
+                && p.confidence
+                && p.confidence.consistency < consistencyThreshold)
+            .sort((a, b) => a.confidence.consistency - b.confidence.consistency)
+            .map(p => ({
+                name: p.name,
+                surveyedCount: p.surveyedCount,
+                consistency: p.confidence.consistency,
+                avgIqr: p.confidence.avgIqr
+            }));
+
+        // Enough EEG trials, yet no band moves meaningfully off baseline.
+        const flatEeg = patterns
+            .filter(p => p.eeg
+                && p.eeg.trialCount >= minEegTrials
+                && p.eeg.maxAbsDelta != null
+                && p.eeg.maxAbsDelta < flatEegThreshold)
+            .sort((a, b) => a.eeg.maxAbsDelta - b.eeg.maxAbsDelta)
+            .map(p => ({
+                name: p.name,
+                eegTrialCount: p.eeg.trialCount,
+                maxAbsDelta: p.eeg.maxAbsDelta,
+                topBand: p.eeg.topBand
+            }));
+
+        const stale = patterns
+            .filter(p => p.latestEndTime)
+            .sort((a, b) => String(a.latestEndTime).localeCompare(String(b.latestEndTime)))
+            .slice(0, staleLimit)
+            .map(p => ({
+                name: p.name,
+                surveyedCount: p.surveyedCount,
+                latestEndTime: p.latestEndTime
+            }));
+
+        return { digIn, underTested, unstable, flatEeg, stale };
+    }
+
+    _percentile(sortedValues, fraction) {
+        if (!sortedValues.length) return null;
+        if (sortedValues.length === 1) return sortedValues[0];
+        const position = fraction * (sortedValues.length - 1);
+        const lower = Math.floor(position);
+        const upper = Math.min(lower + 1, sortedValues.length - 1);
+        const weight = position - lower;
+        return sortedValues[lower] * (1 - weight) + sortedValues[upper] * weight;
+    }
+
+    _computeSpreadStats(values) {
+        const numeric = (values || [])
+            .filter(value => value != null && Number.isFinite(Number(value)))
+            .map(Number)
+            .sort((a, b) => a - b);
+        if (!numeric.length) {
+            return { n: 0, median: null, q1: null, q3: null, min: null, max: null };
+        }
+        return {
+            n: numeric.length,
+            median: this._percentile(numeric, 0.5),
+            q1: this._percentile(numeric, 0.25),
+            q3: this._percentile(numeric, 0.75),
+            min: numeric[0],
+            max: numeric[numeric.length - 1]
+        };
+    }
+
+    _computePairLeanings(surveyedTrials, field, pairIds, pairCatalog) {
+        return (pairIds || []).map(pairId => {
+            const pairDef = (pairCatalog || []).find(pair => pair.id === pairId);
+            if (!pairDef) return null;
+
+            const counts = {};
+            pairDef.options.forEach(option => { counts[option] = 0; });
+            let answered = 0;
+            surveyedTrials.forEach(trial => {
+                const value = trial.surveyResponse?.[field]?.[pairId];
+                if (!value || counts[value] == null) return;
+                answered += 1;
+                counts[value] += 1;
+            });
+
+            const options = pairDef.options.map(label => ({
+                label,
+                count: counts[label] || 0,
+                pct: answered ? Math.round(((counts[label] || 0) / answered) * 100) : 0
+            }));
+            const lean = answered
+                ? options.reduce((best, option) => (option.count > best.count ? option : best))
+                : null;
+
+            return {
+                id: pairId,
+                label: pairDef.label,
+                options,
+                answered,
+                lean: lean && lean.count > 0 ? { label: lean.label, pct: lean.pct } : null
+            };
+        }).filter(Boolean);
+    }
+
+    /**
+     * Transparent rule-based Neutral/Attentive/Disruptive affinity scores.
+     * Each bucket gets a 0-1 score from weighted components; every component
+     * is reported as evidence so the analyst can see why a bucket is suggested.
+     */
+    _computeNadSuggestion({ urgency, intensity, vibeLeanings, binaryLeanings, surveyedCount }) {
+        const empty = {
+            hasData: false,
+            scores: { neutral: null, attentive: null, disruptive: null },
+            suggested: [],
+            ambiguous: false,
+            evidence: { neutral: [], attentive: [], disruptive: [] }
+        };
+        if (!surveyedCount || urgency.median == null || intensity.median == null) {
+            return empty;
+        }
+
+        const u = urgency.median;
+        const i = intensity.median;
+        const peak = (x, center, halfwidth) => Math.max(0, 1 - Math.abs(x - center) / halfwidth);
+        const leanShare = (leanings, pairId, optionLabel) => {
+            const row = (leanings || []).find(l => l.id === pairId);
+            if (!row || !row.answered) return null;
+            const option = row.options.find(o => o.label === optionLabel);
+            return option ? { share: option.pct / 100, pct: option.pct, n: row.answered } : null;
+        };
+
+        const relax = leanShare(binaryLeanings, 'relax_focus', 'Relax');
+        const focus = leanShare(binaryLeanings, 'relax_focus', 'Focus');
+        const safe = leanShare(vibeLeanings, 'safe_danger', 'Safe');
+        const danger = leanShare(vibeLeanings, 'safe_danger', 'Danger');
+        const unknown = leanShare(vibeLeanings, 'expected_unknown', 'Unknown');
+        const welcoming = leanShare(vibeLeanings, 'welcoming_unwelcoming', 'Welcoming');
+
+        const score = (components) => {
+            let weightedSum = 0;
+            let totalWeight = 0;
+            const evidence = [];
+            components.forEach(({ value, weight, label }) => {
+                if (value == null) return;
+                weightedSum += value * weight;
+                totalWeight += weight;
+                evidence.push(label);
+            });
+            return {
+                value: totalWeight > 0 ? weightedSum / totalWeight : null,
+                evidence
+            };
+        };
+
+        const fmt = (value) => value.toFixed(2);
+        const leanLabel = (name, entry) => entry
+            ? { value: entry.share, label: `${name} ${entry.pct}% of ${entry.n} answered` }
+            : { value: null, label: '' };
+
+        const neutral = score([
+            { value: 1 - u, weight: 2, label: `Median urgency ${fmt(u)} (lower supports Neutral)` },
+            { value: 1 - i, weight: 2, label: `Median intensity ${fmt(i)} (lower supports Neutral)` },
+            { ...leanLabel('Relax', relax), weight: 1 },
+            { ...leanLabel('Safe', safe), weight: 1 },
+            { ...leanLabel('Welcoming', welcoming), weight: 1 }
+        ]);
+
+        const attentive = score([
+            { value: peak(u, 0.6, 0.4), weight: 2, label: `Median urgency ${fmt(u)} (mid-high supports Attentive)` },
+            { value: peak(i, 0.5, 0.5), weight: 2, label: `Median intensity ${fmt(i)} (moderate supports Attentive)` },
+            { ...leanLabel('Focus', focus), weight: 1.5 }
+        ]);
+
+        const disruptive = score([
+            { value: u, weight: 2, label: `Median urgency ${fmt(u)} (higher supports Disruptive)` },
+            { value: i, weight: 2, label: `Median intensity ${fmt(i)} (higher supports Disruptive)` },
+            { ...leanLabel('Danger', danger), weight: 1 },
+            { ...leanLabel('Unknown', unknown), weight: 1 }
+        ]);
+
+        const scores = {
+            neutral: neutral.value,
+            attentive: attentive.value,
+            disruptive: disruptive.value
+        };
+        const threshold = typeof ANALYZE_NAD_SUGGESTION_THRESHOLD !== 'undefined'
+            ? ANALYZE_NAD_SUGGESTION_THRESHOLD
+            : 0.55;
+        const suggested = Object.entries(scores)
+            .filter(([, value]) => value != null && value >= threshold)
+            .sort((a, b) => b[1] - a[1])
+            .map(([bucket]) => bucket);
+
+        return {
+            hasData: true,
+            scores,
+            suggested,
+            ambiguous: suggested.length === 0,
+            evidence: {
+                neutral: neutral.evidence,
+                attentive: attentive.evidence,
+                disruptive: disruptive.evidence
+            }
         };
     }
 
@@ -239,6 +748,18 @@ class AnalysisDataProcessor {
         return false;
     }
 
+    updateTrialAnalystNotes(dbTrialId, notes) {
+        for (const session of this.sessions) {
+            for (const trial of session.trials || []) {
+                if (String(trial.dbTrialId) === String(dbTrialId)) {
+                    trial.analystNotes = notes || '';
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     _sortPatternItems(items) {
         return items.sort((a, b) => {
             if (a.trialCount === 0 && b.trialCount > 0) return 1;
@@ -271,23 +792,21 @@ class AnalysisDataProcessor {
             endTime: trial.endTime,
             status: trial.status,
             excludeFromAnalysis: Boolean(trial.excludeFromAnalysis),
+            analystNotes: trial.analystNotes || '',
             hasSurvey: this._trialHasSurvey(trial),
             actions,
             urgency: trial.surveyResponse?.urgency,
             intensity: trial.surveyResponse?.intensity,
             confidence: trial.surveyResponse?.confidence,
             mood: trial.surveyResponse?.emotion?.mood || null,
-            textureSummary: this._formatTextureSummary(trial.surveyResponse?.texture)
+            vibesSummary: this._formatVibesSummary(trial.surveyResponse?.vibes)
         };
     }
 
-    _formatTextureSummary(texture = {}) {
-        if (!texture) return '';
-        const parts = [];
-        if (texture.temperature) parts.push(texture.temperature);
-        if (texture.hardness) parts.push(texture.hardness);
-        if (texture.surface) parts.push(texture.surface);
-        return parts.join(' / ');
+    _formatVibesSummary(vibes = {}) {
+        if (!vibes || typeof vibes !== 'object') return '';
+        const parts = Object.values(vibes).filter(Boolean);
+        return parts.join(' · ');
     }
 
     _trialHasEeg(trial) {
@@ -349,26 +868,26 @@ class AnalysisDataProcessor {
             confidence: this._computeScaleStats(surveyed.map(t => t.surveyResponse?.confidence))
         };
 
-        const direction = (typeof ANALYZE_DIRECTION_AXES !== 'undefined' ? ANALYZE_DIRECTION_AXES : []).map(axis => {
+        const binaryRows = (typeof ANALYZE_BINARY_PAIRS !== 'undefined' ? ANALYZE_BINARY_PAIRS : []).map(pair => {
             const counts = {};
-            axis.options.forEach(option => { counts[option] = 0; });
+            pair.options.forEach(option => { counts[option] = 0; });
             let answered = 0;
             surveyed.forEach(trial => {
-                const value = trial.surveyResponse?.direction?.[axis.id];
+                const value = trial.surveyResponse?.binaryActions?.[pair.id];
                 if (!value) return;
                 answered += 1;
                 if (counts[value] != null) counts[value] += 1;
             });
-            const options = axis.options.map(label => ({
+            const options = pair.options.map(label => ({
                 label,
                 count: counts[label] || 0,
                 pct: answered ? Math.round(((counts[label] || 0) / answered) * 100) : 0
             }));
-            return { ...axis, answered, options };
+            return { ...pair, answered, options };
         });
 
-        const directionVisible = direction.some(axis =>
-            surveyedCount > 0 && axis.answered / surveyedCount >= 0.2
+        const binaryVisible = binaryRows.some(row =>
+            surveyedCount > 0 && row.answered / surveyedCount >= 0.2
         );
 
         const emotion = (typeof ANALYZE_EMOTION_FACETS !== 'undefined' ? ANALYZE_EMOTION_FACETS : []).map(facet => {
@@ -390,44 +909,31 @@ class AnalysisDataProcessor {
             return { ...facet, answered, options };
         });
 
-        const textureCounts = {
-            temperature: { Hot: 0, Cold: 0 },
-            hardness: { Hard: 0, Soft: 0 },
-            surface: { Smooth: 0, Rough: 0 }
-        };
-        surveyed.forEach(trial => {
-            const values = trial.surveyResponse?.texture || {};
-            if (values.temperature && textureCounts.temperature[values.temperature] != null) {
-                textureCounts.temperature[values.temperature] += 1;
-            }
-            if (values.hardness && textureCounts.hardness[values.hardness] != null) {
-                textureCounts.hardness[values.hardness] += 1;
-            }
-            if (values.surface && textureCounts.surface[values.surface] != null) {
-                textureCounts.surface[values.surface] += 1;
-            }
-        });
-
-        const textureRows = (typeof ANALYZE_TEXTURE_FACETS !== 'undefined' ? ANALYZE_TEXTURE_FACETS : []).map(facet => {
-            const bucket = textureCounts[facet.id] || {};
+        const vibeRows = (typeof ANALYZE_VIBE_PAIRS !== 'undefined' ? ANALYZE_VIBE_PAIRS : []).map(pair => {
+            const counts = {};
+            pair.options.forEach(option => { counts[option] = 0; });
             let answered = 0;
-            facet.options.forEach(option => { answered += bucket[option] || 0; });
-            const options = facet.options.map(label => ({
+            surveyed.forEach(trial => {
+                const value = trial.surveyResponse?.vibes?.[pair.id];
+                if (!value) return;
+                answered += 1;
+                if (counts[value] != null) counts[value] += 1;
+            });
+            const options = pair.options.map(label => ({
                 label,
-                count: bucket[label] || 0,
-                pct: answered ? Math.round(((bucket[label] || 0) / answered) * 100) : 0
+                count: counts[label] || 0,
+                pct: answered ? Math.round(((counts[label] || 0) / answered) * 100) : 0
             }));
-            return { ...facet, answered, options };
+            return { ...pair, answered, options };
         });
 
         return {
             surveyedCount,
             scales,
-            direction,
-            directionVisible,
+            binaryRows,
+            binaryVisible,
             emotion,
-            texture: textureCounts,
-            textureRows
+            vibeRows
         };
     }
 
@@ -756,16 +1262,18 @@ class AnalysisDataProcessor {
 
     _getDerivedTagsFromSurveyResponse(surveyResponse) {
         if (!surveyResponse) return [];
+        const normalized = this._normalizeSurveyResponse(surveyResponse);
         const tags = [];
-        const direction = surveyResponse.direction || {};
-        const action = surveyResponse.action || {};
-        const emotion = surveyResponse.emotion || {};
-        const texture = surveyResponse.texture || {};
+        const binaryActions = normalized.binaryActions || {};
+        const action = normalized.action || {};
+        const emotion = normalized.emotion || {};
+        const vibes = normalized.vibes || {};
         const pushTag = (id, label, isCustom = false) => tags.push({ id, label, isCustom });
 
-        if (direction.leftRight) pushTag(`direction:leftRight:${this._slugify(direction.leftRight)}`, `Direction: ${direction.leftRight}`);
-        if (direction.upDown) pushTag(`direction:upDown:${this._slugify(direction.upDown)}`, `Direction: ${direction.upDown}`);
-        if (direction.forwardBackward) pushTag(`direction:forwardBackward:${this._slugify(direction.forwardBackward)}`, `Direction: ${direction.forwardBackward}`);
+        Object.entries(binaryActions).forEach(([pairId, value]) => {
+            if (!value) return;
+            pushTag(`binary:${pairId}:${this._slugify(value)}`, `Binary: ${value}`);
+        });
 
         (action.predefined || []).forEach(value => pushTag(`action:${this._slugify(value)}`, `Action: ${value}`));
         this._getCustomActionValues(action).forEach(customValue => {
@@ -776,10 +1284,43 @@ class AnalysisDataProcessor {
             if (!value) return;
             pushTag(`emotion:${facet}:${this._slugify(value)}`, `${this._titleCase(facet)}: ${value}`);
         });
-        if (texture.temperature) pushTag(`texture:temperature:${this._slugify(texture.temperature)}`, `Temperature: ${texture.temperature}`);
-        if (texture.hardness) pushTag(`texture:hardness:${this._slugify(texture.hardness)}`, `Hardness: ${texture.hardness}`);
-        if (texture.surface) pushTag(`texture:surface:${this._slugify(texture.surface)}`, `Surface: ${texture.surface}`);
+        Object.entries(vibes).forEach(([pairId, value]) => {
+            if (!value) return;
+            pushTag(`vibe:${pairId}:${this._slugify(value)}`, `Vibe: ${value}`);
+        });
         return tags;
+    }
+
+    _normalizeSurveyResponse(surveyResponse) {
+        if (!surveyResponse || typeof surveyResponse !== 'object') return surveyResponse;
+
+        const binaryActions = { ...(surveyResponse.binaryActions || {}) };
+        const direction = surveyResponse.direction || {};
+        const directionMap = {
+            left_right: direction.leftRight,
+            up_down: direction.upDown,
+            forward_backward: direction.forwardBackward
+        };
+        Object.entries(directionMap).forEach(([pairId, value]) => {
+            if (value && !binaryActions[pairId]) binaryActions[pairId] = value;
+        });
+
+        const vibes = { ...(surveyResponse.vibes || {}) };
+        const texture = surveyResponse.texture || {};
+        const textureMap = {
+            hot_cold: texture.temperature,
+            hard_soft: texture.hardness,
+            smooth_rough: texture.surface
+        };
+        Object.entries(textureMap).forEach(([pairId, value]) => {
+            if (value && !vibes[pairId]) vibes[pairId] = value;
+        });
+
+        return {
+            ...surveyResponse,
+            binaryActions,
+            vibes
+        };
     }
 
     _slugify(value) {

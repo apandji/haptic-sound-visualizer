@@ -7,4 +7,13 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+window.addEventListener('sail-theme-change', () => {
+    if (typeof currentView === 'undefined') return;
+    if (currentView === 'patterns') {
+        renderLandscapeView();
+        if (selectedPatternName) renderPatternAnalysis(selectedPatternName);
+    }
+    handleResize();
+});
+
 window.addEventListener('resize', handleResize);

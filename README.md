@@ -87,27 +87,46 @@ This updates `pattern_metadata.json` (with backup).
 
 ## Database
 
-- SQLite file: `haptic_research.db`
-- Schema file: `schema.sql` (includes `trial_events` for tester markers — apply migrations if upgrading an old DB)
-- Init script: `create_database.py`
+- **Active SQLite file:** `haptic_research_v2.db`
+- **Schema:** `schema_v2.sql`
+- **Init script:** `create_database.py` (creates an empty v2 database)
+- **Migration notes:** [docs/SURVEY_V2_MIGRATION.md](docs/SURVEY_V2_MIGRATION.md)
+- **Frozen v1 backup:** `backups/haptic_research_frozen_*.db`
+- Legacy v1 files (`haptic_research.db`, `schema.sql`) are kept for reference only
 - Legacy MySQL-style sketch (ignore): `docs/archive/database_schema.txt`
 
-Initialize (or recreate if DB is missing):
+Initialize (or recreate) an empty v2 database:
 
 ```bash
 python create_database.py
 ```
 
+To rebuild v2 from a frozen v1 backup, see the migration doc and `migrate_to_v2.py`.
+
 ## API Endpoints (`server.py`)
 
-- `GET /api/list-audio-files`
-- `GET /api/tags`
-- `GET /api/locations`
-- `GET /api/participants`
-- `GET /api/analysis/sessions`
-- `GET /api/status`
-- `POST /api/session`
-- `POST /api/sessions/bulk`
+| Method | Path | Purpose |
+|--------|------|---------|
+| GET | `/api/list-audio-files` | Audio files in `audio_files/` |
+| GET | `/api/tags` | Survey taxonomy as a flat tag catalog |
+| GET | `/api/locations` | All locations |
+| GET | `/api/participants` | All participants |
+| GET | `/api/survey/custom-actions` | Known custom survey actions (autocomplete) |
+| GET | `/api/analysis/pattern-metadata` | Pattern audio metadata for Analyze |
+| GET | `/api/analysis/sessions` | Full session corpus for Analyze (`?limit=N` optional) |
+| GET | `/api/analysis/tags` | Analyst classification tag vocabulary |
+| POST | `/api/analysis/tags` | Create a custom analyst tag |
+| GET | `/api/analysis/pattern-tags` | Tag assignments + notes per pattern |
+| POST | `/api/analysis/pattern-tags` | Save tags + notes for a pattern |
+| POST | `/api/analysis/trials/notes` | Save analyst note on a trial |
+| POST | `/api/analysis/trials/exclude` | Exclude/include a trial in analysis |
+| GET | `/api/timing-stats` | Empirical session timing stats |
+| GET | `/api/pattern-stats` | Per-pattern trial counts for queue weighting |
+| GET | `/api/status` | Server status |
+| POST | `/api/session` | Save a completed session |
+| POST | `/api/sessions/bulk` | Save multiple sessions (localStorage sync) |
+
+The server has no authentication and binds to all network interfaces; run it on a trusted machine/network only.
 
 ## Key Config Files
 
@@ -115,8 +134,8 @@ python create_database.py
   - Calibration, baseline, and stimulation durations (seconds)
   - `taggingDuration` — used by session time estimator (human-readable “~ how long” on setup)
   - `surveyDurationEstimate` — used for **in-session ETA** in the tester control panel (falls back to `taggingDuration` if omitted)
-- `js/modules/trialTagsConfig.json`
-  - Survey categories/tags shown after each trial
+- `js/modules/surveyTaxonomy.js` / `survey_taxonomy.py`
+  - Binary action and vibe pair definitions for the post-trial survey (v2)
 
 ## Test Session Defaults
 
@@ -131,13 +150,10 @@ Current defaults from code/config (see `sessionTimingConfig.json` for live value
 ## Data Flow and Storage
 
 - During Test sessions, EEG readings stream via WebSocket (`ws://localhost:8765`) and are appended into session/trial objects in memory.
-- Session save writes:
+- Session data lives in browser memory during the test; it is written only at session end (or abort with completed trials):
   - Browser backup: `localStorage['sessions']`
-  - Server DB: `POST /api/session` -> SQLite (`haptic_research.db`)
-- Analyze mode can load from:
-  - Database (`/api/analysis/sessions`)
-  - Browser storage fallback (`localStorage['sessions']`)
-  - **Sample data** — on Analyze, use **LOAD SAMPLE DATA** to preview charts with mock sessions (`js/analyze/mockDashboardData.js`).
+  - Server DB: `POST /api/session` → SQLite (`haptic_research_v2.db`)
+- Analyze loads the full corpus from the database API (`GET /api/analysis/sessions`) and aggregates client-side (`js/modules/analysisDataProcessor.js`).
 
 ## Repository Layout
 
@@ -145,8 +161,8 @@ Current defaults from code/config (see `sessionTimingConfig.json` for live value
 .
 |- index.html / test.html / analyze.html
 |- server.py / eeg_server.py / run_servers.py
-|- db_handler.py / schema.sql / create_database.py
-|- generate_metadata.py / signal_quality.py
+|- db_handler.py / schema_v2.sql / create_database.py / migrate_to_v2.py
+|- generate_metadata.py / signal_quality.py / eeg_quality.py
 |- js/components/ (UI components)
 |- js/modules/ (non-UI logic)
 |- css/components/ (component styles)
@@ -159,5 +175,5 @@ Current defaults from code/config (see `sessionTimingConfig.json` for live value
 
 - No `requirements.txt` is currently provided; install dependencies manually as above.
 - `server.py` runs on port `8000`.
-- `eeg_server.py` runs on WebSocket port `8765` by default.
-- Local development uses `/api/list-audio-files`; static hosting falls back to `audio-files.json`.
+- `eeg_server.py` runs on WebSocket port `8765` by default (binds to localhost).
+- The active pattern catalog is `audio_files/` (served via `/api/list-audio-files`); `legacy_audio_files/` holds the retired catalog. The static fallback `audio-files.json` still lists the legacy catalog and is stale.

@@ -1,3 +1,6 @@
+-- LEGACY v1 schema — superseded by schema_v2.sql (2026-06).
+-- The running app uses haptic_research_v2.db. See docs/SURVEY_V2_MIGRATION.md.
+
 -- Haptic Sound Visualizer Research Database Schema (SQLite)
 
 CREATE TABLE participants (

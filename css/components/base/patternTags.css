@@ -1,0 +1,184 @@
+/**
+ * PatternTagsPanel — classification block on the Pattern view:
+ * data digest, tag chips (+ inline creation), analyst notes, save row.
+ */
+
+/* Digest — visually distinct slot, future AI summary lands here */
+.pattern-tags__digest {
+    margin: 0 0 var(--space-3);
+    background: var(--color-surface-subtle);
+    border: 1px dashed var(--color-border-strong);
+    border-radius: var(--radius-lg);
+    padding: var(--space-3) var(--space-4);
+    font-size: var(--text-sm);
+    line-height: var(--leading-normal);
+    color: var(--color-text);
+}
+
+.pattern-tags__row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+    margin-bottom: var(--space-3);
+}
+
+.pattern-tags__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+}
+
+.pattern-tags__chip {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--text-sm);
+    font-family: inherit;
+    padding: var(--space-1) var(--space-4);
+    border-radius: var(--radius-pill);
+    border: 1.5px solid var(--color-border);
+    background: var(--color-bg-elevated);
+    color: var(--color-text-muted);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.pattern-tags__chip::before {
+    content: '';
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--tag-color);
+    opacity: 0.4;
+    transition: opacity var(--transition-fast);
+}
+
+.pattern-tags__chip:hover {
+    border-color: var(--tag-color);
+    color: var(--color-text);
+}
+
+.pattern-tags__chip--suggested {
+    border-style: dashed;
+    border-color: var(--tag-color);
+}
+
+.pattern-tags__chip--on {
+    border-color: var(--tag-color);
+    background: color-mix(in srgb, var(--tag-color) 14%, var(--color-bg-elevated));
+    color: var(--color-text);
+    font-weight: var(--font-weight-semibold);
+}
+
+.pattern-tags__chip--on::before {
+    opacity: 1;
+}
+
+.pattern-tags__chip-hint {
+    font-size: var(--text-xs);
+    color: var(--color-text-faint);
+}
+
+/* Typeahead match states while the new-tag input is open */
+.pattern-tags__chip--match {
+    border-color: var(--tag-color);
+    box-shadow: 0 0 0 1px var(--tag-color);
+}
+
+.pattern-tags__chip--dim {
+    opacity: 0.35;
+}
+
+.pattern-tags__new-btn {
+    background: none;
+    border: 1.5px dashed var(--color-border);
+    border-radius: var(--radius-pill);
+    padding: var(--space-1) var(--space-3);
+    font-size: var(--text-sm);
+    font-family: inherit;
+    color: var(--color-text-faint);
+    cursor: pointer;
+    transition: color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.pattern-tags__new-btn:hover {
+    color: var(--color-accent);
+    border-color: var(--color-accent);
+}
+
+.pattern-tags__new-input {
+    font-size: var(--text-sm);
+    font-family: inherit;
+    color: var(--color-text);
+    background: var(--color-bg-elevated);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-pill);
+    padding: var(--space-1) var(--space-3);
+    width: 160px;
+}
+
+.pattern-tags__new-input:focus {
+    outline: none;
+    box-shadow: var(--focus-ring);
+}
+
+.pattern-tags__notes {
+    width: 100%;
+    box-sizing: border-box;
+    font-family: inherit;
+    font-size: var(--text-sm);
+    color: var(--color-text);
+    background: var(--color-bg-elevated);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-2) var(--space-3);
+    resize: vertical;
+}
+
+.pattern-tags__notes:focus {
+    outline: none;
+    box-shadow: var(--focus-ring);
+}
+
+.pattern-tags__save-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    margin-top: var(--space-2);
+    flex-wrap: wrap;
+}
+
+.pattern-tags__save-btn {
+    font-size: var(--text-sm);
+    font-family: inherit;
+    font-weight: var(--font-weight-medium);
+    background: var(--color-accent);
+    color: var(--color-text-inverse);
+    border: none;
+    border-radius: var(--radius-md);
+    padding: var(--space-2) var(--space-4);
+    cursor: pointer;
+    transition: background var(--transition-fast);
+}
+
+.pattern-tags__save-btn:hover {
+    background: var(--color-accent-hover);
+}
+
+.pattern-tags__save-btn:disabled {
+    opacity: 0.6;
+    cursor: wait;
+}
+
+.pattern-tags__status {
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+}
+
+.pattern-tags__saved-at {
+    font-size: var(--text-xs);
+    font-family: var(--font-mono);
+    color: var(--color-text-faint);
+    margin-left: auto;
+}

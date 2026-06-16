@@ -19,26 +19,15 @@ function initializeComponents() {
 
     sidebar = new PatternExplorerForAnalysis({
         containerId: 'patternList',
+        externalControls: true,
         onPatternSelect: handlePatternSelect,
         onFilePreview: handleFilePreview
     });
 
-    trialsSidebar = new TrialsSidebarList({
-        containerId: 'trialSidebarList',
-        onTrialSelect: handleTrialSelect
-    });
-
     summaryStats = new SummaryStats({ containerId: 'summaryStats' });
-    actionFrequencyChart = new ActionFrequencyChart({ containerId: 'actionFrequencyChart' });
     radarChart = new RadarChart({ containerId: 'radarChart' });
     boxPlotChart = new BoxPlotChart({ containerId: 'boxPlotChart' });
     timeSeriesChart = new TimeSeriesChart({ containerId: 'timeSeriesChart' });
-
-    patternTrialsListView = new TrialsListView({
-        containerId: 'patternTrialsListView',
-        compact: true,
-        onTrialSelect: (dbTrialId) => openTrialView(dbTrialId)
-    });
 
     patternTabs = new AnalyzePatternTabs({
         containerId: 'analyzePatternTabs',
@@ -50,46 +39,131 @@ function initializeComponents() {
     trialDetailView = new TrialDetailView({
         containerId: 'trialDetailView',
         onExcludeChange: handleTrialExcludeChange,
-        onBack: handleTrialDetailBack
+        onNavigate: (dbTrialId) => openTrialView(dbTrialId),
+        onSaveNote: handleDetailNoteSave
     });
 
-    patternViewEl = document.getElementById('patternView');
+    // Landscape home: the map navigates down the hierarchy on click.
+    landscapeChart = new NadLandscapeChart({
+        containerId: 'nadLandscapeChart',
+        onPatternSelect: openPattern
+    });
+
+    attentionQueuePanel = new AttentionQueuePanel({
+        containerId: 'attentionQueuePanel',
+        onPatternSelect: openPattern,
+        onTagToggle: handleQueueTagToggle
+    });
+
+    tagCohortsPanel = new TagCohortsPanel({
+        containerId: 'tagCohortsPanel',
+        onHighlightTag: (tagId) => landscapeChart?.setHighlightedTag(tagId)
+    });
+
+    // Pattern view additions
+    patternTagsPanel = new PatternTagsPanel({
+        containerId: 'patternTagsPanel',
+        onSave: savePatternTagState,
+        onCreateTag: createAnalysisTag
+    });
+
+    actionsWordCloud = new WordCloudPanel({
+        containerId: 'actionsWordCloud',
+        emptyText: 'No reported actions yet.'
+    });
+
+    vibesWordCloud = new WordCloudPanel({
+        containerId: 'vibesWordCloud',
+        emptyText: 'No vibe responses yet.'
+    });
+
+    trialsWorkbench = new TrialsWorkbench({
+        containerId: 'trialsWorkbench',
+        onExcludeToggle: handleWorkbenchExcludeToggle,
+        onTrialOpen: (dbTrialId) => openTrialView(dbTrialId),
+        getTrialDetail: (dbTrialId) => dataProcessor.getTrialDetail(dbTrialId),
+        onSaveNote: saveTrialAnalystNote
+    });
+
+    // Trials mode: the workbench is the trial list; rows select into the
+    // persistent detail panel beside it. Search comes from the modebar.
+    allTrialsWorkbench = new TrialsWorkbench({
+        containerId: 'allTrialsWorkbench',
+        selectable: true,
+        externalSearch: true,
+        onExcludeToggle: handleWorkbenchExcludeToggle,
+        onTrialOpen: (dbTrialId) => openTrialView(dbTrialId),
+        getTrialDetail: (dbTrialId) => dataProcessor.getTrialDetail(dbTrialId),
+        onSaveNote: saveTrialAnalystNote
+    });
+
+    patternsModeViewEl = document.getElementById('patternsModeView');
     trialsViewEl = document.getElementById('trialsView');
-    patternSidebarPanel = document.getElementById('patternSidebarPanel');
-    trialSidebarPanel = document.getElementById('trialSidebarPanel');
+    patternViewEl = document.getElementById('patternView');
+    patternRailEl = document.getElementById('patternRail');
+    attentionRailEl = document.getElementById('attentionRail');
+
+    bindModebar();
 }
 
-function updateSidebarMode(view) {
-    const isPattern = view === 'pattern';
-    if (patternSidebarPanel) {
-        patternSidebarPanel.classList.toggle('analyze-sidebar__panel--active', isPattern);
+function bindModebar() {
+    globalSearchEl = document.getElementById('analyzeGlobalSearch');
+    globalSortWrapEl = document.getElementById('analyzeGlobalSortWrap');
+    const sortSelect = document.getElementById('analyzeGlobalSort');
+
+    if (globalSearchEl) {
+        globalSearchEl.addEventListener('input', () => {
+            const query = globalSearchEl.value;
+            modeSearchQueries[currentView] = query;
+            if (currentView === 'trials') {
+                allTrialsWorkbench.setSearchQuery(query);
+            } else {
+                sidebar.setSearchQuery(query);
+            }
+        });
     }
-    if (trialSidebarPanel) {
-        trialSidebarPanel.classList.toggle('analyze-sidebar__panel--active', !isPattern);
+    if (sortSelect) {
+        sortSelect.addEventListener('change', () => sidebar.setSortBy(sortSelect.value));
     }
+}
+
+// Keep the modebar + rails consistent with the active mode.
+function updateModeChrome() {
+    const isTrials = currentView === 'trials';
+    sidebarNav.setActiveView(currentView);
+    if (patternRailEl) patternRailEl.hidden = isTrials;
+    if (attentionRailEl) attentionRailEl.hidden = isTrials;
+    if (globalSearchEl) {
+        globalSearchEl.placeholder = isTrials
+            ? 'Search trials — pattern, participant, action…'
+            : 'Search patterns…';
+        globalSearchEl.value = modeSearchQueries[currentView] || '';
+    }
+    if (globalSortWrapEl) globalSortWrapEl.hidden = isTrials;
 }
 
 function refreshSidebarContent() {
-    sidebar.setPatterns(dataProcessor.getPatternSidebarItems());
-
-    const trials = dataProcessor.getTrials({ includeExcluded: true });
-    trialsSidebar.setTrials(trials);
-    if (selectedTrialDbId) {
-        trialsSidebar.selectTrial(selectedTrialDbId);
-    }
+    const items = dataProcessor.getPatternSidebarItems();
+    sidebar.setPatterns(items);
+    const meta = document.getElementById('patternRailMeta');
+    if (meta) meta.textContent = `${items.length} patterns`;
 }
 
-function setSidebarView(view) {
-    sidebarNav.setActiveView(view);
-    updateSidebarMode(view);
+// Select a pattern from anywhere (map dot, queue row, sidebar).
+function openPattern(patternName) {
+    sidebar.setSelectedPattern(patternName);
+    handlePatternSelect(patternName);
 }
 
 function openTrialView(dbTrialId) {
     selectedTrialDbId = dbTrialId;
-    currentView = 'trials';
-    setSidebarView('trials');
-    trialsSidebar.selectTrial(dbTrialId);
-    renderCurrentView();
+    if (currentView !== 'trials') {
+        currentView = 'trials';
+        renderCurrentView();
+    } else {
+        renderTrialDetail();
+    }
+    allTrialsWorkbench.setSelectedTrial(dbTrialId);
 }
 
 function updatePatternHeader(patternName, metadata) {
@@ -121,6 +195,16 @@ function updatePatternHeader(patternName, metadata) {
     meta.innerHTML = pills.map(text => `<span class="pattern-detail-header__pill">${text}</span>`).join('');
 }
 
+async function loadPatternCatalog() {
+    try {
+        const response = await fetch('/api/list-audio-files');
+        if (!response.ok) return;
+        dataProcessor.setPatternCatalog(await response.json());
+    } catch (err) {
+        console.warn('Analyze: could not load pattern catalog', err);
+    }
+}
+
 async function loadPatternMetadata() {
     try {
         const response = await fetch('/api/analysis/pattern-metadata');
@@ -132,10 +216,101 @@ async function loadPatternMetadata() {
     }
 }
 
+async function loadTagData() {
+    try {
+        const [tagsResponse, stateResponse] = await Promise.all([
+            fetch('/api/analysis/tags'),
+            fetch('/api/analysis/pattern-tags')
+        ]);
+        if (tagsResponse.ok) {
+            const payload = await tagsResponse.json();
+            analysisTags = payload.tags || [];
+            analysisTagsById = new Map(analysisTags.map(tag => [tag.id, tag]));
+        }
+        if (stateResponse.ok) {
+            const payload = await stateResponse.json();
+            patternTagAssignments = new Map(Object.entries(payload.patternTags || {}));
+            patternAnnotations = new Map(Object.entries(payload.annotations || {}));
+        }
+    } catch (err) {
+        console.warn('Analyze: could not load analyst tags', err);
+    }
+}
+
+async function createAnalysisTag(name) {
+    const response = await fetch('/api/analysis/tags', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name })
+    });
+    const result = await response.json();
+    if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Could not create tag');
+    }
+    if (!analysisTagsById.has(result.tag.id)) {
+        analysisTags.push(result.tag);
+        analysisTagsById.set(result.tag.id, result.tag);
+    }
+    return result.tag;
+}
+
+async function savePatternTagState(payload) {
+    const response = await fetch('/api/analysis/pattern-tags', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    });
+    const result = await response.json();
+    if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Could not save tags');
+    }
+    patternTagAssignments.set(result.patternName, result.tagIds);
+    patternAnnotations.set(result.patternName, {
+        notes: result.notes,
+        updatedAt: result.updatedAt
+    });
+    return result;
+}
+
+// Inline tagging from the attention queue: flip one tag, keep existing
+// notes, then refresh the landscape (map colors, queue chips, cohorts) and
+// the open pattern's tag panel if it's the same pattern.
+async function handleQueueTagToggle(patternName, tagId) {
+    const current = new Set(patternTagAssignments.get(patternName) || []);
+    if (current.has(tagId)) current.delete(tagId);
+    else current.add(tagId);
+
+    const annotation = patternAnnotations.get(patternName);
+    await savePatternTagState({
+        patternName,
+        tagIds: Array.from(current),
+        notes: annotation?.notes || ''
+    });
+
+    renderLandscapeView();
+    if (selectedPatternName === patternName) {
+        renderPatternAnalysis(patternName);
+    }
+}
+
+async function saveTrialAnalystNote(dbTrialId, text) {
+    const response = await fetch('/api/analysis/trials/notes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ trialId: Number(dbTrialId), analystNotes: text })
+    });
+    const result = await response.json();
+    if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Could not save note');
+    }
+    dataProcessor.updateTrialAnalystNotes(dbTrialId, result.analystNotes);
+    return result;
+}
+
 async function handleSessionsLoaded(sessions) {
-    await loadPatternMetadata();
+    await Promise.all([loadPatternCatalog(), loadPatternMetadata(), loadTagData()]);
     dataProcessor.loadSessions(sessions);
-    refreshAnalyzeViews({ autoSelectFirstPattern: true });
+    refreshAnalyzeViews({ resetToLandscape: true });
 }
 
 function handleFiltersChange(filters) {
@@ -143,9 +318,9 @@ function handleFiltersChange(filters) {
     refreshAnalyzeViews();
 }
 
-function handleViewChange(view) {
-    currentView = view;
-    setSidebarView(view);
+// Mode tabs flip between the two flattened screens.
+function handleViewChange(mode) {
+    currentView = mode === 'trials' ? 'trials' : 'patterns';
     renderCurrentView();
 }
 
@@ -155,90 +330,193 @@ function refreshAnalyzeViews(options = {}) {
     toolbar.setFilterOptions(dataProcessor.getFilterOptions());
     refreshSidebarContent();
 
-    if (options.autoSelectFirstPattern) {
-        currentView = 'pattern';
-        setSidebarView('pattern');
-        const patterns = dataProcessor.getPatternSidebarItems();
-        const firstWithData = patterns.find(pattern => pattern.trialCount > 0);
-        if (firstWithData) {
-            selectedPatternName = firstWithData.name;
-            sidebar.selectPattern(firstWithData.name);
-            return;
-        }
-        showPlaceholder('No completed trials found for the current filters.');
-        return;
+    if (options.resetToLandscape) {
+        currentView = 'patterns';
     }
 
     renderCurrentView();
 }
 
 function renderCurrentView() {
-    setSidebarView(currentView);
-
+    updateModeChrome();
     if (currentView === 'trials') {
-        showTrialsView();
+        renderTrialsMode();
+    } else {
+        renderPatternsMode();
+    }
+}
+
+// Patterns mode: map on top, selected pattern's details right below it.
+function renderPatternsMode() {
+    trialsViewEl.classList.remove('active');
+    patternsModeViewEl.classList.add('active');
+    analyzePlaceholder.style.display = 'none';
+    analyzeContent.classList.add('active');
+    analyzeContent.classList.remove('analyze-main__content--viewport');
+    renderLandscapeView();
+    renderPatternDetails();
+    handleResize();
+}
+
+function renderPatternDetails() {
+    const empty = document.getElementById('patternDetailsEmpty');
+    const content = document.getElementById('patternDetailsContent');
+    if (!selectedPatternName) {
+        if (empty) {
+            empty.hidden = false;
+            empty.textContent = 'Select a pattern from the list or click a dot on the map to see its details here.';
+        }
+        if (content) content.hidden = true;
         return;
     }
+    renderPatternAnalysis(selectedPatternName);
+}
 
-    showPatternView();
-    if (selectedPatternName) {
-        renderPatternAnalysis(selectedPatternName);
-    } else {
-        showPlaceholder('Select a pattern to view its analysis.');
+function renderLandscapeView() {
+    if (!landscapeChart) return;
+
+    const landscape = dataProcessor.getCorpusLandscape();
+
+    landscapeChart.update(landscape, {
+        tagsById: analysisTagsById,
+        patternTags: patternTagAssignments
+    });
+
+    attentionQueuePanel.update(
+        dataProcessor.getResearchHealth(landscape),
+        landscape,
+        patternTagAssignments,
+        analysisTags
+    );
+    tagCohortsPanel.update(analysisTags, patternTagAssignments, landscape.mappablePatternCount);
+
+    const fieldMeta = document.getElementById('landscapeFieldMeta');
+    if (fieldMeta) {
+        fieldMeta.textContent = landscapeMetaText(landscape);
     }
 }
 
-function showPatternView() {
-    patternViewEl.classList.add('active');
-    trialsViewEl.classList.remove('active');
+function landscapeMetaText(landscape) {
+    const parts = [`${landscape.mappablePatternCount} of ${landscape.totalPatternCount} patterns on the map`];
+    const neverTested = landscape.totalPatternCount - landscape.testedPatternCount;
+    const awaitingSurveys = landscape.testedPatternCount - landscape.mappablePatternCount;
+    if (awaitingSurveys > 0) parts.push(`${awaitingSurveys} awaiting surveys`);
+    if (neverTested > 0) parts.push(`${neverTested} never tested`);
+    return parts.join(' · ');
 }
 
-function showTrialsView() {
-    patternViewEl.classList.remove('active');
+// Trials mode: list and detail live side by side — no page jumps.
+function renderTrialsMode() {
+    patternsModeViewEl.classList.remove('active');
     trialsViewEl.classList.add('active');
     analyzePlaceholder.style.display = 'none';
     analyzeContent.classList.add('active');
+    analyzeContent.classList.add('analyze-main__content--viewport');
 
-    const detailPanel = document.getElementById('trialDetailPanel');
-    const emptyState = document.getElementById('trialsEmptyState');
+    allTrialsWorkbench.render(dataProcessor.getTrials({ includeExcluded: true }));
+    allTrialsWorkbench.setSelectedTrial(selectedTrialDbId);
 
     if (selectedTrialDbId) {
-        trialDetailView.render(dataProcessor.getTrialDetail(selectedTrialDbId));
-        detailPanel.hidden = false;
-        emptyState.hidden = true;
-        return;
+        renderTrialDetail();
+    } else {
+        trialDetailView.render(null);
+    }
+}
+
+// Trials in the same order the workbench displays them:
+// sessions newest-first, trials by run order within each session.
+function orderedTrialIds() {
+    const sessions = new Map();
+    for (const trial of dataProcessor.getTrials({ includeExcluded: true })) {
+        const key = String(trial.dbSessionId ?? trial.sessionId ?? 'unknown');
+        if (!sessions.has(key)) {
+            sessions.set(key, { date: trial.sessionDate || trial.startTime || '', trials: [] });
+        }
+        sessions.get(key).trials.push(trial);
     }
 
-    detailPanel.hidden = true;
-    emptyState.hidden = false;
-    trialDetailView.render(null);
+    const ordered = [];
+    Array.from(sessions.values())
+        .sort((a, b) => String(b.date).localeCompare(String(a.date)))
+        .forEach(session => {
+            session.trials
+                .sort((a, b) => (a.trialOrder || 0) - (b.trialOrder || 0))
+                .forEach(trial => ordered.push(String(trial.dbTrialId)));
+        });
+    return ordered;
+}
+
+function renderTrialDetail() {
+    const ids = orderedTrialIds();
+    const index = ids.indexOf(String(selectedTrialDbId));
+    trialDetailView.render(dataProcessor.getTrialDetail(selectedTrialDbId), {
+        prevId: index > 0 ? ids[index - 1] : null,
+        nextId: index >= 0 && index < ids.length - 1 ? ids[index + 1] : null,
+        position: index >= 0 ? `${index + 1} of ${ids.length}` : null
+    });
 }
 
 function handlePatternSelect(patternName) {
     selectedPatternName = patternName;
-    currentView = 'pattern';
-    setSidebarView('pattern');
     analyzeMarkPatternViewed(patternName);
-    renderCurrentView();
+    if (currentView !== 'patterns') {
+        currentView = 'patterns';
+        renderCurrentView();
+    } else {
+        renderPatternDetails();
+        refreshSidebarContent();
+    }
+    if (patternViewEl) {
+        patternViewEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
 }
 
-function renderPatternAnalysis(patternName) {
+function renderPatternAnalysis(patternName, options = {}) {
     const analysis = dataProcessor.getPatternAnalysis(patternName);
+    const empty = document.getElementById('patternDetailsEmpty');
+    const content = document.getElementById('patternDetailsContent');
+
     if (!analysis) {
         updatePatternHeader(null);
-        showPlaceholder('No data available for this pattern under the current filters.');
+        const landscape = dataProcessor.getCorpusLandscape();
+        const entry = landscape.patterns.find(p => p.name === patternName);
+        if (empty) {
+            empty.hidden = false;
+            empty.textContent = entry && entry.trialCount === 0
+                ? `${patternName} has never been tested — run trials in the Test tab to put it on the map.`
+                : 'No data available for this pattern under the current filters.';
+        }
+        if (content) content.hidden = true;
         return;
     }
 
-    showContent();
+    if (empty) empty.hidden = true;
+    if (content) content.hidden = false;
     updatePatternHeader(patternName, analysis.metadata);
     summaryStats.update(analysis.summary);
     updateSampleNote(analysis.summary?.surveyedCount || 0);
     updatePanelMetaLabels(analysis);
 
-    actionFrequencyChart.update(analysis.actionFrequency);
+    // Classification & notes block (tags + digest + analyst notes)
+    const landscape = dataProcessor.getCorpusLandscape();
+    const entry = landscape.patterns.find(p => p.name === patternName) || null;
+    patternTagsPanel.render(
+        entry,
+        analysisTags,
+        patternTagAssignments.get(patternName) || [],
+        patternAnnotations.get(patternName) || null
+    );
+    const classifySection = document.getElementById('patternClassifySection');
+    if (classifySection) classifySection.hidden = !entry;
+
+    // Qualitative: word clouds for actions and vibes
+    actionsWordCloud.update(
+        (analysis.actionFrequency || []).map(item => ({ label: item.action, count: item.count }))
+    );
+    vibesWordCloud.update(vibeWordItems(analysis.subjective));
     subjectiveProfilePanel.update(analysis.subjective);
 
+    // Quantitative: EEG charts
     if (analysis.radar) {
         radarChart.update(analysis);
     } else {
@@ -255,16 +533,56 @@ function renderPatternAnalysis(patternName) {
         timeSeriesChart.clear();
     }
 
+    // Trials workbench (includes excluded trials so flags stay visible)
     const trialsPanel = document.getElementById('patternTrialsPanel');
-    const trialsSummary = document.getElementById('patternTrialsSummary');
-    if (trialsPanel && trialsSummary) {
-        patternTrialsListView.render(analysis.trials);
-        trialsSummary.textContent = `Trials (${analysis.trials.length})`;
-        trialsPanel.hidden = analysis.trials.length === 0;
+    if (trialsPanel && !options.skipWorkbench) {
+        const workbenchTrials = dataProcessor.getTrials({ patternName, includeExcluded: true });
+        trialsWorkbench.render(workbenchTrials, patternName);
+        trialsPanel.hidden = workbenchTrials.length === 0;
     }
 
     refreshSidebarContent();
     handleResize();
+}
+
+function vibeWordItems(subjective) {
+    const items = [];
+    (subjective?.vibeRows || []).forEach(row => {
+        (row.options || []).forEach(option => {
+            if (option.count > 0) items.push({ label: option.label, count: option.count });
+        });
+    });
+    return items;
+}
+
+async function handleWorkbenchExcludeToggle(dbTrialId, excluded) {
+    try {
+        const response = await fetch('/api/analysis/trials/exclude', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ trialId: Number(dbTrialId), excludeFromAnalysis: excluded })
+        });
+        const result = await response.json();
+        if (!response.ok || !result.success) {
+            throw new Error(result.error || 'Could not update trial exclusion');
+        }
+
+        dataProcessor.updateTrialExclusion(dbTrialId, excluded);
+        toolbar.updateSummary(dataProcessor.getCorpusSummary());
+
+        // Flip the row in place (in whichever workbench shows it), refresh
+        // the charts around it without rebuilding (keeps drawer + scroll).
+        trialsWorkbench.updateRowExclusion(dbTrialId, excluded);
+        allTrialsWorkbench.updateRowExclusion(dbTrialId, excluded);
+        if (currentView === 'patterns' && selectedPatternName) {
+            renderPatternAnalysis(selectedPatternName, { skipWorkbench: true });
+        }
+    } catch (err) {
+        console.error('Analyze: failed to update trial exclusion from workbench', err);
+        trialsWorkbench.updateRowExclusion(dbTrialId, !excluded);
+        allTrialsWorkbench.updateRowExclusion(dbTrialId, !excluded);
+        alert('Could not save exclusion flag. Reload and try again.');
+    }
 }
 
 function updateSampleNote(surveyedCount) {
@@ -277,7 +595,7 @@ function updateSampleNote(surveyedCount) {
 
     if (surveyedCount > 0 && surveyedCount < threshold) {
         note.hidden = false;
-        note.textContent = `${surveyedCount} surveyed trial${surveyedCount === 1 ? '' : 's'} — interpret subjective readouts cautiously.`;
+        note.textContent = `${surveyedCount} surveyed trial${surveyedCount === 1 ? '' : 's'} — interpret qualitative readouts cautiously.`;
         return;
     }
 
@@ -298,9 +616,9 @@ function updatePanelMetaLabels(analysis) {
 
     setMeta('actionsPanelMeta', null);
     setMeta('scalesPanelMeta', null);
-    setMeta('directionPanelMeta', null);
+    setMeta('binaryPanelMeta', null);
     setMeta('emotionPanelMeta', null);
-    setMeta('texturePanelMeta', null);
+    setMeta('vibesPanelMeta', null);
 
     const physioMeta = document.getElementById('physioPanelMeta');
     if (physioMeta) {
@@ -309,16 +627,14 @@ function updatePanelMetaLabels(analysis) {
     }
 }
 
-function handleTrialSelect(dbTrialId) {
-    selectedTrialDbId = dbTrialId;
-    trialsSidebar.selectTrial(dbTrialId);
-    renderCurrentView();
-}
-
-function handleTrialDetailBack() {
-    selectedTrialDbId = null;
-    trialsSidebar.selectTrial(null);
-    renderCurrentView();
+// Note save from the persistent detail panel: persist, then sync the
+// note indicator on the corresponding workbench row.
+async function handleDetailNoteSave(dbTrialId, text) {
+    const result = await saveTrialAnalystNote(dbTrialId, text);
+    const hasNote = Boolean(String(result.analystNotes || '').trim());
+    allTrialsWorkbench.updateRowNote(dbTrialId, hasNote);
+    trialsWorkbench.updateRowNote(dbTrialId, hasNote);
+    return result;
 }
 
 async function handleTrialExcludeChange(dbTrialId, excluded) {
@@ -334,18 +650,11 @@ async function handleTrialExcludeChange(dbTrialId, excluded) {
         }
         dataProcessor.updateTrialExclusion(dbTrialId, excluded);
         refreshSidebarContent();
+        allTrialsWorkbench.updateRowExclusion(dbTrialId, excluded);
         if (selectedTrialDbId) {
-            trialsSidebar.selectTrial(selectedTrialDbId);
-            trialDetailView.render(dataProcessor.getTrialDetail(selectedTrialDbId));
+            renderTrialDetail();
         }
-        if (currentView === 'pattern' && selectedPatternName) {
-            renderPatternAnalysis(selectedPatternName);
-        } else if (currentView === 'pattern') {
-            toolbar.updateSummary(dataProcessor.getCorpusSummary());
-            sidebar.setPatterns(dataProcessor.getPatternSidebarItems());
-        } else {
-            toolbar.updateSummary(dataProcessor.getCorpusSummary());
-        }
+        toolbar.updateSummary(dataProcessor.getCorpusSummary());
     } catch (err) {
         console.error('Analyze: failed to update trial exclusion', err);
         alert('Could not save exclusion flag. Reload and try again.');
@@ -406,16 +715,20 @@ function showPlaceholder(message) {
         textEl.textContent = message || 'Load session data to begin analysis.';
     }
     analyzePlaceholder.style.display = 'flex';
+    analyzePlaceholder.setAttribute('aria-busy', 'false');
     analyzeContent.classList.remove('active');
 }
 
 function showContent() {
     analyzePlaceholder.style.display = 'none';
+    analyzePlaceholder.setAttribute('aria-busy', 'false');
     analyzeContent.classList.add('active');
 }
 
 function handleResize() {
-    if (analyzeContent.classList.contains('active')) {
-        analyzeContent.querySelectorAll('.js-plotly-plot').forEach(div => Plotly.Plots.resize(div));
-    }
+    if (!analyzeContent.classList.contains('active')) return;
+    analyzeContent.querySelectorAll('.js-plotly-plot').forEach(div => {
+        // Skip plots inside hidden regions — Plotly throws on undisplayed divs.
+        if (div.offsetParent !== null) Plotly.Plots.resize(div);
+    });
 }

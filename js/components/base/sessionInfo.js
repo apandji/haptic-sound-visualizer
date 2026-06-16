@@ -57,7 +57,9 @@ class SessionInfo {
         
         // Validation state
         this.isValid = false;
-        this.isSessionStarted = false; // Track if session has been started
+        this.isSessionStarted = false;
+        this.showFieldErrors = false;
+        this.touchedFields = new Set();
         
         // Initialize
         this.init();
@@ -150,7 +152,7 @@ class SessionInfo {
         headerLeft.className = 'session-info__header-left';
         
         const headerText = document.createElement('span');
-        headerText.className = 'session-info__header-text';
+        headerText.className = 'section-label session-info__header-text';
         headerText.textContent = 'SESSION';
         headerLeft.appendChild(headerText);
         
@@ -179,7 +181,7 @@ class SessionInfo {
         patternSection.className = 'session-info__estimate-section';
         
         const patternLabel = document.createElement('span');
-        patternLabel.className = 'session-info__estimate-label';
+        patternLabel.className = 'section-label session-info__estimate-label';
         patternLabel.textContent = 'Patterns';
         patternSection.appendChild(patternLabel);
         
@@ -193,7 +195,7 @@ class SessionInfo {
         durationSection.className = 'session-info__estimate-section';
         
         const durationLabel = document.createElement('span');
-        durationLabel.className = 'session-info__estimate-label';
+        durationLabel.className = 'section-label session-info__estimate-label';
         durationLabel.textContent = 'Est. Duration';
         durationSection.appendChild(durationLabel);
         
@@ -304,6 +306,9 @@ class SessionInfo {
         
         this.patternValueElement.textContent = `${estimate.patternCount} ${patternText}`;
         this.durationValueElement.textContent = estimate.formattedDuration;
+        if (estimate.basisLabel) {
+            this.durationValueElement.title = estimate.basisLabel;
+        }
     }
     
     /**
@@ -326,6 +331,7 @@ class SessionInfo {
             // Clear values immediately when count is 0
             this.clearEstimateDisplay();
         }
+        this.updateStartButton();
     }
     
     /**
@@ -341,7 +347,7 @@ class SessionInfo {
         
         // Label
         const participantLabel = document.createElement('label');
-        participantLabel.className = 'session-info__label';
+        participantLabel.className = 'field__label session-info__label';
         participantLabel.setAttribute('for', `${this.containerId}_participant_id`);
         participantLabel.textContent = 'Participant Code *';
         participantFieldContainer.appendChild(participantLabel);
@@ -353,7 +359,7 @@ class SessionInfo {
         // Participant select dropdown
         const select = document.createElement('select');
         select.id = `${this.containerId}_participant_id`;
-        select.className = 'session-info__input session-info__select';
+        select.className = 'select session-info__select';
         select.required = true;
         
         // Add empty option (placeholder, hidden from dropdown)
@@ -376,19 +382,14 @@ class SessionInfo {
             select.appendChild(option);
         });
         
-        // Style select text color based on whether placeholder is selected
-        if (!this.data.participant_id) {
-            select.style.color = '#999';
-        } else {
-            select.style.color = '#333';
-        }
+        select.style.removeProperty('color');
         
         selectButtonRow.appendChild(select);
         
         // Add button (shown when form is closed)
         const addButton = document.createElement('button');
         addButton.type = 'button';
-        addButton.className = 'session-info__add-button';
+        addButton.className = 'btn btn--secondary btn--sm session-info__add-button';
         addButton.textContent = '+ Add';
         addButton.setAttribute('aria-label', 'Add new participant');
         this.participantAddButton = addButton; // Store reference
@@ -400,7 +401,7 @@ class SessionInfo {
         // Cancel and Save buttons (shown when form is open, initially hidden)
         const cancelButton = document.createElement('button');
         cancelButton.type = 'button';
-        cancelButton.className = 'session-info__action-button session-info__action-button--cancel';
+        cancelButton.className = 'btn btn--secondary btn--sm session-info__action-button session-info__action-button--cancel';
         cancelButton.textContent = 'Cancel';
         cancelButton.setAttribute('aria-label', 'Cancel adding participant');
         cancelButton.style.display = 'none';
@@ -412,7 +413,7 @@ class SessionInfo {
         
         const saveButton = document.createElement('button');
         saveButton.type = 'button';
-        saveButton.className = 'session-info__action-button session-info__action-button--save';
+        saveButton.className = 'btn btn--primary btn--sm session-info__action-button session-info__action-button--save';
         saveButton.textContent = 'Save';
         saveButton.setAttribute('aria-label', 'Save new participant');
         saveButton.style.display = 'none';
@@ -528,7 +529,7 @@ class SessionInfo {
         const locationSelect = locationField.querySelector('select');
         if (locationSelect && locationValue) {
             locationSelect.value = locationValue;
-            locationSelect.style.color = '#333';
+            locationSelect.style.removeProperty('color');
         }
         
         // Group: SESSION DETAILS (stacked)
@@ -585,7 +586,7 @@ class SessionInfo {
         startButtonContainer.className = 'session-info__start-button-container';
         
         const startButton = document.createElement('button');
-        startButton.className = 'session-info__start-button';
+        startButton.className = 'btn btn--primary btn--block btn--upper session-info__start-button';
         startButton.id = `${this.containerId}_start`;
         startButton.textContent = 'START SESSION';
         startButton.setAttribute('aria-label', 'Start session');
@@ -616,7 +617,7 @@ class SessionInfo {
         
         if (title) {
             const titleEl = document.createElement('div');
-            titleEl.className = 'session-info__field-group-title';
+            titleEl.className = 'section-label field-group__title';
             titleEl.textContent = title;
             group.appendChild(titleEl);
         }
@@ -633,17 +634,17 @@ class SessionInfo {
      */
     createSelectField({ id, label, required, options, value }) {
         const field = document.createElement('div');
-        field.className = 'session-info__field';
+        field.className = 'field session-info__field';
         
         const labelEl = document.createElement('label');
-        labelEl.className = 'session-info__label';
+        labelEl.className = 'field__label session-info__label';
         labelEl.setAttribute('for', `${this.containerId}_${id}`);
         labelEl.textContent = label + (required ? ' *' : '');
         field.appendChild(labelEl);
         
         const select = document.createElement('select');
         select.id = `${this.containerId}_${id}`;
-        select.className = 'session-info__input session-info__select';
+        select.className = 'select session-info__select';
         select.required = required;
         
         // Add empty option (placeholder, hidden from dropdown)
@@ -655,10 +656,7 @@ class SessionInfo {
         emptyOption.hidden = true; // Hide from dropdown list
         select.appendChild(emptyOption);
         
-        // Style select when placeholder is selected
-        if (!value) {
-            select.style.color = '#999';
-        }
+        select.style.removeProperty('color');
         
         // Add options
         options.forEach(opt => {
@@ -680,10 +678,10 @@ class SessionInfo {
      */
     createTextField({ id, label, required, placeholder, value, maxLength }) {
         const field = document.createElement('div');
-        field.className = 'session-info__field';
+        field.className = 'field session-info__field';
         
         const labelEl = document.createElement('label');
-        labelEl.className = 'session-info__label';
+        labelEl.className = 'field__label session-info__label';
         labelEl.setAttribute('for', `${this.containerId}_${id}`);
         labelEl.textContent = label + (required ? ' *' : '');
         field.appendChild(labelEl);
@@ -691,7 +689,7 @@ class SessionInfo {
         const input = document.createElement('input');
         input.type = 'text';
         input.id = `${this.containerId}_${id}`;
-        input.className = 'session-info__input';
+        input.className = 'input session-info__input';
         input.placeholder = placeholder || '';
         input.value = value || '';
         input.required = required;
@@ -704,7 +702,7 @@ class SessionInfo {
         // Add error message container (for participant form fields)
         if (id && id.startsWith('new_participant_')) {
             const errorMsg = document.createElement('div');
-            errorMsg.className = 'session-info__error-message';
+            errorMsg.className = 'field__error session-info__error-message';
             errorMsg.id = `${this.containerId}_${id}_error`;
             errorMsg.style.display = 'none';
             field.appendChild(errorMsg);
@@ -735,10 +733,10 @@ class SessionInfo {
      */
     createDateTimeField({ id, label, required, value }) {
         const field = document.createElement('div');
-        field.className = 'session-info__field';
+        field.className = 'field session-info__field';
         
         const labelEl = document.createElement('label');
-        labelEl.className = 'session-info__label';
+        labelEl.className = 'field__label session-info__label';
         labelEl.setAttribute('for', `${this.containerId}_${id}`);
         labelEl.textContent = label + (required ? ' *' : '');
         field.appendChild(labelEl);
@@ -746,7 +744,7 @@ class SessionInfo {
         const input = document.createElement('input');
         input.type = 'datetime-local';
         input.id = `${this.containerId}_${id}`;
-        input.className = 'session-info__input';
+        input.className = 'input session-info__input';
         input.value = value || '';
         input.required = required;
         
@@ -759,17 +757,17 @@ class SessionInfo {
      */
     createTextareaField({ id, label, required, placeholder, value }) {
         const field = document.createElement('div');
-        field.className = 'session-info__field';
+        field.className = 'field session-info__field';
         
         const labelEl = document.createElement('label');
-        labelEl.className = 'session-info__label';
+        labelEl.className = 'field__label session-info__label';
         labelEl.setAttribute('for', `${this.containerId}_${id}`);
         labelEl.textContent = label + (required ? ' *' : '');
         field.appendChild(labelEl);
         
         const textarea = document.createElement('textarea');
         textarea.id = `${this.containerId}_${id}`;
-        textarea.className = 'session-info__input session-info__textarea';
+        textarea.className = 'textarea session-info__textarea';
         textarea.placeholder = placeholder || '';
         textarea.value = value || '';
         textarea.required = required;
@@ -794,6 +792,13 @@ class SessionInfo {
             input.addEventListener('input', (e) => {
                 this.handleFieldChange(e.target);
             });
+            if (input.hasAttribute('required')) {
+                input.addEventListener('blur', (e) => {
+                    const fieldId = e.target.id.replace(`${this.containerId}_`, '');
+                    this.touchedFields.add(fieldId);
+                    this.validate();
+                });
+            }
         });
     }
     
@@ -816,12 +821,8 @@ class SessionInfo {
                 value = input.value || '';
             }
             
-            // Update select text color based on whether placeholder is selected
-            if (value === null || value === '' || value === undefined) {
-                input.style.color = '#999';
-            } else {
-                input.style.color = '#333';
-            }
+            // Placeholder vs selected value — let CSS tokens handle color
+            input.style.removeProperty('color');
         } else {
             value = input.value;
         }
@@ -857,7 +858,13 @@ class SessionInfo {
         const requiredFields = ['participant_id', 'location_id'];
         const isValid = requiredFields.every(field => {
             const value = this.data[field];
-            return value !== null && value !== '' && value !== undefined;
+            if (value === null || value === '' || value === undefined) {
+                return false;
+            }
+            if (typeof value === 'number' && Number.isNaN(value)) {
+                return false;
+            }
+            return true;
         });
         
         this.isValid = isValid;
@@ -877,33 +884,34 @@ class SessionInfo {
     updateValidationState() {
         if (!this.container) return;
         
-        const requiredInputs = this.container.querySelectorAll('.session-info__input[required]');
+        const requiredInputs = this.container.querySelectorAll('.input[required], .select[required]');
         requiredInputs.forEach(input => {
             const fieldId = input.id.replace(`${this.containerId}_`, '');
             const value = this.data[fieldId];
             const fieldValid = value !== null && value !== '' && value !== undefined;
+            const showError = this.showFieldErrors || this.touchedFields.has(fieldId);
             
             // Find or create error message element
-            const field = input.closest('.session-info__field');
-            let errorMessage = field ? field.querySelector('.session-info__error-message') : null;
+            const field = input.closest('.field');
+            let errorMessage = field ? field.querySelector('.field__error, .session-info__error-message') : null;
             
-            if (fieldValid) {
-                input.classList.remove('session-info__input--invalid');
+            if (fieldValid || !showError) {
+                input.classList.remove('input--invalid');
                 if (errorMessage) {
                     errorMessage.style.display = 'none';
                 }
             } else {
-                input.classList.add('session-info__input--invalid');
+                input.classList.add('input--invalid');
                 
                 // Create error message if it doesn't exist
                 if (!errorMessage && field) {
                     errorMessage = document.createElement('div');
-                    errorMessage.className = 'session-info__error-message';
+                    errorMessage.className = 'field__error session-info__error-message';
                     field.appendChild(errorMessage);
                 }
                 
                 if (errorMessage) {
-                    const fieldLabel = field.querySelector('.session-info__label');
+                    const fieldLabel = field.querySelector('.field__label, .session-info__label');
                     const labelText = fieldLabel ? fieldLabel.textContent.replace(' *', '') : 'This field';
                     errorMessage.textContent = `${labelText} is required`;
                     errorMessage.style.display = 'block';
@@ -946,13 +954,7 @@ class SessionInfo {
             if (input) {
                 if (input.tagName === 'SELECT') {
                     input.value = this.data[fieldId] || '';
-                    // Update select text color based on whether placeholder is selected
-                    const value = this.data[fieldId];
-                    if (value === null || value === '' || value === undefined) {
-                        input.style.color = '#999';
-                    } else {
-                        input.style.color = '#333';
-                    }
+                    input.style.removeProperty('color');
                 } else {
                     input.value = this.data[fieldId] || '';
                 }
@@ -969,7 +971,7 @@ class SessionInfo {
         
         // Export Sessions button (auxiliary function)
         const exportButton = document.createElement('button');
-        exportButton.className = 'session-info__export-button';
+        exportButton.className = 'btn btn--secondary btn--upper session-info__export-button';
         exportButton.id = 'exportSessionsBtn';
         exportButton.textContent = 'EXPORT SESSIONS';
         exportButton.setAttribute('aria-label', 'Export sessions');
@@ -1043,9 +1045,11 @@ class SessionInfo {
         }
         
         if (!this.isValid) {
+            this.showFieldErrors = true;
+            this.validate();
             this.showValidationError('Please fill in all required fields (Participant Code and Location).');
             // Scroll to first invalid field
-            const firstInvalid = this.container.querySelector('.session-info__input--invalid');
+            const firstInvalid = this.container.querySelector('.input--invalid, .select.input--invalid');
             if (firstInvalid) {
                 firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 firstInvalid.focus();
@@ -1292,7 +1296,7 @@ class SessionInfo {
         const inputs = this.participantFormElement.querySelectorAll('input, select, textarea');
         inputs.forEach(input => {
             input.value = '';
-            input.classList.remove('session-info__input--invalid');
+            input.classList.remove('input--invalid');
         });
     }
     
@@ -1332,7 +1336,7 @@ class SessionInfo {
         }
         
         if (input) {
-            input.classList.add('session-info__input--invalid');
+            input.classList.add('input--invalid');
         }
     }
     
@@ -1355,7 +1359,7 @@ class SessionInfo {
         }
         
         if (input) {
-            input.classList.remove('session-info__input--invalid');
+            input.classList.remove('input--invalid');
         }
     }
     

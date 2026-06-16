@@ -2,7 +2,7 @@
   "calibrationDuration": 20,
   "baselineDuration": 30,
   "stimulationDuration": 30,
-  "surveyDurationEstimate": 20,
-  "taggingDuration": 10,
-  "_comment": "All durations are in seconds. calibrationDuration is initial setup. baselineDuration and stimulationDuration are runtime phases. surveyDurationEstimate controls ETA in control-room panel. taggingDuration remains legacy estimate support."
+  "surveyDurationEstimate": 100,
+  "taggingDuration": 100,
+  "_comment": "All durations are in seconds. calibrationDuration is initial setup. baselineDuration and stimulationDuration are runtime phases. surveyDurationEstimate controls ETA in control-room panel; taggingDuration is the legacy alias used by the setup-time estimator fallback. Both are set to ~100s based on measured survey time in recorded sessions (median trial cycle ~158s minus 60s of timed phases). Preferred estimates come from /api/timing-stats; these values are only the fallback."
 }

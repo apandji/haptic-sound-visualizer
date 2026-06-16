@@ -50,6 +50,27 @@
     background: var(--color-surface-muted);
 }
 
+.pattern-explorer-analysis__sort-row {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: 0 var(--spacing-md) var(--spacing-sm);
+    flex-shrink: 0;
+}
+
+.pattern-explorer-analysis__sort-label {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+    flex-shrink: 0;
+}
+
+.pattern-explorer-analysis__sort-select {
+    flex: 1;
+    min-width: 0;
+    padding: 6px 8px;
+    font-size: var(--font-size-xs);
+}
+
 .pattern-explorer-analysis__list {
     flex: 1;
     overflow-y: auto;
@@ -58,7 +79,7 @@
 .pattern-explorer-analysis__list .file-item-text {
     font-family: var(--font-mono);
     font-variant-numeric: tabular-nums;
-    font-size: var(--font-size-xs);
+    font-size: var(--font-size-sm);
 }
 
 .pattern-explorer-analysis__list .file-item {
@@ -74,7 +95,7 @@
 }
 
 .pattern-explorer-analysis__badge {
-    font-size: var(--font-size-2xs);
+    font-size: var(--font-size-xs);
     font-family: var(--font-mono);
     font-variant-numeric: tabular-nums;
     color: var(--color-text-muted);
@@ -94,7 +115,7 @@
 }
 
 .pattern-explorer-analysis__dot--new {
-    background: #e8b84a;
+    background: var(--color-data-new);
 }
 
 .pattern-explorer-analysis__dot--consistent {

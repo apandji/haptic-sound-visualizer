@@ -10,6 +10,7 @@ class AnalyzePatternTabs {
         this.storageKey = options.storageKey || 'analyze_v2_pattern_tab';
         this.onChange = options.onChange || null;
         this.activeTab = 'physiological';
+        this.tabControls = null;
 
         if (!this.container) return;
 
@@ -28,6 +29,13 @@ class AnalyzePatternTabs {
             });
         });
 
+        if (window.AppUI) {
+            this.tabControls = AppUI.bindSegmentedTabs(this.container, {
+                getValue: (tab) => tab.dataset.analyzeTab,
+                onSelect: (tabName) => this.setActiveTab(tabName),
+            });
+        }
+
         this.setActiveTab(this.activeTab, false);
     }
 
@@ -35,10 +43,13 @@ class AnalyzePatternTabs {
         if (tab !== 'physiological' && tab !== 'subjective') return;
         this.activeTab = tab;
 
+        let activeButton = null;
         this.buttons.forEach(button => {
             const isActive = button.dataset.analyzeTab === tab;
             button.classList.toggle('segmented-control__item--active', isActive);
             button.setAttribute('aria-selected', isActive ? 'true' : 'false');
+            button.tabIndex = isActive ? 0 : -1;
+            if (isActive) activeButton = button;
         });
 
         if (this.physioPanel) {
@@ -46,6 +57,10 @@ class AnalyzePatternTabs {
         }
         if (this.subjectivePanel) {
             this.subjectivePanel.hidden = tab !== 'subjective';
+        }
+
+        if (this.tabControls && activeButton) {
+            this.tabControls.syncTabIndex(activeButton);
         }
 
         if (persist) {

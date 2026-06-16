@@ -13,7 +13,9 @@ class PatternQueue {
         this.onReorder = options.onReorder || null;
         this.onClear = options.onClear || null;
         this.onRandomSelect = options.onRandomSelect || null; // Called when random selection is made
+        this.onQueueChange = options.onQueueChange || null; // Called whenever queue contents change (add/remove/clear/random)
         this.getAvailableFiles = options.getAvailableFiles || null; // Callback to get filtered/available files for random selection
+        this.getPatternWeights = options.getPatternWeights || null; // Optional async () => Map<name, weight> biasing random selection toward under-tested patterns
         this.onFilePreview = options.onFilePreview || null; // Preview callback (play button)
         this.onPlayStateChange = options.onPlayStateChange || null; // Called when play/pause state changes
         this.headerLabel = options.headerLabel !== undefined ? options.headerLabel : 'PATTERNS';
@@ -43,6 +45,9 @@ class PatternQueue {
         
         // Add queue class to container
         this.container.classList.add('queue');
+        
+        // Clear any prior instance markup/listeners (e.g. when setup re-inits)
+        this.container.innerHTML = '';
         
         // Initialize (always visible now)
         this.render();
@@ -128,7 +133,7 @@ class PatternQueue {
         headerLeft.className = 'queue__header-left';
         
         const headerText = document.createElement('span');
-        headerText.className = 'queue__header-text';
+        headerText.className = 'section-label queue__header-text';
         headerText.textContent = this.headerLabel;
         headerLeft.appendChild(headerText);
         
@@ -152,10 +157,10 @@ class PatternQueue {
             randomLabel.textContent = 'Random:';
             randomGroup.appendChild(randomLabel);
             
-            // Random count buttons: 3, 5, 10, 20
+            // Random count buttons: 3, 5, 10, 20, All
             [3, 5, 10, 20].forEach(count => {
                 const randomBtn = document.createElement('button');
-                randomBtn.className = 'queue__header-random-btn';
+                randomBtn.className = 'btn btn--secondary btn--xs queue__header-random-btn';
                 randomBtn.textContent = count.toString();
                 randomBtn.setAttribute('aria-label', `Randomly select ${count} patterns`);
                 randomBtn.title = `Random ${count}`;
@@ -165,6 +170,18 @@ class PatternQueue {
                 });
                 randomGroup.appendChild(randomBtn);
             });
+
+            // "All" button — shuffle and select every available pattern
+            const allBtn = document.createElement('button');
+            allBtn.className = 'btn btn--secondary btn--xs queue__header-random-btn';
+            allBtn.textContent = 'All';
+            allBtn.setAttribute('aria-label', 'Randomly select all patterns');
+            allBtn.title = 'Random All';
+            allBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.randomSelect(Infinity);
+            });
+            randomGroup.appendChild(allBtn);
             
             headerActions.appendChild(randomGroup);
         }
@@ -186,7 +203,7 @@ class PatternQueue {
         
         // Clear button (always visible, disabled when empty)
         const clearButton = document.createElement('button');
-        clearButton.className = 'queue__footer-clear';
+        clearButton.className = 'btn btn--secondary btn--upper queue__footer-clear';
         clearButton.textContent = 'CLEAR';
         clearButton.setAttribute('aria-label', 'Clear all items from session');
         clearButton.title = 'Clear all items';
@@ -836,6 +853,7 @@ class PatternQueue {
         if (this.onItemAdd) {
             this.onItemAdd(file, this.items.length - 1);
         }
+        this.notifyQueueChange('add');
         
         return true;
     }
@@ -853,6 +871,7 @@ class PatternQueue {
             if (this.onItemRemove) {
                 this.onItemRemove(removedItem, index);
             }
+            this.notifyQueueChange('remove');
             
             return removedItem;
         }
@@ -882,12 +901,25 @@ class PatternQueue {
         if (this.onClear) {
             this.onClear(clearedItems);
         }
+        this.notifyQueueChange('clear');
     }
     
     /**
-     * Randomly select N patterns from available files
+     * Notify listeners that queue contents changed
      */
-    randomSelect(count) {
+    notifyQueueChange(source) {
+        if (this.onQueueChange) {
+            this.onQueueChange(this.getItems(), source);
+        }
+    }
+    
+    /**
+     * Randomly select N patterns from available files.
+     * When a getPatternWeights provider exists, selection is weighted so
+     * under-tested patterns (especially ones this participant hasn't done)
+     * are drawn first; otherwise it falls back to a uniform shuffle.
+     */
+    async randomSelect(count) {
         if (!this.getAvailableFiles) {
             console.warn('PatternQueue: getAvailableFiles callback not provided');
             return;
@@ -901,10 +933,19 @@ class PatternQueue {
         
         // Don't select more than available
         const selectCount = Math.min(count, availableFiles.length);
-        
-        // Shuffle and select N items
-        const shuffled = [...availableFiles].sort(() => Math.random() - 0.5);
-        const selected = shuffled.slice(0, selectCount);
+
+        let weights = null;
+        if (this.getPatternWeights) {
+            try {
+                weights = await this.getPatternWeights();
+            } catch (err) {
+                console.warn('PatternQueue: pattern weights unavailable, using uniform random', err);
+            }
+        }
+
+        const selected = weights
+            ? this._weightedSample(availableFiles, selectCount, weights)
+            : [...availableFiles].sort(() => Math.random() - 0.5).slice(0, selectCount);
         
         // Clear current queue and add random selections
         this.items = [];
@@ -916,32 +957,49 @@ class PatternQueue {
         
         this.render();
         
-        // Call callbacks for each added item
-        if (this.onItemAdd) {
-            selected.forEach((file, index) => {
-                this.onItemAdd(file, index);
-            });
-        }
-        
-        // Call random select callback if provided
+        // Call random select callback if provided (e.g. sync library selection icons)
         if (this.onRandomSelect) {
             this.onRandomSelect(selected, count);
         }
+        
+        this.notifyQueueChange('random');
     }
     
+    /**
+     * Weighted sampling without replacement: each pick draws proportionally
+     * to remaining weights, so heavy (data-hungry) patterns surface first
+     * while light ones can still appear.
+     */
+    _weightedSample(files, count, weights) {
+        // Files the weights map doesn't know about have never produced a
+        // trial — they need data the most, so they get the heaviest weight.
+        const fallback = weights.size ? Math.max(...weights.values()) : 1;
+        const pool = files.map(file => ({
+            file,
+            weight: Math.max(weights.get(file.name) ?? fallback, 0.0001)
+        }));
+        const selected = [];
+
+        while (selected.length < count && pool.length) {
+            const total = pool.reduce((sum, entry) => sum + entry.weight, 0);
+            let r = Math.random() * total;
+            let index = 0;
+            for (; index < pool.length - 1; index++) {
+                r -= pool[index].weight;
+                if (r <= 0) break;
+            }
+            selected.push(pool[index].file);
+            pool.splice(index, 1);
+        }
+
+        return selected;
+    }
+
     /**
      * Get all items in queue
      */
     getItems() {
         return [...this.items];
-    }
-    
-    /**
-     * Clear queue
-     */
-    clear() {
-        this.items = [];
-        this.render();
     }
     
     /**

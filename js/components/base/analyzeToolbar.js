@@ -16,19 +16,15 @@ class AnalyzeToolbar {
     }
 
     render() {
+        const icons = window.ICONS || {};
         this.container.innerHTML = `
             <button type="button" class="icon-btn" id="analyzeFiltersToggle" aria-expanded="false" aria-controls="analyzeFiltersPopover" title="Filters">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                    <path d="M4 6h16M7 12h10M10 18h4" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
-                </svg>
+                <span class="icon">${icons.listFilter || ''}</span>
                 <span class="icon-btn__label">Filters</span>
                 <span class="icon-btn__badge" id="analyzeFiltersBadge" hidden></span>
             </button>
             <button type="button" id="analyzeRefreshBtn" class="icon-btn analyze-refresh-btn" title="Reload from database" aria-label="Reload from database">
-                <svg class="analyze-refresh-btn__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                    <path d="M21 12a9 9 0 1 1-2.64-6.36" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
-                    <path d="M21 3v6h-6" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
+                <span class="icon analyze-refresh-btn__icon">${icons.refresh || ''}</span>
             </button>
         `;
 
@@ -223,6 +219,8 @@ class AnalyzeToolbar {
             ? new Set(participants.map(p => p.id))
             : new Set(this.includedParticipantIds);
 
+        const esc = (value) => (window.AppUI?.escapeHtml ? window.AppUI.escapeHtml(value) : String(value));
+
         this.participantListEl.innerHTML = participants.map(participant => {
             const included = includedSet.has(participant.id);
             return `
@@ -230,7 +228,7 @@ class AnalyzeToolbar {
                     class="analyze-filters-chip ${included ? 'analyze-filters-chip--included' : ''}"
                     data-participant-id="${participant.id}"
                     aria-pressed="${included}">
-                    ${participant.code}
+                    ${esc(participant.code)}
                 </button>
             `;
         }).join('');
@@ -301,7 +299,16 @@ class AnalyzeToolbar {
 
     updateSummary(summary = {}) {
         if (!this.summaryEl) return;
-        this.summaryEl.textContent = `${summary.sessionCount || 0} sessions · ${summary.trialCount || 0} trials · ${summary.participantCount || 0} participants`;
+        const trialCount = summary.trialCount || 0;
+        const allTrialCount = summary.allTrialCount;
+        const filtersActive = this._countActiveFilters() > 0;
+
+        // Make the active corpus unambiguous when filters narrow the data.
+        const trialsPart = filtersActive && allTrialCount != null && allTrialCount !== trialCount
+            ? `Filtered: ${trialCount} of ${allTrialCount} trials`
+            : `${trialCount} trials`;
+
+        this.summaryEl.textContent = `${summary.sessionCount || 0} sessions · ${trialsPart} · ${summary.participantCount || 0} participants`;
     }
 
     getFilters() {

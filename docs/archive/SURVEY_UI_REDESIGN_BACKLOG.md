@@ -1,5 +1,7 @@
 # Survey UI Redesign Backlog
 
+> **Archived (2026-06):** Implemented as survey v2. See [SURVEY_V2_MIGRATION.md](../SURVEY_V2_MIGRATION.md).
+
 ## Status
 - Backlog only. Do not implement in this sprint.
 

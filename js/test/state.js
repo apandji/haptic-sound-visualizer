@@ -8,6 +8,7 @@ let allFilesList = [];
         let timeEstimator = null;
         let signalQualityVisualizer = null;
         let availableParticipants = null;
+        let componentsInitialized = false;
         
         // Simple audio preview
         let audioPlayerInstance = null;

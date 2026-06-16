@@ -1,7 +1,7 @@
 .box-plot-chart__header {
     font-size: var(--font-size-xs);
     font-weight: var(--font-weight-semibold);
-    color: #999;
+    color: var(--color-text-faint);
     letter-spacing: 1px;
     text-transform: uppercase;
     margin-bottom: var(--spacing-md);

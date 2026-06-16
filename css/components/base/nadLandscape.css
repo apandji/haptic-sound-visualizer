@@ -1,0 +1,110 @@
+/**
+ * NAD Landscape — the global pattern map (Urgency x Intensity) and its
+ * legend popover.
+ */
+
+/* ============== Map: chart + legend popover ============== */
+.nad-landscape-chart {
+    position: relative;
+}
+
+.nad-landscape-chart__popover {
+    position: absolute;
+    top: 0;
+    right: 0;
+    z-index: 5;
+}
+
+.nad-landscape-chart__popover summary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-border);
+    background: var(--color-bg-elevated);
+    color: var(--color-text-faint);
+    cursor: pointer;
+    list-style: none;
+    transition: color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.nad-landscape-chart__popover summary::-webkit-details-marker {
+    display: none;
+}
+
+.nad-landscape-chart__popover summary:hover,
+.nad-landscape-chart__popover[open] summary {
+    color: var(--color-text);
+    border-color: var(--color-border-strong);
+}
+
+.nad-landscape-chart__popover-body {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    width: 240px;
+    background: var(--color-bg-elevated);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg, 0 8px 24px rgba(0, 0, 0, 0.12));
+    padding: var(--space-3) var(--space-4);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.nad-landscape-chart__popover-section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.nad-landscape-chart__popover-section + .nad-landscape-chart__popover-section {
+    border-top: 1px solid var(--color-border-subtle);
+    padding-top: var(--space-3);
+}
+
+.nad-landscape-chart__popover-label {
+    font-size: var(--text-3xs);
+    font-weight: var(--font-weight-semibold);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-text-faint);
+}
+
+.nad-landscape-chart__legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+}
+
+.nad-landscape-chart__legend-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--dot-color, var(--color-text-faint));
+    flex: none;
+}
+
+.nad-landscape-chart__legend-dot--open {
+    background: transparent;
+    border: 2px solid var(--color-text-faint);
+}
+
+.nad-landscape-chart__legend-dot--hollow {
+    background: transparent;
+    border: 1.5px dashed var(--color-text-faint);
+}
+
+.nad-landscape-chart__empty {
+    padding: var(--space-10) var(--space-4);
+    text-align: center;
+    font-size: var(--text-sm);
+    color: var(--color-text-faint);
+}
+
+

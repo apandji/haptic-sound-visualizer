@@ -4,42 +4,45 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SAIL Pattern Library - Test</title>
+    <script src="js/theme.js?v=2026-06-08.1"></script>
+    <script src="js/icons.js?v=2026-06-13.1"></script>
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
     <!-- Design tokens (load first) -->
-    <link rel="stylesheet" href="css/design-tokens.css?v=2026-06-07.1">
-    <link rel="stylesheet" href="css/chrome.css?v=2026-06-07.5">
+    <link rel="stylesheet" href="css/design-tokens.css?v=2026-06-09.3">
+    <link rel="stylesheet" href="css/chrome.css?v=2026-06-13.1">
     <!-- Page CSS -->
-    <link rel="stylesheet" href="css/pages/test.css?v=2026-06-07.1">
+    <link rel="stylesheet" href="css/pages/test.css?v=2026-06-09.2">
     
     <!-- Component CSS -->
-    <link rel="stylesheet" href="css/components/base/patternExplorer.css?v=2026-02-26.1">
-    <link rel="stylesheet" href="css/components/base/filterPanel.css?v=2026-02-26.1">
-    <link rel="stylesheet" href="css/components/base/dualSlider.css?v=2026-02-26.1">
-    <link rel="stylesheet" href="css/components/base/patternQueue.css?v=2026-02-26.1">
-    <link rel="stylesheet" href="css/components/base/sessionInfo.css?v=2026-02-26.1">
-    <link rel="stylesheet" href="css/components/base/audioControls.css?v=2026-02-26.1">
-    <link rel="stylesheet" href="css/components/base/testExecutionOverlay.css?v=2026-02-26.1">
-    <link rel="stylesheet" href="css/components/base/trialTagsSurvey.css?v=2026-06-05.8">
-    <link rel="stylesheet" href="css/components/base/signalQualityVisualizer.css?v=2026-06-02.5">
+    <link rel="stylesheet" href="css/components/base/patternExplorer.css?v=2026-06-09.2">
+    <link rel="stylesheet" href="css/components/base/filterPanel.css?v=2026-06-09.2">
+    <link rel="stylesheet" href="css/components/base/dualSlider.css?v=2026-06-08.2">
+    <link rel="stylesheet" href="css/components/base/patternQueue.css?v=2026-06-09.2">
+    <link rel="stylesheet" href="css/components/base/sessionInfo.css?v=2026-06-09.2">
+    <link rel="stylesheet" href="css/components/base/audioControls.css?v=2026-06-08.2">
+    <link rel="stylesheet" href="css/components/base/testExecutionOverlay.css?v=2026-06-09.6">
+    <link rel="stylesheet" href="css/components/base/trialTagsSurvey.css?v=2026-06-12.2">
+    <link rel="stylesheet" href="css/components/base/signalQualityVisualizer.css?v=2026-06-09.3">
 </head>
 <body>
+    <a href="#main-content" class="skip-link">Skip to main content</a>
     <header class="app-header">
         <div class="app-header__start">
             <span class="app-header__brand">SAIL</span>
-            <nav class="segmented-control segmented-control--nav" aria-label="Main navigation" data-app-nav>
-                <span class="segmented-control__indicator" aria-hidden="true"></span>
-                <a href="index.html" class="segmented-control__item">Explore</a>
-                <a href="test.html" class="segmented-control__item segmented-control__item--active" aria-current="page">Test</a>
-                <a href="analyze.html" class="segmented-control__item">Analyze</a>
+            <nav class="app-nav-links" aria-label="Main navigation" data-app-nav>
+                <a href="index.html" class="app-nav-links__item"><span class="icon" data-icon="compass"></span>Explore</a>
+                <a href="test.html" class="app-nav-links__item app-nav-links__item--active" aria-current="page"><span class="icon" data-icon="flask"></span>Test</a>
+                <a href="analyze.html" class="app-nav-links__item"><span class="icon" data-icon="chart"></span>Analyze</a>
             </nav>
         </div>
         <div class="app-header__center">
             <h1 class="app-header__title">Setup test</h1>
         </div>
+        <div class="app-header__end" data-theme-toggle-mount></div>
     </header>
     
     <!-- Main Layout: Patterns + Session in one view -->
-    <div class="layout layout--setup" id="setupLayout">
+    <main class="layout layout--setup" id="main-content">
         <div class="setup-one-view">
             <div class="patterns-panel" role="region" aria-label="Patterns">
                 <div class="patterns-panel__header">
@@ -49,7 +52,12 @@
                 <div class="patterns-panel__body">
                     <div class="patterns-panel__library">
                         <div id="filterPanel"></div>
-                        <div id="fileList">Loading files...</div>
+                        <div id="fileList" aria-live="polite" aria-busy="true">
+                            <div class="app-loading app-loading--compact" role="status">
+                                <div class="loading-spinner" aria-hidden="true"></div>
+                                <p class="app-loading__text">Loading patterns…</p>
+                            </div>
+                        </div>
                     </div>
                     <div class="patterns-panel__queue">
                         <div id="queue"></div>
@@ -66,7 +74,7 @@
                 </div>
             </div>
         </div>
-    </div>
+    </main>
     
     <!-- Audio Progress Bar (Fixed Bottom) -->
     <div class="audio-progress-bar" id="audioProgressBar">
@@ -89,8 +97,8 @@
             <div class="custom-confirm-title" id="customConfirmTitle">Confirm Action</div>
             <div class="custom-confirm-message" id="customConfirmMessage"></div>
             <div class="custom-confirm-buttons">
-                <button class="custom-confirm-btn custom-confirm-btn--cancel" id="customConfirmCancel">Cancel</button>
-                <button class="custom-confirm-btn custom-confirm-btn--confirm" id="customConfirmConfirm">Abort</button>
+                <button type="button" class="btn btn--secondary custom-confirm-btn custom-confirm-btn--cancel" id="customConfirmCancel">Cancel</button>
+                <button type="button" class="btn btn--destructive custom-confirm-btn custom-confirm-btn--confirm" id="customConfirmConfirm">Abort</button>
             </div>
         </div>
     </div>
@@ -101,29 +109,32 @@
     
     <!-- Component JavaScript -->
     <script src="js/modules/filters.js?v=2026-02-26.1"></script>
-    <script src="js/modules/sessionTimeEstimator.js?v=2026-02-26.1"></script>
+    <script src="js/modules/sessionTimeEstimator.js?v=2026-06-10.1"></script>
     <script src="js/modules/audioPlayer.js?v=2026-02-26.1"></script>
     <script src="js/modules/testSession.js?v=2026-02-26.1"></script>
-    <script src="js/components/base/testExecutionOverlay.js?v=2026-06-02.5"></script>
+    <script src="js/components/base/testExecutionOverlay.js?v=2026-06-09.5"></script>
     <script src="js/modules/eegDataCollector.js?v=2026-02-26.1"></script>
     <script src="js/modules/eegQualityConfig.js?v=2026-06-02.5"></script>
-    <script src="js/components/base/patternExplorer.js?v=2026-02-26.1"></script>
-    <script src="js/components/base/filterPanel.js?v=2026-02-26.1"></script>
+    <script src="js/components/base/patternExplorer.js?v=2026-06-09.2"></script>
+    <script src="js/components/base/filterPanel.js?v=2026-06-09.1"></script>
     <script src="js/components/base/dualSlider.js?v=2026-02-26.1"></script>
-    <script src="js/components/base/patternQueue.js?v=2026-02-26.1"></script>
-    <script src="js/components/base/sessionInfo.js?v=2026-02-26.1"></script>
-    <script src="js/components/base/trialTagsSurvey.js?v=2026-06-05.9"></script>
+    <script src="js/components/base/patternQueue.js?v=2026-06-12.1"></script>
+    <script src="js/components/base/sessionInfo.js?v=2026-06-10.1"></script>
+    <script src="js/modules/surveyTaxonomy.js?v=2026-06-09.2"></script>
+    <script src="js/components/base/trialTagsSurvey.js?v=2026-06-12.2"></script>
     <script src="js/components/base/signalQualityVisualizer.js?v=2026-06-02.5"></script>
-    <script src="js/components/variants/patternExplorerWithSelection.js?v=2026-02-26.1"></script>
+    <script src="js/components/base/patternLibraryShell.js?v=2026-06-09.2"></script>
+    <script src="js/components/variants/patternExplorerWithSelection.js?v=2026-06-07.8"></script>
     <!-- Page Script -->
-    <script src="js/dataCache.js?v=2026-06-07.5"></script>
-    <script src="js/test/state.js?v=2026-02-26.1"></script>
-    <script src="js/test/dataAndComponents.js?v=2026-02-26.1"></script>
+    <script src="js/uiHelpers.js?v=2026-06-09.2"></script>
+    <script src="js/dataCache.js?v=2026-06-07.6"></script>
+    <script src="js/test/state.js?v=2026-06-09.7"></script>
+    <script src="js/test/dataAndComponents.js?v=2026-06-12.1"></script>
     <script src="js/test/audioPreview.js?v=2026-02-26.1"></script>
-    <script src="js/test/sessionPersistence.js?v=2026-02-26.1"></script>
-    <script src="js/test/testExecution.js?v=2026-06-05.9"></script>
+    <script src="js/test/sessionPersistence.js?v=2026-06-13.1"></script>
+    <script src="js/test/testExecution.js?v=2026-06-13.1"></script>
     <script src="js/test/signalQuality.js?v=2026-02-26.1"></script>
     <script src="js/test/bootstrap.js?v=2026-02-26.1"></script>
-    <script src="js/appNav.js?v=2026-06-07.5"></script>
+    <script src="js/appNav.js?v=2026-06-12.6"></script>
 </body>
 </html>

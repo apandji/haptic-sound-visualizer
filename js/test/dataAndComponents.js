@@ -158,19 +158,64 @@
             // If we get here, all attempts failed
             console.error('Failed to load audio files from any source');
             const fileListEl = document.getElementById('fileList');
-            if (fileListEl) {
+            if (window.AppUI) {
+                AppUI.renderError(fileListEl, {
+                    title: 'Could not load patterns',
+                    hint: 'Check your connection or refresh the page.',
+                    onRetry: () => loadFileList(),
+                });
+                AppUI.showBanner({
+                    type: 'error',
+                    message: 'Could not load the pattern library.',
+                    actionLabel: 'Retry',
+                    onAction: () => loadFileList(),
+                });
+            } else if (fileListEl) {
                 fileListEl.innerHTML = '<div style="padding: 20px; color: #999; font-size: 12px;">Failed to load audio files</div>';
             }
         }
         
         // Initialize all components
         async function initializeComponents() {
-            // Initialize time estimator
-            timeEstimator = new SessionTimeEstimator({
-                // Values can be overridden here, or edit js/modules/sessionTimingConfig.json
-            });
+            if (componentsInitialized) {
+                if (patternExplorer && typeof patternExplorer.setFiles === 'function') {
+                    patternExplorer.setFiles(allFilesList);
+                }
+                if (queue && typeof queue.updateMetadata === 'function') {
+                    queue.updateMetadata(patternMetadata);
+                }
+                return;
+            }
+            componentsInitialized = true;
+
+            const fileListEl = document.getElementById('fileList');
+            if (window.AppUI) {
+                AppUI.clearBusy(fileListEl);
+            }
+
+            // Initialize time estimator: loads sessionTimingConfig.json and
+            // empirical timing stats (/api/timing-stats) when available.
+            timeEstimator = await SessionTimeEstimator.create();
 
             await loadParticipants();
+
+            function updatePatternsSelectedCount() {
+                const el = document.getElementById('patternsSelectedCount');
+                if (!el || !queue) return;
+                const n = queue.getItems().length;
+                el.textContent = n === 1 ? '1 selected' : `${n} selected`;
+            }
+
+            function handleQueueChange(source) {
+                const count = queue ? queue.getItems().length : 0;
+                if (sessionInfo) {
+                    sessionInfo.updateSessionEstimate(count);
+                }
+                updatePatternsSelectedCount();
+                if (typeof updateSetupStepContinueButton === 'function') {
+                    updateSetupStepContinueButton();
+                }
+            }
             
             // Initialize Queue
             queue = new PatternQueue({
@@ -178,11 +223,38 @@
                 metadata: patternMetadata,
                 headerLabel: 'Queue',
                 getAvailableFiles: () => {
-                    // Return currently filtered files for random selection
-                    if (patternExplorer && patternExplorer.getFilteredFiles) {
-                        return patternExplorer.getFilteredFiles();
+                    if (patternExplorer && typeof patternExplorer.getFilteredFiles === 'function') {
+                        const filtered = patternExplorer.getFilteredFiles();
+                        if (filtered.length > 0) return filtered;
                     }
-                    return [];
+                    if (patternExplorer?.allFiles?.length) {
+                        return patternExplorer.allFiles;
+                    }
+                    return allFilesList || [];
+                },
+                // Random selection favors patterns that still need data.
+                // Weight anchors to the 3-surveyed-trials confidence floor:
+                // never-tested patterns weigh 4, fully-covered ones weigh 1,
+                // with a 1.5x boost when the selected participant hasn't
+                // experienced the pattern yet.
+                getPatternWeights: async () => {
+                    const participantId = sessionInfo?.data?.participant_id || null;
+                    const url = participantId
+                        ? `/api/pattern-stats?participant_id=${encodeURIComponent(participantId)}`
+                        : '/api/pattern-stats';
+                    const response = await fetch(url);
+                    if (!response.ok) throw new Error(`pattern-stats ${response.status}`);
+                    const payload = await response.json();
+
+                    const weights = new Map();
+                    for (const entry of payload.patterns || []) {
+                        let weight = Math.max(1, 4 - (entry.surveyedCount || 0));
+                        if (participantId && (entry.participantTrials || 0) === 0) {
+                            weight *= 1.5;
+                        }
+                        weights.set(entry.name, weight);
+                    }
+                    return weights;
                 },
                 onItemClick: (file, index) => {
                     console.log('Queue item clicked:', file, 'at index:', index);
@@ -200,60 +272,29 @@
                         pauseAudioPlayback();
                     }
                 },
-                onItemAdd: (file, index) => {
+                onItemAdd: (file) => {
                     console.log('Item added to queue:', file.name);
-                    setTimeout(() => {
-                        if (sessionInfo && queue) {
-                            sessionInfo.updateSessionEstimate(queue.getItems().length);
-                        }
-                        updatePatternsSelectedCount();
-                    }, 0);
                 },
-                onItemRemove: (file, index) => {
+                onItemRemove: (file) => {
                     console.log('Item removed from queue:', file.name);
-                    // Sync selection state with PatternExplorer
                     if (patternExplorer) {
                         patternExplorer.syncWithQueue();
                     }
-                    // Update session estimate after a short delay to ensure queue is updated
-                    // Skip update if queue is empty (likely being cleared)
-                    setTimeout(() => {
-                        if (sessionInfo && queue) {
-                            const count = queue.getItems().length;
-                            if (count > 0) {
-                                sessionInfo.updateSessionEstimate(count);
-                            }
-                        }
-                        updatePatternsSelectedCount();
-                    }, 0);
                 },
                 onClear: (clearedItems) => {
                     console.log('Queue cleared:', clearedItems.length, 'items');
-                    // Sync selection state with PatternExplorer
                     if (patternExplorer) {
                         patternExplorer.syncWithQueue();
                     }
-                    // Update session estimate immediately to 0 (queue is already empty)
-                    if (sessionInfo) {
-                        sessionInfo.patternCount = 0;
-                        sessionInfo.updateEstimatePanelVisibility();
-                        sessionInfo.updateSessionEstimate(0);
-                    }
-                    updatePatternsSelectedCount();
                 },
                 onRandomSelect: (selected, requestedCount) => {
                     console.log(`Randomly selected ${selected.length} patterns (requested ${requestedCount})`);
-                    // Sync selection state with PatternExplorer
                     if (patternExplorer) {
                         patternExplorer.syncWithQueue();
                     }
-                    // Update session estimate after all items are added - use setTimeout to ensure it happens after render
-                    setTimeout(() => {
-                        if (sessionInfo && queue) {
-                            sessionInfo.updateSessionEstimate(queue.getItems().length);
-                        }
-                        updatePatternsSelectedCount();
-                    }, 0);
+                },
+                onQueueChange: (items, source) => {
+                    handleQueueChange(source);
                 },
                 onReorder: (items) => {
                     console.log('Queue reordered:', items.map(i => i.name));
@@ -327,10 +368,6 @@
                 },
                 onSelectionChange: (file, isSelected) => {
                     console.log('Selection changed:', file.name, isSelected);
-                    // Update session estimate when selection changes
-                    if (sessionInfo) {
-                        sessionInfo.updateSessionEstimate(queue.getItems().length);
-                    }
                 },
                 onFilterChange: (filters) => {
                     console.log('Filters changed:', filters);
@@ -338,54 +375,10 @@
             });
             
             // Initial session estimate update
-            if (sessionInfo) {
-                sessionInfo.updateSessionEstimate(queue.getItems().length);
-            }
+            handleQueueChange('init');
 
             // Patterns header: "N selected"
             updatePatternsSelectedCount();
-
-            // Filters: icon + popover (no longer inline so list isn't pushed down)
-            wrapFilterPanelInPopover();
-        }
-
-        function wrapFilterPanelInPopover() {
-            const fp = document.getElementById('filterPanel');
-            if (!fp || !fp.parentNode) return;
-            const parent = fp.parentNode;
-            const wrap = document.createElement('div');
-            wrap.className = 'filter-popover';
-            const trigger = document.createElement('button');
-            trigger.type = 'button';
-            trigger.className = 'filter-popover__trigger';
-            trigger.setAttribute('aria-label', 'Open filters');
-            trigger.setAttribute('aria-expanded', 'false');
-            trigger.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>';
-            const popoverContent = document.createElement('div');
-            popoverContent.className = 'filter-popover__content';
-            parent.insertBefore(wrap, fp);
-            parent.removeChild(fp);
-            popoverContent.appendChild(fp);
-            wrap.appendChild(trigger);
-            wrap.appendChild(popoverContent);
-            trigger.addEventListener('click', function (e) {
-                e.stopPropagation();
-                const open = popoverContent.classList.toggle('is-open');
-                trigger.setAttribute('aria-expanded', open ? 'true' : 'false');
-            });
-            document.addEventListener('click', function (e) {
-                if (!wrap.contains(e.target)) {
-                    popoverContent.classList.remove('is-open');
-                    trigger.setAttribute('aria-expanded', 'false');
-                }
-            });
-        }
-
-        function updatePatternsSelectedCount() {
-            const el = document.getElementById('patternsSelectedCount');
-            if (!el || !queue) return;
-            const n = queue.getItems().length;
-            el.textContent = n === 1 ? '1 selected' : `${n} selected`;
         }
         
         // Tooltip handling

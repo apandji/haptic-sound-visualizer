@@ -33,6 +33,11 @@
     };
 
     app.initializeComponent = function initializeComponent() {
+        const fileListEl = document.getElementById('fileList');
+        if (window.AppUI) {
+            AppUI.clearBusy(fileListEl);
+        }
+
         state.patternExplorer = new PatternExplorerWithFilters({
             containerId: 'fileList',
             filterContainerId: 'filterPanel',
