@@ -103,6 +103,15 @@ python create_database.py
 
 To rebuild v2 from a frozen v1 backup, see the migration doc and `migrate_to_v2.py`.
 
+## Server
+
+```bash
+pip3 install -r requirements.txt
+python3 server.py
+```
+
+Opens at `http://127.0.0.1:8000/`. Auth is **off by default**. To enable WashU Entra RBAC, see [docs/ENTRA_SETUP.md](docs/ENTRA_SETUP.md).
+
 ## API Endpoints (`server.py`)
 
 | Method | Path | Purpose |
@@ -122,11 +131,12 @@ To rebuild v2 from a frozen v1 backup, see the migration doc and `migrate_to_v2.
 | POST | `/api/analysis/trials/exclude` | Exclude/include a trial in analysis |
 | GET | `/api/timing-stats` | Empirical session timing stats |
 | GET | `/api/pattern-stats` | Per-pattern trial counts for queue weighting |
+| GET | `/api/me` | Current user + roles (when auth enabled) |
 | GET | `/api/status` | Server status |
 | POST | `/api/session` | Save a completed session |
 | POST | `/api/sessions/bulk` | Save multiple sessions (localStorage sync) |
 
-The server has no authentication and binds to all network interfaces; run it on a trusted machine/network only.
+The server binds to `127.0.0.1` only. Optional Entra SSO + RBAC (`AUTH_REQUIRED=true`) enforces roles on `/api/*` — see [docs/ENTRA_SETUP.md](docs/ENTRA_SETUP.md).
 
 ## Key Config Files
 

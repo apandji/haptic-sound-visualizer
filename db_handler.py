@@ -24,6 +24,7 @@ from survey_taxonomy import (
 )
 
 DB_PATH = Path(__file__).parent / 'haptic_research_v2.db'
+_SCHEMA_INITIALIZED = False
 
 
 def _slugify_fragment(value: str) -> str:
@@ -375,12 +376,19 @@ def _normalize_tag_color(color: Optional[str]) -> Optional[str]:
 
 def get_connection():
     """Get database connection with foreign keys enabled."""
-    conn = sqlite3.connect(str(DB_PATH))
+    global _SCHEMA_INITIALIZED
+    conn = sqlite3.connect(str(DB_PATH), timeout=30.0)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
-    conn.execute("PRAGMA journal_mode = WAL")
-    conn.execute("PRAGMA busy_timeout = 5000")
-    ensure_analysis_schema(conn)
+    conn.execute("PRAGMA busy_timeout = 30000")
+    try:
+        conn.execute("PRAGMA journal_mode = WAL")
+    except sqlite3.OperationalError:
+        # Another app (e.g. DB Browser) may hold the file — busy_timeout still applies.
+        pass
+    if not _SCHEMA_INITIALIZED:
+        ensure_analysis_schema(conn)
+        _SCHEMA_INITIALIZED = True
     return conn
 
 
@@ -453,7 +461,23 @@ def ensure_analysis_schema(conn: sqlite3.Connection) -> None:
             )
 
     _migrate_legacy_classifications(cursor)
+    ensure_participants_schema(conn)
     conn.commit()
+
+
+def ensure_participants_schema(conn: sqlite3.Connection) -> None:
+    """Add lookup_hmac for private name→opaque-ID resolution (names never stored)."""
+    cursor = conn.cursor()
+    cursor.execute("PRAGMA table_info(participants)")
+    columns = {row[1] for row in cursor.fetchall()}
+    if 'lookup_hmac' not in columns:
+        cursor.execute("ALTER TABLE participants ADD COLUMN lookup_hmac TEXT")
+    cursor.execute(
+        """
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_participants_lookup_hmac
+        ON participants(lookup_hmac) WHERE lookup_hmac IS NOT NULL
+        """
+    )
 
 
 def _migrate_legacy_classifications(cursor: sqlite3.Cursor) -> None:
@@ -1714,6 +1738,126 @@ def get_all_participants() -> List[Dict[str, Any]]:
     rows = cursor.fetchall()
     conn.close()
     return [dict(row) for row in rows]
+
+
+def resolve_participant_from_name(
+    name: str,
+    age: int = None,
+    gender: str = None,
+    handedness: str = None,
+    notes: str = None,
+    dry_run: bool = False,
+    require_existing: bool = False,
+) -> Dict[str, Any]:
+    """
+    Resolve a participant by name using HMAC lookup.
+    Creates a new opaque study ID if none exists. The name is never stored.
+    """
+    from participant_ids import (
+        normalize_participant_name,
+        compute_lookup_hmac_for_name,
+        allocate_next_participant_code,
+    )
+
+    normalized = normalize_participant_name(name)
+    if len(normalized) < 2:
+        return {'success': False, 'error': 'Enter at least two characters'}
+
+    lookup_hmac = compute_lookup_hmac_for_name(name)
+
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            """
+            SELECT participant_id, participant_code, age, gender, handedness, notes
+            FROM participants WHERE lookup_hmac = ?
+            """,
+            (lookup_hmac,),
+        )
+        row = cursor.fetchone()
+
+        if row:
+            participant_id = row['participant_id']
+            is_new = False
+            if age is not None or gender or handedness or notes:
+                cursor.execute(
+                    """
+                    UPDATE participants SET
+                        age = COALESCE(?, age),
+                        gender = COALESCE(?, gender),
+                        handedness = COALESCE(?, handedness),
+                        notes = COALESCE(?, notes)
+                    WHERE participant_id = ?
+                    """,
+                    (age, gender, handedness, notes, participant_id),
+                )
+                conn.commit()
+                cursor.execute(
+                    """
+                    SELECT participant_id, participant_code, age, gender, handedness, notes
+                    FROM participants WHERE participant_id = ?
+                    """,
+                    (participant_id,),
+                )
+                row = cursor.fetchone()
+        else:
+            if require_existing:
+                return {
+                    'success': False,
+                    'error': 'No participant found with that name. Use New participant to enroll.',
+                }
+
+            if dry_run:
+                next_code = allocate_next_participant_code(cursor)
+                return {
+                    'success': True,
+                    'is_new': True,
+                    'dry_run': True,
+                    'participant_id': None,
+                    'participant_code': next_code,
+                    'age': None,
+                    'gender': None,
+                    'handedness': None,
+                    'notes': None,
+                }
+
+            participant_code = allocate_next_participant_code(cursor)
+            cursor.execute(
+                """
+                INSERT INTO participants
+                    (participant_code, lookup_hmac, age, gender, handedness, notes)
+                VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                (participant_code, lookup_hmac, age, gender, handedness, notes),
+            )
+            conn.commit()
+            participant_id = cursor.lastrowid
+            is_new = True
+            cursor.execute(
+                """
+                SELECT participant_id, participant_code, age, gender, handedness, notes
+                FROM participants WHERE participant_id = ?
+                """,
+                (participant_id,),
+            )
+            row = cursor.fetchone()
+
+        return {
+            'success': True,
+            'is_new': is_new,
+            'participant_id': row['participant_id'],
+            'participant_code': row['participant_code'],
+            'age': row['age'],
+            'gender': row['gender'],
+            'handedness': row['handedness'],
+            'notes': row['notes'],
+        }
+    except Exception as exc:
+        conn.rollback()
+        return {'success': False, 'error': str(exc)}
+    finally:
+        conn.close()
 
 
 if __name__ == "__main__":

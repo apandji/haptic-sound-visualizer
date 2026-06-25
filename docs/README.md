@@ -12,5 +12,6 @@ Minimal set of docs for day-to-day work. Everything else lives in **[archive/](a
 | [AUDIT_2026-06-11.md](AUDIT_2026-06-11.md) | Code/UX/security audit (pre-IRB, pre-scale) |
 | [DATA_STORAGE_PLAN.md](DATA_STORAGE_PLAN.md) | WashU Box backup architecture + IRB open questions |
 | [CYBERSEC_RESPONSE.md](CYBERSEC_RESPONSE.md) | Cybersec follow-up: FileVault, Entra SSO/RBAC, pseudonyms, subject access |
+| [ENTRA_SETUP.md](ENTRA_SETUP.md) | Turn on WashU Entra SSO + RBAC (IT checklist, `.env`) |
 
 **Database:** [`../schema_v2.sql`](../schema_v2.sql) (SQLite, active). Legacy v1: [`../schema.sql`](../schema.sql). **EEG / signal quality:** `eeg_server.py`, `signal_quality.py`, and `js/` (no separate living spec).

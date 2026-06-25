@@ -304,7 +304,7 @@
             // Initialize SessionInfo
             sessionInfo = new SessionInfo({
                 containerId: 'sessionInfo',
-                participants: availableParticipants,
+                privateParticipantLookup: true,
                 locations: [
                     { location_id: 1, name: 'MDes Lab' },
                     { location_id: 2, name: 'Steinberg 204' },

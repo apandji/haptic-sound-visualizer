@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SAIL Pattern Library - Test</title>
+    <script src="js/auth.js?v=2026-06-13.1"></script>
     <script src="js/theme.js?v=2026-06-08.1"></script>
     <script src="js/icons.js?v=2026-06-13.1"></script>
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
@@ -18,7 +19,7 @@
     <link rel="stylesheet" href="css/components/base/filterPanel.css?v=2026-06-09.2">
     <link rel="stylesheet" href="css/components/base/dualSlider.css?v=2026-06-08.2">
     <link rel="stylesheet" href="css/components/base/patternQueue.css?v=2026-06-09.2">
-    <link rel="stylesheet" href="css/components/base/sessionInfo.css?v=2026-06-09.2">
+    <link rel="stylesheet" href="css/components/base/sessionInfo.css?v=2026-06-13.8">
     <link rel="stylesheet" href="css/components/base/audioControls.css?v=2026-06-08.2">
     <link rel="stylesheet" href="css/components/base/testExecutionOverlay.css?v=2026-06-09.6">
     <link rel="stylesheet" href="css/components/base/trialTagsSurvey.css?v=2026-06-12.2">
@@ -38,7 +39,10 @@
         <div class="app-header__center">
             <h1 class="app-header__title">Setup test</h1>
         </div>
-        <div class="app-header__end" data-theme-toggle-mount></div>
+        <div class="app-header__end">
+            <div data-auth-mount></div>
+            <div data-theme-toggle-mount></div>
+        </div>
     </header>
     
     <!-- Main Layout: Patterns + Session in one view -->
@@ -119,7 +123,7 @@
     <script src="js/components/base/filterPanel.js?v=2026-06-09.1"></script>
     <script src="js/components/base/dualSlider.js?v=2026-02-26.1"></script>
     <script src="js/components/base/patternQueue.js?v=2026-06-12.1"></script>
-    <script src="js/components/base/sessionInfo.js?v=2026-06-10.1"></script>
+    <script src="js/components/base/sessionInfo.js?v=2026-06-13.10"></script>
     <script src="js/modules/surveyTaxonomy.js?v=2026-06-09.2"></script>
     <script src="js/components/base/trialTagsSurvey.js?v=2026-06-12.2"></script>
     <script src="js/components/base/signalQualityVisualizer.js?v=2026-06-02.5"></script>
@@ -129,10 +133,10 @@
     <script src="js/uiHelpers.js?v=2026-06-09.2"></script>
     <script src="js/dataCache.js?v=2026-06-07.6"></script>
     <script src="js/test/state.js?v=2026-06-09.7"></script>
-    <script src="js/test/dataAndComponents.js?v=2026-06-12.1"></script>
+    <script src="js/test/dataAndComponents.js?v=2026-06-13.2"></script>
     <script src="js/test/audioPreview.js?v=2026-02-26.1"></script>
     <script src="js/test/sessionPersistence.js?v=2026-06-13.1"></script>
-    <script src="js/test/testExecution.js?v=2026-06-13.1"></script>
+    <script src="js/test/testExecution.js?v=2026-06-13.2"></script>
     <script src="js/test/signalQuality.js?v=2026-02-26.1"></script>
     <script src="js/test/bootstrap.js?v=2026-02-26.1"></script>
     <script src="js/appNav.js?v=2026-06-12.6"></script>

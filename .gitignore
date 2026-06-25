@@ -46,5 +46,11 @@ data/haptics-study/*.db
 dist/
 build/
 
+# Study pepper + participant codebook (names for one-time backfill only)
+.study_pepper
+.env
+participant_codebook.csv
+scripts/participant_codebook.csv
+
 # AI tools
 .codex

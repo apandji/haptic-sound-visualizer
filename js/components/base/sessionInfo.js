@@ -13,7 +13,13 @@ class SessionInfo {
         }
         
         // Configuration
-        // Load participants from localStorage or use provided/default
+        this.privateParticipantLookup = options.privateParticipantLookup === true;
+        this.resolvedParticipant = null;
+        this.participantConfirmed = false;
+        this.participantLookupPending = false;
+        this.participantMode = 'search';
+
+        // Load participants from localStorage or use provided/default (legacy dropdown mode)
         const storedParticipants = this.loadParticipantsFromStorage();
         this.participants = options.participants || storedParticipants || [
             { participant_id: 1, participant_code: 'P001' }
@@ -155,7 +161,7 @@ class SessionInfo {
         headerText.className = 'section-label session-info__header-text';
         headerText.textContent = 'SESSION';
         headerLeft.appendChild(headerText);
-        
+
         const sessionIdDisplay = document.createElement('span');
         sessionIdDisplay.className = 'session-info__header-id';
         sessionIdDisplay.textContent = this.sessionId;
@@ -341,170 +347,15 @@ class SessionInfo {
         const form = document.createElement('div');
         form.className = 'session-info__form';
         
-        // Participant field with add button
-        const participantFieldContainer = document.createElement('div');
-        participantFieldContainer.className = 'session-info__field';
+        // Participant field — private lookup (Test) or legacy dropdown (dev examples)
+        const participantFieldContainer = this.privateParticipantLookup
+            ? this.createPrivateParticipantLookup()
+            : this.createLegacyParticipantFields();
         
-        // Label
-        const participantLabel = document.createElement('label');
-        participantLabel.className = 'field__label session-info__label';
-        participantLabel.setAttribute('for', `${this.containerId}_participant_id`);
-        participantLabel.textContent = 'Participant Code *';
-        participantFieldContainer.appendChild(participantLabel);
-        
-        // Select + Add button row
-        const selectButtonRow = document.createElement('div');
-        selectButtonRow.className = 'session-info__select-button-row';
-        
-        // Participant select dropdown
-        const select = document.createElement('select');
-        select.id = `${this.containerId}_participant_id`;
-        select.className = 'select session-info__select';
-        select.required = true;
-        
-        // Add empty option (placeholder, hidden from dropdown)
-        const emptyOption = document.createElement('option');
-        emptyOption.value = '';
-        emptyOption.textContent = 'Select participant...';
-        emptyOption.disabled = true;
-        emptyOption.selected = !this.data.participant_id;
-        emptyOption.hidden = true; // Hide from dropdown list
-        select.appendChild(emptyOption);
-        
-        // Add participant options
-        this.participants.forEach(p => {
-            const option = document.createElement('option');
-            option.value = p.participant_id || p.id;
-            option.textContent = p.participant_code || p.code || `Participant ${p.participant_id || p.id}`;
-            if (this.data.participant_id && String(option.value) === String(this.data.participant_id)) {
-                option.selected = true;
-            }
-            select.appendChild(option);
-        });
-        
-        select.style.removeProperty('color');
-        
-        selectButtonRow.appendChild(select);
-        
-        // Add button (shown when form is closed)
-        const addButton = document.createElement('button');
-        addButton.type = 'button';
-        addButton.className = 'btn btn--secondary btn--sm session-info__add-button';
-        addButton.textContent = '+ Add';
-        addButton.setAttribute('aria-label', 'Add new participant');
-        this.participantAddButton = addButton; // Store reference
-        addButton.addEventListener('click', () => {
-            this.openParticipantForm();
-        });
-        selectButtonRow.appendChild(addButton);
-        
-        // Cancel and Save buttons (shown when form is open, initially hidden)
-        const cancelButton = document.createElement('button');
-        cancelButton.type = 'button';
-        cancelButton.className = 'btn btn--secondary btn--sm session-info__action-button session-info__action-button--cancel';
-        cancelButton.textContent = 'Cancel';
-        cancelButton.setAttribute('aria-label', 'Cancel adding participant');
-        cancelButton.style.display = 'none';
-        this.participantCancelButton = cancelButton; // Store reference
-        cancelButton.addEventListener('click', () => {
-            this.closeParticipantForm();
-        });
-        selectButtonRow.appendChild(cancelButton);
-        
-        const saveButton = document.createElement('button');
-        saveButton.type = 'button';
-        saveButton.className = 'btn btn--primary btn--sm session-info__action-button session-info__action-button--save';
-        saveButton.textContent = 'Save';
-        saveButton.setAttribute('aria-label', 'Save new participant');
-        saveButton.style.display = 'none';
-        this.participantSaveButton = saveButton; // Store reference
-        saveButton.addEventListener('click', () => {
-            this.saveNewParticipant();
-        });
-        selectButtonRow.appendChild(saveButton);
-        
-        participantFieldContainer.appendChild(selectButtonRow);
-        
-        // Participant creation subform (initially hidden)
-        const participantForm = document.createElement('div');
-        participantForm.className = 'session-info__participant-form';
-        participantForm.style.display = 'none';
-        this.participantFormElement = participantForm;
-        
-        // Participant code (required)
-        const codeField = this.createTextField({
-            id: 'new_participant_code',
-            label: 'Participant Code',
-            required: true,
-            placeholder: 'e.g., P001',
-            value: '',
-            maxLength: 50
-        });
-        participantForm.appendChild(codeField);
-        
-        // Age (optional)
-        const ageField = this.createTextField({
-            id: 'new_participant_age',
-            label: 'Age',
-            required: false,
-            placeholder: 'Age',
-            value: '',
-            maxLength: 3
-        });
-        // Change input type to number
-        const ageInput = ageField.querySelector('input');
-        if (ageInput) {
-            ageInput.type = 'number';
-            ageInput.min = '1';
-            ageInput.max = '150';
-        }
-        participantForm.appendChild(ageField);
-        
-        // Gender (optional dropdown)
-        const genderOptions = [
-            { value: 'Male', text: 'Male' },
-            { value: 'Female', text: 'Female' },
-            { value: 'Other', text: 'Other' },
-            { value: 'Prefer not to say', text: 'Prefer not to say' }
-        ];
-        const genderField = this.createSelectField({
-            id: 'new_participant_gender',
-            label: 'Gender',
-            required: false,
-            options: genderOptions,
-            value: ''
-        });
-        participantForm.appendChild(genderField);
-        
-        // Handedness (optional dropdown)
-        const handednessOptions = [
-            { value: 'Right', text: 'Right' },
-            { value: 'Left', text: 'Left' },
-            { value: 'Ambidextrous', text: 'Ambidextrous' }
-        ];
-        const handednessField = this.createSelectField({
-            id: 'new_participant_handedness',
-            label: 'Handedness',
-            required: false,
-            options: handednessOptions,
-            value: ''
-        });
-        participantForm.appendChild(handednessField);
-        
-        // Participant notes (optional)
-        const notesField = this.createTextareaField({
-            id: 'new_participant_notes',
-            label: 'Participant Notes',
-            required: false,
-            placeholder: 'Additional notes about this participant',
-            value: ''
-        });
-        participantForm.appendChild(notesField);
-        
-        // No footer actions needed - actions are in the header row
-        participantFieldContainer.appendChild(participantForm);
-        
-        // Location field - default to MDes Lab
+        // Group: SESSION DETAILS (stacked)
+        const sessionGroup = this.createFieldGroup('Session Details', false);
+        sessionGroup.querySelector('.session-info__field-group-fields').appendChild(participantFieldContainer);
+
         const defaultLocationId = this.locations.find(l => l.name === 'MDes Lab')?.location_id || this.locations[0]?.location_id || null;
         // Use existing data.location_id if set, otherwise use default
         const locationValue = this.data.location_id || defaultLocationId;
@@ -531,10 +382,7 @@ class SessionInfo {
             locationSelect.value = locationValue;
             locationSelect.style.removeProperty('color');
         }
-        
-        // Group: SESSION DETAILS (stacked)
-        const sessionGroup = this.createFieldGroup('Session Details', false);
-        sessionGroup.querySelector('.session-info__field-group-fields').appendChild(participantFieldContainer);
+
         sessionGroup.querySelector('.session-info__field-group-fields').appendChild(locationField);
         form.appendChild(sessionGroup);
         
@@ -854,19 +702,31 @@ class SessionInfo {
      * Validate form
      */
     validate() {
-        // Required fields: participant_id and location_id (session_date is set when session starts)
-        const requiredFields = ['participant_id', 'location_id'];
-        const isValid = requiredFields.every(field => {
-            const value = this.data[field];
-            if (value === null || value === '' || value === undefined) {
-                return false;
-            }
-            if (typeof value === 'number' && Number.isNaN(value)) {
-                return false;
-            }
-            return true;
-        });
-        
+        let isValid;
+
+        if (this.privateParticipantLookup) {
+            const hasParticipant = Boolean(
+                this.participantConfirmed &&
+                this.data.participant_id != null &&
+                this.resolvedParticipant
+            );
+            const locationId = this.data.location_id;
+            const hasLocation = locationId !== null && locationId !== '' && locationId !== undefined;
+            isValid = hasParticipant && hasLocation;
+        } else {
+            const requiredFields = ['participant_id', 'location_id'];
+            isValid = requiredFields.every(field => {
+                const value = this.data[field];
+                if (value === null || value === '' || value === undefined) {
+                    return false;
+                }
+                if (typeof value === 'number' && Number.isNaN(value)) {
+                    return false;
+                }
+                return true;
+            });
+        }
+
         this.isValid = isValid;
         
         // Update visual validation state
@@ -1047,7 +907,7 @@ class SessionInfo {
         if (!this.isValid) {
             this.showFieldErrors = true;
             this.validate();
-            this.showValidationError('Please fill in all required fields (Participant Code and Location).');
+            this.showValidationError('Please fill in all required fields (Participant and Location).');
             // Scroll to first invalid field
             const firstInvalid = this.container.querySelector('.input--invalid, .select.input--invalid');
             if (firstInvalid) {
@@ -1155,6 +1015,765 @@ class SessionInfo {
         return this.isSessionStarted;
     }
     
+    /**
+     * Legacy participant dropdown + inline add form (dev examples).
+     */
+    createLegacyParticipantFields() {
+        const participantFieldContainer = document.createElement('div');
+        participantFieldContainer.className = 'session-info__field';
+
+        const participantLabel = document.createElement('label');
+        participantLabel.className = 'field__label session-info__label';
+        participantLabel.setAttribute('for', `${this.containerId}_participant_id`);
+        participantLabel.textContent = 'Participant Code *';
+        participantFieldContainer.appendChild(participantLabel);
+
+        const selectButtonRow = document.createElement('div');
+        selectButtonRow.className = 'session-info__select-button-row';
+
+        const select = document.createElement('select');
+        select.id = `${this.containerId}_participant_id`;
+        select.className = 'select session-info__select';
+        select.required = true;
+
+        const emptyOption = document.createElement('option');
+        emptyOption.value = '';
+        emptyOption.textContent = 'Select participant...';
+        emptyOption.disabled = true;
+        emptyOption.selected = !this.data.participant_id;
+        emptyOption.hidden = true;
+        select.appendChild(emptyOption);
+
+        this.participants.forEach(p => {
+            const option = document.createElement('option');
+            option.value = p.participant_id || p.id;
+            option.textContent = p.participant_code || p.code || `Participant ${p.participant_id || p.id}`;
+            if (this.data.participant_id && String(option.value) === String(this.data.participant_id)) {
+                option.selected = true;
+            }
+            select.appendChild(option);
+        });
+
+        select.style.removeProperty('color');
+        selectButtonRow.appendChild(select);
+
+        const addButton = document.createElement('button');
+        addButton.type = 'button';
+        addButton.className = 'btn btn--secondary btn--sm session-info__add-button';
+        addButton.textContent = '+ Add';
+        addButton.setAttribute('aria-label', 'Add new participant');
+        this.participantAddButton = addButton;
+        addButton.addEventListener('click', () => this.openParticipantForm());
+        selectButtonRow.appendChild(addButton);
+
+        const cancelButton = document.createElement('button');
+        cancelButton.type = 'button';
+        cancelButton.className = 'btn btn--secondary btn--sm session-info__action-button session-info__action-button--cancel';
+        cancelButton.textContent = 'Cancel';
+        cancelButton.style.display = 'none';
+        this.participantCancelButton = cancelButton;
+        cancelButton.addEventListener('click', () => this.closeParticipantForm());
+        selectButtonRow.appendChild(cancelButton);
+
+        const saveButton = document.createElement('button');
+        saveButton.type = 'button';
+        saveButton.className = 'btn btn--primary btn--sm session-info__action-button session-info__action-button--save';
+        saveButton.textContent = 'Save';
+        saveButton.style.display = 'none';
+        this.participantSaveButton = saveButton;
+        saveButton.addEventListener('click', () => this.saveNewParticipant());
+        selectButtonRow.appendChild(saveButton);
+
+        participantFieldContainer.appendChild(selectButtonRow);
+
+        const participantForm = document.createElement('div');
+        participantForm.className = 'session-info__participant-form';
+        participantForm.style.display = 'none';
+        this.participantFormElement = participantForm;
+
+        const codeField = this.createTextField({
+            id: 'new_participant_code',
+            label: 'Participant Code',
+            required: true,
+            placeholder: 'e.g., P001',
+            value: '',
+            maxLength: 50
+        });
+        participantForm.appendChild(codeField);
+
+        const ageField = this.createTextField({
+            id: 'new_participant_age',
+            label: 'Age',
+            required: false,
+            placeholder: 'Age',
+            value: '',
+            maxLength: 3
+        });
+        const ageInput = ageField.querySelector('input');
+        if (ageInput) {
+            ageInput.type = 'number';
+            ageInput.min = '1';
+            ageInput.max = '150';
+        }
+        participantForm.appendChild(ageField);
+
+        const genderOptions = [
+            { value: 'Male', text: 'Male' },
+            { value: 'Female', text: 'Female' },
+            { value: 'Other', text: 'Other' },
+            { value: 'Prefer not to say', text: 'Prefer not to say' }
+        ];
+        participantForm.appendChild(this.createSelectField({
+            id: 'new_participant_gender',
+            label: 'Gender',
+            required: false,
+            options: genderOptions,
+            value: ''
+        }));
+
+        const handednessOptions = [
+            { value: 'Right', text: 'Right' },
+            { value: 'Left', text: 'Left' },
+            { value: 'Ambidextrous', text: 'Ambidextrous' }
+        ];
+        participantForm.appendChild(this.createSelectField({
+            id: 'new_participant_handedness',
+            label: 'Handedness',
+            required: false,
+            options: handednessOptions,
+            value: ''
+        }));
+
+        participantForm.appendChild(this.createTextareaField({
+            id: 'new_participant_notes',
+            label: 'Participant Notes',
+            required: false,
+            placeholder: 'Additional notes about this participant',
+            value: ''
+        }));
+
+        participantFieldContainer.appendChild(participantForm);
+        return participantFieldContainer;
+    }
+
+    /**
+     * Private name lookup — Search past | New participant tabs; no cohort list.
+     */
+    createPrivateParticipantLookup() {
+        const container = document.createElement('div');
+        container.className = 'session-info__field session-info__participant-lookup';
+
+        const label = document.createElement('div');
+        label.className = 'field__label session-info__label';
+        label.textContent = 'Participant *';
+        container.appendChild(label);
+
+        this.participantModeToggle = document.createElement('div');
+        this.participantModeToggle.className = 'session-info__mode-toggle';
+        this.participantModeToggle.setAttribute('role', 'tablist');
+        this.participantModeToggle.setAttribute('aria-label', 'Participant enrollment mode');
+
+        this.participantSearchTab = this.createParticipantModeTab('search', 'Past participant', true);
+        this.participantNewTab = this.createParticipantModeTab('new', 'New participant', false);
+        this.participantModeToggle.appendChild(this.participantSearchTab);
+        this.participantModeToggle.appendChild(this.participantNewTab);
+        container.appendChild(this.participantModeToggle);
+
+        this.participantSearchPanel = this.createParticipantSearchPanel();
+        container.appendChild(this.participantSearchPanel);
+
+        this.participantNewPanel = this.createParticipantNewPanel();
+        this.participantNewPanel.hidden = true;
+        container.appendChild(this.participantNewPanel);
+
+        this.participantConfirmedPanel = document.createElement('div');
+        this.participantConfirmedPanel.className = 'session-info__participant-confirmed';
+        this.participantConfirmedPanel.hidden = true;
+
+        this.participantConfirmedMeta = document.createElement('div');
+        this.participantConfirmedMeta.className = 'session-info__confirmed-meta';
+
+        this.participantConfirmedCode = document.createElement('div');
+        this.participantConfirmedCode.className = 'session-info__confirmed-code';
+        this.participantConfirmedMeta.appendChild(this.participantConfirmedCode);
+
+        this.participantConfirmedPanel.appendChild(this.participantConfirmedMeta);
+
+        const changeBtn = document.createElement('button');
+        changeBtn.type = 'button';
+        changeBtn.className = 'btn btn--secondary btn--sm session-info__change-participant';
+        changeBtn.textContent = 'Change participant';
+        changeBtn.addEventListener('click', () => this.resetParticipantLookup());
+        this.participantConfirmedPanel.appendChild(changeBtn);
+
+        container.appendChild(this.participantConfirmedPanel);
+
+        return container;
+    }
+
+    createParticipantModeTab(mode, text, selected) {
+        const tab = document.createElement('button');
+        tab.type = 'button';
+        tab.className = 'session-info__mode-tab' + (selected ? ' session-info__mode-tab--active' : '');
+        tab.textContent = text;
+        tab.setAttribute('role', 'tab');
+        tab.setAttribute('aria-selected', selected ? 'true' : 'false');
+        tab.dataset.mode = mode;
+        tab.addEventListener('click', () => this.setParticipantMode(mode));
+        return tab;
+    }
+
+    createParticipantNameInput(idSuffix, placeholder) {
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.id = `${this.containerId}_participant_${idSuffix}_name`;
+        input.className = 'input session-info__input session-info__lookup-name';
+        input.placeholder = placeholder;
+        input.autocomplete = 'off';
+        input.autocorrect = 'off';
+        input.spellcheck = false;
+        input.setAttribute('data-lpignore', 'true');
+        input.setAttribute('data-form-type', 'other');
+        return input;
+    }
+
+    appendParticipantDemographics(parent, idPrefix) {
+        const wrap = document.createElement('div');
+        wrap.className = 'session-info__participant-demographics';
+
+        const ageField = this.createTextField({
+            id: `participant_${idPrefix}_age`,
+            label: 'Age',
+            required: false,
+            placeholder: 'Age',
+            value: '',
+            maxLength: 3
+        });
+        const ageInput = ageField.querySelector('input');
+        if (ageInput) {
+            ageInput.type = 'number';
+            ageInput.min = '1';
+            ageInput.max = '150';
+        }
+        wrap.appendChild(ageField);
+
+        const genderOptions = [
+            { value: 'Male', text: 'Male' },
+            { value: 'Female', text: 'Female' },
+            { value: 'Other', text: 'Other' },
+            { value: 'Prefer not to say', text: 'Prefer not to say' }
+        ];
+        wrap.appendChild(this.createSelectField({
+            id: `participant_${idPrefix}_gender`,
+            label: 'Gender',
+            required: false,
+            options: genderOptions,
+            value: ''
+        }));
+
+        const handednessOptions = [
+            { value: 'Right', text: 'Right' },
+            { value: 'Left', text: 'Left' },
+            { value: 'Ambidextrous', text: 'Ambidextrous' }
+        ];
+        wrap.appendChild(this.createSelectField({
+            id: `participant_${idPrefix}_handedness`,
+            label: 'Handedness',
+            required: false,
+            options: handednessOptions,
+            value: ''
+        }));
+
+        wrap.appendChild(this.createTextareaField({
+            id: `participant_${idPrefix}_notes`,
+            label: 'Participant notes',
+            required: false,
+            placeholder: 'No names or contact info',
+            value: ''
+        }));
+
+        parent.appendChild(wrap);
+        return wrap;
+    }
+
+    createParticipantSearchPanel() {
+        const panel = document.createElement('div');
+        panel.className = 'session-info__mode-panel';
+        panel.dataset.mode = 'search';
+
+        const row = document.createElement('div');
+        row.className = 'session-info__lookup-row';
+
+        this.participantSearchNameInput = this.createParticipantNameInput('search', 'Full name');
+        this.participantSearchNameInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                this.searchPastParticipant();
+            }
+        });
+        this.participantSearchNameInput.addEventListener('input', () => {
+            this.clearSearchResultCard();
+            this.showSearchError('');
+        });
+
+        this.participantSearchButton = document.createElement('button');
+        this.participantSearchButton.type = 'button';
+        this.participantSearchButton.className = 'btn btn--secondary btn--sm session-info__lookup-button';
+        this.participantSearchButton.textContent = 'Search';
+        this.participantSearchButton.addEventListener('click', () => this.searchPastParticipant());
+
+        row.appendChild(this.participantSearchNameInput);
+        row.appendChild(this.participantSearchButton);
+        panel.appendChild(row);
+
+        this.participantSearchError = document.createElement('div');
+        this.participantSearchError.className = 'session-info__lookup-error';
+        this.participantSearchError.hidden = true;
+        panel.appendChild(this.participantSearchError);
+
+        this.participantSearchResultCard = document.createElement('div');
+        this.participantSearchResultCard.className = 'session-info__found-card';
+        this.participantSearchResultCard.hidden = true;
+        panel.appendChild(this.participantSearchResultCard);
+
+        return panel;
+    }
+
+    createParticipantNewPanel() {
+        const panel = document.createElement('div');
+        panel.className = 'session-info__mode-panel';
+        panel.dataset.mode = 'new';
+
+        const nameField = document.createElement('div');
+        nameField.className = 'field session-info__field';
+        const nameLabel = document.createElement('label');
+        nameLabel.className = 'field__label session-info__label';
+        nameLabel.setAttribute('for', `${this.containerId}_participant_new_name`);
+        nameLabel.textContent = 'Name';
+        nameField.appendChild(nameLabel);
+        this.participantNewNameInput = this.createParticipantNameInput('new', 'Full name');
+        nameField.appendChild(this.participantNewNameInput);
+
+        const hint = document.createElement('p');
+        hint.className = 'session-info__hint session-info__hint--tight';
+        hint.textContent = 'A participant code is generated from name; name itself is not stored. Please update codebook.';
+        nameField.appendChild(hint);
+        panel.appendChild(nameField);
+
+        this.participantNewDemographics = this.appendParticipantDemographics(panel, 'new');
+
+        this.participantNewError = document.createElement('div');
+        this.participantNewError.className = 'session-info__lookup-error';
+        this.participantNewError.hidden = true;
+        panel.appendChild(this.participantNewError);
+
+        this.participantNewRegisterButton = document.createElement('button');
+        this.participantNewRegisterButton.type = 'button';
+        this.participantNewRegisterButton.className = 'btn btn--primary btn--block session-info__action-button';
+        this.participantNewRegisterButton.textContent = 'Register participant';
+        this.participantNewRegisterButton.addEventListener('click', () => this.registerNewParticipant());
+        panel.appendChild(this.participantNewRegisterButton);
+
+        return panel;
+    }
+
+    setParticipantMode(mode) {
+        if (this.participantConfirmed || this.participantMode === mode) return;
+
+        this.participantMode = mode;
+        this.pendingLookupName = null;
+        this.pendingLookupParticipant = null;
+
+        if (this.participantSearchTab) {
+            const isSearch = mode === 'search';
+            this.participantSearchTab.classList.toggle('session-info__mode-tab--active', isSearch);
+            this.participantSearchTab.setAttribute('aria-selected', isSearch ? 'true' : 'false');
+        }
+        if (this.participantNewTab) {
+            const isNew = mode === 'new';
+            this.participantNewTab.classList.toggle('session-info__mode-tab--active', isNew);
+            this.participantNewTab.setAttribute('aria-selected', isNew ? 'true' : 'false');
+        }
+        if (this.participantSearchPanel) {
+            this.participantSearchPanel.hidden = mode !== 'search';
+        }
+        if (this.participantNewPanel) {
+            this.participantNewPanel.hidden = mode !== 'new';
+        }
+
+        this.clearSearchResultCard();
+        this.showSearchError('');
+        this.showNewError('');
+    }
+
+    getActiveParticipantNameInput() {
+        return this.participantMode === 'search'
+            ? this.participantSearchNameInput
+            : this.participantNewNameInput;
+    }
+
+    readParticipantDemographicsFromForm(mode = this.participantMode) {
+        const prefix = mode === 'search' ? 'search' : 'new';
+        const ageInput = this.container.querySelector(`#${this.containerId}_participant_${prefix}_age`);
+        const genderSelect = this.container.querySelector(`#${this.containerId}_participant_${prefix}_gender`);
+        const handednessSelect = this.container.querySelector(`#${this.containerId}_participant_${prefix}_handedness`);
+        const notesInput = this.container.querySelector(`#${this.containerId}_participant_${prefix}_notes`);
+
+        const ageRaw = ageInput && ageInput.value ? ageInput.value.trim() : '';
+        return {
+            age: ageRaw ? parseInt(ageRaw, 10) : null,
+            gender: genderSelect && genderSelect.value ? genderSelect.value : null,
+            handedness: handednessSelect && handednessSelect.value ? handednessSelect.value : null,
+            notes: notesInput && notesInput.value ? notesInput.value.trim() : null
+        };
+    }
+
+    fillParticipantDemographicsForm(participant, mode = 'search') {
+        const prefix = mode === 'search' ? 'search' : 'new';
+        const ageInput = this.container.querySelector(`#${this.containerId}_participant_${prefix}_age`);
+        const genderSelect = this.container.querySelector(`#${this.containerId}_participant_${prefix}_gender`);
+        const handednessSelect = this.container.querySelector(`#${this.containerId}_participant_${prefix}_handedness`);
+        const notesInput = this.container.querySelector(`#${this.containerId}_participant_${prefix}_notes`);
+
+        if (ageInput) ageInput.value = participant.age != null ? String(participant.age) : '';
+        if (genderSelect) genderSelect.value = participant.gender || '';
+        if (handednessSelect) handednessSelect.value = participant.handedness || '';
+        if (notesInput) notesInput.value = participant.notes || '';
+    }
+
+    clearParticipantDemographicsForm(mode) {
+        this.fillParticipantDemographicsForm({}, mode);
+    }
+
+    setParticipantLookupPanelsVisible(visible) {
+        if (this.participantModeToggle) {
+            this.participantModeToggle.hidden = !visible;
+        }
+        if (this.participantSearchPanel) {
+            this.participantSearchPanel.hidden = !visible || this.participantMode !== 'search';
+        }
+        if (this.participantNewPanel) {
+            this.participantNewPanel.hidden = !visible || this.participantMode !== 'new';
+        }
+    }
+
+    getResolvedParticipant() {
+        return this.resolvedParticipant ? { ...this.resolvedParticipant } : null;
+    }
+
+    showSearchError(message) {
+        if (!this.participantSearchError) return;
+        this.participantSearchError.textContent = message;
+        this.participantSearchError.hidden = !message;
+    }
+
+    showNewError(message) {
+        if (!this.participantNewError) return;
+        this.participantNewError.textContent = message;
+        this.participantNewError.hidden = !message;
+    }
+
+    formatParticipantDetail(label, value) {
+        if (value === null || value === undefined || value === '') return null;
+        const row = document.createElement('div');
+        row.className = 'session-info__found-detail';
+
+        const dt = document.createElement('span');
+        dt.className = 'session-info__found-detail-label';
+        dt.textContent = label;
+
+        const dd = document.createElement('span');
+        dd.className = 'session-info__found-detail-value';
+        dd.textContent = String(value);
+
+        row.appendChild(dt);
+        row.appendChild(dd);
+        return row;
+    }
+
+    clearSearchResultCard() {
+        if (!this.participantSearchResultCard) return;
+        this.participantSearchResultCard.replaceChildren();
+        this.participantSearchResultCard.hidden = true;
+        this.participantSearchConfirmButton = null;
+    }
+
+    renderSearchResultCard(participant) {
+        if (!this.participantSearchResultCard) return;
+        this.participantSearchResultCard.replaceChildren();
+
+        const title = document.createElement('div');
+        title.className = 'session-info__found-title';
+        title.textContent = 'Participant found';
+        this.participantSearchResultCard.appendChild(title);
+
+        const code = document.createElement('div');
+        code.className = 'session-info__found-code';
+        code.textContent = participant.participant_code;
+        this.participantSearchResultCard.appendChild(code);
+
+        const details = document.createElement('div');
+        details.className = 'session-info__found-details';
+        [
+            this.formatParticipantDetail('Age', participant.age),
+            this.formatParticipantDetail('Gender', participant.gender),
+            this.formatParticipantDetail('Handedness', participant.handedness),
+            this.formatParticipantDetail('Notes', participant.notes)
+        ].filter(Boolean).forEach(row => details.appendChild(row));
+
+        if (details.childElementCount) {
+            this.participantSearchResultCard.appendChild(details);
+        }
+
+        this.participantSearchConfirmButton = document.createElement('button');
+        this.participantSearchConfirmButton.type = 'button';
+        this.participantSearchConfirmButton.className = 'btn btn--primary btn--block session-info__action-button';
+        this.participantSearchConfirmButton.textContent = 'Confirm participant';
+        this.participantSearchConfirmButton.addEventListener('click', () => this.confirmSearchParticipant());
+        this.participantSearchResultCard.appendChild(this.participantSearchConfirmButton);
+
+        this.participantSearchResultCard.hidden = false;
+    }
+
+    async postParticipantResolve(body) {
+        const response = await fetch('/api/participants/resolve', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+        const result = await response.json();
+
+        if (response.status === 404) {
+            return {
+                ok: false,
+                error: 'Lookup API not found — restart the research server (python3 server.py) and reload.'
+            };
+        }
+
+        if (!response.ok || !result.success) {
+            return { ok: false, error: result.error || 'Request failed. Try again.' };
+        }
+
+        return { ok: true, result };
+    }
+
+    finalizeParticipantSelection(result) {
+        this.resolvedParticipant = {
+            participant_id: result.participant_id,
+            participant_code: result.participant_code,
+            age: result.age,
+            gender: result.gender,
+            handedness: result.handedness,
+            notes: result.notes
+        };
+        this.data.participant_id = result.participant_id;
+        this.participantConfirmed = true;
+        this.pendingLookupName = null;
+        this.pendingLookupParticipant = null;
+
+        if (this.participantSearchNameInput) this.participantSearchNameInput.value = '';
+        if (this.participantNewNameInput) this.participantNewNameInput.value = '';
+
+        this.setParticipantLookupPanelsVisible(false);
+        this.clearSearchResultCard();
+        this.showSearchError('');
+        this.showNewError('');
+        if (this.participantConfirmedPanel && this.participantConfirmedCode) {
+            this.participantConfirmedCode.textContent = result.participant_code;
+            this.participantConfirmedPanel.hidden = false;
+        }
+
+        this.validate();
+
+        if (this.onChange) {
+            this.onChange({
+                field: 'participant_id',
+                value: result.participant_id,
+                data: { ...this.data },
+                isValid: this.isValid
+            });
+        }
+    }
+
+    async searchPastParticipant() {
+        if (!this.participantSearchNameInput || this.participantLookupPending) return;
+
+        const name = this.participantSearchNameInput.value.trim();
+        this.showSearchError('');
+        this.clearSearchResultCard();
+        if (name.length < 2) {
+            this.showSearchError('Enter at least two characters.');
+            return;
+        }
+
+        this.participantLookupPending = true;
+        if (this.participantSearchButton) {
+            this.participantSearchButton.disabled = true;
+            this.participantSearchButton.textContent = 'Searching\u2026';
+        }
+
+        try {
+            const { ok, error, result } = await this.postParticipantResolve({
+                name,
+                dry_run: true,
+                require_existing: true
+            });
+
+            if (!ok) {
+                const notFound = error && error.toLowerCase().includes('no participant found');
+                this.showSearchError(notFound ? 'Participant not found' : error);
+                return;
+            }
+
+            // Past-participant search must match a real enrolled row — never a preview ID.
+            if (!result.participant_id || result.is_new || result.dry_run) {
+                this.showSearchError('Participant not found');
+                return;
+            }
+
+            this.pendingLookupName = name;
+            this.pendingLookupParticipant = result;
+            this.renderSearchResultCard(result);
+        } catch (lookupError) {
+            console.warn('Participant search failed:', lookupError);
+            this.showSearchError('Could not reach the server. Is it running?');
+        } finally {
+            this.participantLookupPending = false;
+            if (this.participantSearchButton) {
+                this.participantSearchButton.disabled = false;
+                this.participantSearchButton.textContent = 'Search';
+            }
+        }
+    }
+
+    async confirmSearchParticipant() {
+        if (!this.pendingLookupName || !this.pendingLookupParticipant) {
+            this.showSearchError('Search for a participant first.');
+            return;
+        }
+
+        const pending = this.pendingLookupParticipant;
+        if (this.participantSearchConfirmButton) {
+            this.participantSearchConfirmButton.disabled = true;
+            this.participantSearchConfirmButton.textContent = 'Confirming\u2026';
+        }
+
+        try {
+            const { ok, error, result } = await this.postParticipantResolve({
+                name: this.pendingLookupName,
+                require_existing: true,
+                age: pending.age,
+                gender: pending.gender,
+                handedness: pending.handedness,
+                notes: pending.notes
+            });
+
+            if (!ok) {
+                this.showSearchError(error);
+                return;
+            }
+
+            this.finalizeParticipantSelection(result);
+        } catch (confirmError) {
+            console.warn('Participant confirm failed:', confirmError);
+            this.showSearchError('Could not reach the server. Is it running?');
+        } finally {
+            if (this.participantSearchConfirmButton) {
+                this.participantSearchConfirmButton.disabled = false;
+                this.participantSearchConfirmButton.textContent = 'Confirm participant';
+            }
+        }
+    }
+
+    async registerNewParticipant() {
+        if (!this.participantNewNameInput || this.participantLookupPending) return;
+
+        const name = this.participantNewNameInput.value.trim();
+        this.showNewError('');
+        if (name.length < 2) {
+            this.showNewError('Enter at least two characters.');
+            return;
+        }
+
+        const demographics = this.readParticipantDemographicsFromForm('new');
+
+        this.participantLookupPending = true;
+        if (this.participantNewRegisterButton) {
+            this.participantNewRegisterButton.disabled = true;
+            this.participantNewRegisterButton.textContent = 'Registering\u2026';
+        }
+
+        try {
+            const { ok, error, result } = await this.postParticipantResolve({
+                name,
+                require_existing: false,
+                ...demographics
+            });
+
+            if (!ok) {
+                const locked = error && error.toLowerCase().includes('database is locked');
+                this.showNewError(
+                    locked
+                        ? 'Database is locked — close DB Browser or any app viewing the database, then try again.'
+                        : error
+                );
+                return;
+            }
+
+            if (!result.is_new) {
+                this.showNewError(
+                    `Already enrolled as ${result.participant_code}. Use Past participant.`
+                );
+                return;
+            }
+
+            this.finalizeParticipantSelection(result);
+        } catch (registerError) {
+            console.warn('Participant registration failed:', registerError);
+            this.showNewError('Could not reach the server. Is it running?');
+        } finally {
+            this.participantLookupPending = false;
+            if (this.participantNewRegisterButton) {
+                this.participantNewRegisterButton.disabled = false;
+                this.participantNewRegisterButton.textContent = 'Register participant';
+            }
+        }
+    }
+
+    resetParticipantLookup() {
+        this.resolvedParticipant = null;
+        this.participantConfirmed = false;
+        this.pendingLookupName = null;
+        this.pendingLookupParticipant = null;
+        this.data.participant_id = null;
+        this.participantMode = 'search';
+
+        if (this.participantSearchTab) {
+            this.participantSearchTab.classList.add('session-info__mode-tab--active');
+            this.participantSearchTab.setAttribute('aria-selected', 'true');
+        }
+        if (this.participantNewTab) {
+            this.participantNewTab.classList.remove('session-info__mode-tab--active');
+            this.participantNewTab.setAttribute('aria-selected', 'false');
+        }
+
+        this.setParticipantLookupPanelsVisible(true);
+        this.clearSearchResultCard();
+        if (this.participantConfirmedPanel) {
+            this.participantConfirmedPanel.hidden = true;
+        }
+        if (this.participantSearchNameInput) {
+            this.participantSearchNameInput.value = '';
+        }
+        if (this.participantNewNameInput) {
+            this.participantNewNameInput.value = '';
+        }
+        this.clearParticipantDemographicsForm('new');
+        this.showSearchError('');
+        this.showNewError('');
+        this.validate();
+    }
+
     /**
      * Load participants from localStorage
      */

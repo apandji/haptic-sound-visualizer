@@ -2,23 +2,47 @@
 """
 HTTP Server for Haptic Research
 
-Serves static files and handles API requests for:
-- Listing audio files
-- Saving session data to SQLite database
-- Managing participants, locations, and tags
+Serves static files and handles API requests. Optional WashU Entra RBAC via AUTH_REQUIRED=true.
 """
 
-import http.server
-import socketserver
+from __future__ import annotations
+
 import json
 import os
-from urllib.parse import urlparse, parse_qs
+from pathlib import Path
 
-PORT = 8000
-HOST = '127.0.0.1'  # localhost only — avoids exposing PII APIs on the lab LAN
+from flask import Flask, jsonify, request, send_from_directory
+
+from auth import (
+    api_me,
+    enforce_request_auth,
+    init_auth,
+    log_audit,
+    require_coordinator_for_new_participant,
+)
+from auth_config import auth_required
+
+ROOT = Path(__file__).resolve().parent
+
+
+def _load_env_file() -> None:
+    env_path = ROOT / '.env'
+    if not env_path.is_file():
+        return
+    for line in env_path.read_text(encoding='utf-8').splitlines():
+        line = line.strip()
+        if not line or line.startswith('#') or '=' not in line:
+            continue
+        key, _, value = line.partition('=')
+        os.environ.setdefault(key.strip(), value.strip().strip('"').strip("'"))
+
+
+_load_env_file()
+
+PORT = int(os.environ.get('PORT', '8000'))
+HOST = os.environ.get('HOST', '127.0.0.1')
 AUDIO_DIR = 'audio_files'
 
-# Import database handler
 try:
     from db_handler import (
         save_session_data,
@@ -35,300 +59,334 @@ try:
         get_pattern_tag_state,
         save_pattern_tag_state,
         set_trial_analyst_notes,
-        get_pattern_survey_counts
+        get_pattern_survey_counts,
+        resolve_participant_from_name,
     )
+    from participant_ids import is_pepper_configured
+
     DB_AVAILABLE = True
-except ImportError as e:
-    print(f"Warning: Database handler not available: {e}")
+except ImportError as exc:
+    print(f'Warning: Database handler not available: {exc}')
     DB_AVAILABLE = False
 
+    def is_pepper_configured() -> bool:
+        return False
 
-class Handler(http.server.SimpleHTTPRequestHandler):
-    def send_json_response(self, data, status=200):
-        """Send JSON response."""
-        self.send_response(status)
-        self.send_header('Content-Type', 'application/json')
-        self.end_headers()
-        self.wfile.write(json.dumps(data).encode())
 
-    def do_GET(self):
-        """Handle GET requests."""
-        parsed_path = urlparse(self.path)
-        path = parsed_path.path
+app = Flask(__name__)
+init_auth(app)
 
-        if path == '/api/list-audio-files':
-            files = []
-            if os.path.exists(AUDIO_DIR):
-                for filename in sorted(os.listdir(AUDIO_DIR)):
-                    if filename.lower().endswith(('.mp3', '.wav', '.ogg', '.m4a')):
-                        filepath = os.path.join(AUDIO_DIR, filename)
-                        if os.path.isfile(filepath):
-                            files.append({
-                                'name': filename,
-                                'path': f'/audio_files/{filename}',
-                                'size': os.path.getsize(filepath)
-                            })
-            self.send_json_response(files)
 
-        elif path == '/api/tags':
-            if DB_AVAILABLE:
-                tags = get_all_tags()
-                self.send_json_response(tags)
-            else:
-                self.send_json_response({'error': 'Database not available'}, 500)
+@app.before_request
+def _auth_gate():
+    blocked = enforce_request_auth()
+    if blocked is not None:
+        return blocked
 
-        elif path == '/api/locations':
-            if DB_AVAILABLE:
-                locations = get_all_locations()
-                self.send_json_response(locations)
-            else:
-                self.send_json_response({'error': 'Database not available'}, 500)
 
-        elif path == '/api/participants':
-            if DB_AVAILABLE:
-                participants = get_all_participants()
-                self.send_json_response(participants)
-            else:
-                self.send_json_response({'error': 'Database not available'}, 500)
+@app.route('/api/me')
+def route_me():
+    return api_me()
 
-        elif path == '/api/survey/custom-actions':
-            if DB_AVAILABLE:
-                self.send_json_response({'actions': get_known_custom_actions()})
-            else:
-                self.send_json_response({'error': 'Database not available'}, 500)
 
-        elif path == '/api/analysis/pattern-metadata':
-            if DB_AVAILABLE:
-                self.send_json_response(get_pattern_metadata_catalog())
-            else:
-                self.send_json_response({'error': 'Database not available'}, 500)
+@app.route('/api/status')
+def route_status():
+    audio_count = 0
+    if os.path.exists(AUDIO_DIR):
+        audio_count = len([
+            f for f in os.listdir(AUDIO_DIR)
+            if f.lower().endswith(('.mp3', '.wav', '.ogg', '.m4a'))
+        ])
+    return jsonify({
+        'status': 'ok',
+        'database_available': DB_AVAILABLE,
+        'participant_lookup_available': DB_AVAILABLE and is_pepper_configured(),
+        'auth_required': auth_required(),
+        'audio_dir': AUDIO_DIR,
+        'audio_files_count': audio_count,
+    })
 
-        elif path == '/api/analysis/sessions':
-            if DB_AVAILABLE:
-                query_params = parse_qs(parsed_path.query)
-                limit_param = query_params.get('limit', [None])[0]
-                try:
-                    limit = int(limit_param) if limit_param else None
-                except (TypeError, ValueError):
-                    self.send_json_response({'error': 'Invalid limit parameter'}, 400)
-                    return
-                sessions = get_analysis_sessions(limit=limit)
-                self.send_json_response(sessions)
-            else:
-                self.send_json_response({'error': 'Database not available'}, 500)
 
-        elif path == '/api/analysis/tags':
-            if DB_AVAILABLE:
-                self.send_json_response({'tags': get_analysis_tags()})
-            else:
-                self.send_json_response({'error': 'Database not available'}, 500)
-
-        elif path == '/api/analysis/pattern-tags':
-            if DB_AVAILABLE:
-                self.send_json_response(get_pattern_tag_state())
-            else:
-                self.send_json_response({'error': 'Database not available'}, 500)
-
-        elif path == '/api/timing-stats':
-            if DB_AVAILABLE:
-                self.send_json_response(get_session_timing_stats())
-            else:
-                self.send_json_response({'error': 'Database not available'}, 500)
-
-        elif path == '/api/pattern-stats':
-            if DB_AVAILABLE:
-                query_params = parse_qs(parsed_path.query)
-                participant_param = query_params.get('participant_id', [None])[0]
-                try:
-                    participant_id = int(participant_param) if participant_param else None
-                except (TypeError, ValueError):
-                    self.send_json_response({'error': 'Invalid participant_id parameter'}, 400)
-                    return
-                self.send_json_response(get_pattern_survey_counts(participant_id))
-            else:
-                self.send_json_response({'error': 'Database not available'}, 500)
-
-        elif path == '/api/status':
-            self.send_json_response({
-                'status': 'ok',
-                'database_available': DB_AVAILABLE,
-                'audio_dir': AUDIO_DIR,
-                'audio_files_count': len([f for f in os.listdir(AUDIO_DIR) if f.lower().endswith(('.mp3', '.wav', '.ogg', '.m4a'))]) if os.path.exists(AUDIO_DIR) else 0
-            })
-
-        else:
-            super().do_GET()
-
-    def do_POST(self):
-        """Handle POST requests."""
-        parsed_path = urlparse(self.path)
-        path = parsed_path.path
-
-        # Read request body
-        content_length = int(self.headers.get('Content-Length', 0))
-        body = self.rfile.read(content_length).decode('utf-8') if content_length > 0 else '{}'
-
-        try:
-            data = json.loads(body)
-        except json.JSONDecodeError as e:
-            self.send_json_response({'error': f'Invalid JSON: {e}'}, 400)
-            return
-
-        if path == '/api/session':
-            # Save session data to database
-            if not DB_AVAILABLE:
-                self.send_json_response({'error': 'Database not available'}, 500)
-                return
-
-            try:
-                result = save_session_data(data)
-                if result['success']:
-                    self.send_json_response(result, 200)
-                else:
-                    self.send_json_response(result, 500)
-            except Exception as e:
-                import traceback
-                self.send_json_response({
-                    'error': str(e),
-                    'traceback': traceback.format_exc()
-                }, 500)
-
-        elif path == '/api/analysis/trials/exclude':
-            if not DB_AVAILABLE:
-                self.send_json_response({'error': 'Database not available'}, 500)
-                return
-
-            trial_id = data.get('trialId')
-            excluded = data.get('excludeFromAnalysis')
-            if trial_id is None or excluded is None:
-                self.send_json_response({'error': 'trialId and excludeFromAnalysis are required'}, 400)
-                return
-
-            try:
-                trial_id_int = int(trial_id)
-            except (TypeError, ValueError):
-                self.send_json_response({'error': 'Invalid trialId'}, 400)
-                return
-
-            result = set_trial_exclude_from_analysis(trial_id_int, bool(excluded))
-            status = 200 if result.get('success') else 404
-            self.send_json_response(result, status)
-
-        elif path == '/api/analysis/tags':
-            if not DB_AVAILABLE:
-                self.send_json_response({'error': 'Database not available'}, 500)
-                return
-
-            result = create_analysis_tag(data.get('name'), data.get('color'))
-            status = 200 if result.get('success') else 400
-            self.send_json_response(result, status)
-
-        elif path == '/api/analysis/pattern-tags':
-            if not DB_AVAILABLE:
-                self.send_json_response({'error': 'Database not available'}, 500)
-                return
-
-            pattern_name = data.get('patternName')
-            if not pattern_name or not str(pattern_name).strip():
-                self.send_json_response({'error': 'patternName is required'}, 400)
-                return
-
-            result = save_pattern_tag_state(
-                pattern_name=str(pattern_name),
-                tag_ids=data.get('tagIds') or [],
-                notes=data.get('notes')
-            )
-            status = 200 if result.get('success') else 400
-            self.send_json_response(result, status)
-
-        elif path == '/api/analysis/trials/notes':
-            if not DB_AVAILABLE:
-                self.send_json_response({'error': 'Database not available'}, 500)
-                return
-
-            trial_id = data.get('trialId')
-            try:
-                trial_id_int = int(trial_id)
-            except (TypeError, ValueError):
-                self.send_json_response({'error': 'Invalid trialId'}, 400)
-                return
-
-            result = set_trial_analyst_notes(trial_id_int, data.get('analystNotes'))
-            status = 200 if result.get('success') else 404
-            self.send_json_response(result, status)
-
-        elif path == '/api/sessions/bulk':
-            # Save multiple sessions (for syncing localStorage data)
-            if not DB_AVAILABLE:
-                self.send_json_response({'error': 'Database not available'}, 500)
-                return
-
-            sessions = data.get('sessions', [])
-            results = []
-            for session_data in sessions:
-                try:
-                    result = save_session_data(session_data)
-                    results.append(result)
-                except Exception as e:
-                    results.append({
-                        'success': False,
-                        'error': str(e),
-                        'sessionId': session_data.get('sessionId', 'unknown')
+@app.route('/api/list-audio-files')
+def route_list_audio():
+    files = []
+    if os.path.exists(AUDIO_DIR):
+        for filename in sorted(os.listdir(AUDIO_DIR)):
+            if filename.lower().endswith(('.mp3', '.wav', '.ogg', '.m4a')):
+                filepath = os.path.join(AUDIO_DIR, filename)
+                if os.path.isfile(filepath):
+                    files.append({
+                        'name': filename,
+                        'path': f'/audio_files/{filename}',
+                        'size': os.path.getsize(filepath),
                     })
+    return jsonify(files)
 
-            success_count = sum(1 for r in results if r.get('success'))
-            self.send_json_response({
-                'success': success_count == len(sessions),
-                'total': len(sessions),
-                'saved': success_count,
-                'failed': len(sessions) - success_count,
-                'results': results
+
+@app.route('/api/tags')
+def route_tags():
+    if not DB_AVAILABLE:
+        return jsonify({'error': 'Database not available'}), 500
+    return jsonify(get_all_tags())
+
+
+@app.route('/api/locations')
+def route_locations():
+    if not DB_AVAILABLE:
+        return jsonify({'error': 'Database not available'}), 500
+    return jsonify(get_all_locations())
+
+
+@app.route('/api/participants')
+def route_participants():
+    if not DB_AVAILABLE:
+        return jsonify({'error': 'Database not available'}), 500
+    log_audit('participants.list')
+    return jsonify(get_all_participants())
+
+
+@app.route('/api/survey/custom-actions')
+def route_custom_actions():
+    if not DB_AVAILABLE:
+        return jsonify({'error': 'Database not available'}), 500
+    return jsonify({'actions': get_known_custom_actions()})
+
+
+@app.route('/api/analysis/pattern-metadata')
+def route_pattern_metadata():
+    if not DB_AVAILABLE:
+        return jsonify({'error': 'Database not available'}), 500
+    return jsonify(get_pattern_metadata_catalog())
+
+
+@app.route('/api/analysis/sessions')
+def route_analysis_sessions():
+    if not DB_AVAILABLE:
+        return jsonify({'error': 'Database not available'}), 500
+    limit_param = request.args.get('limit')
+    try:
+        limit = int(limit_param) if limit_param else None
+    except (TypeError, ValueError):
+        return jsonify({'error': 'Invalid limit parameter'}), 400
+    log_audit('analysis.sessions.read', resource=f'limit={limit}')
+    return jsonify(get_analysis_sessions(limit=limit))
+
+
+@app.route('/api/analysis/tags', methods=['GET'])
+def route_analysis_tags_get():
+    if not DB_AVAILABLE:
+        return jsonify({'error': 'Database not available'}), 500
+    return jsonify({'tags': get_analysis_tags()})
+
+
+@app.route('/api/analysis/pattern-tags', methods=['GET'])
+def route_pattern_tags_get():
+    if not DB_AVAILABLE:
+        return jsonify({'error': 'Database not available'}), 500
+    return jsonify(get_pattern_tag_state())
+
+
+@app.route('/api/timing-stats')
+def route_timing_stats():
+    if not DB_AVAILABLE:
+        return jsonify({'error': 'Database not available'}), 500
+    return jsonify(get_session_timing_stats())
+
+
+@app.route('/api/pattern-stats')
+def route_pattern_stats():
+    if not DB_AVAILABLE:
+        return jsonify({'error': 'Database not available'}), 500
+    participant_param = request.args.get('participant_id')
+    try:
+        participant_id = int(participant_param) if participant_param else None
+    except (TypeError, ValueError):
+        return jsonify({'error': 'Invalid participant_id parameter'}), 400
+    return jsonify(get_pattern_survey_counts(participant_id))
+
+
+@app.route('/api/session', methods=['POST'])
+def route_save_session():
+    if not DB_AVAILABLE:
+        return jsonify({'error': 'Database not available'}), 500
+    data = request.get_json(silent=True) or {}
+    try:
+        result = save_session_data(data)
+        if result.get('success'):
+            log_audit('session.save', resource=data.get('sessionId'))
+            return jsonify(result), 200
+        return jsonify(result), 500
+    except Exception as exc:
+        import traceback
+        return jsonify({'error': str(exc), 'traceback': traceback.format_exc()}), 500
+
+
+@app.route('/api/analysis/trials/exclude', methods=['POST'])
+def route_trial_exclude():
+    if not DB_AVAILABLE:
+        return jsonify({'error': 'Database not available'}), 500
+    data = request.get_json(silent=True) or {}
+    trial_id = data.get('trialId')
+    excluded = data.get('excludeFromAnalysis')
+    if trial_id is None or excluded is None:
+        return jsonify({'error': 'trialId and excludeFromAnalysis are required'}), 400
+    try:
+        trial_id_int = int(trial_id)
+    except (TypeError, ValueError):
+        return jsonify({'error': 'Invalid trialId'}), 400
+    result = set_trial_exclude_from_analysis(trial_id_int, bool(excluded))
+    status = 200 if result.get('success') else 404
+    if result.get('success'):
+        log_audit('analysis.trial.exclude', resource=f'trial_id={trial_id_int}')
+    return jsonify(result), status
+
+
+@app.route('/api/analysis/tags', methods=['POST'])
+def route_analysis_tags_post():
+    if not DB_AVAILABLE:
+        return jsonify({'error': 'Database not available'}), 500
+    data = request.get_json(silent=True) or {}
+    result = create_analysis_tag(data.get('name'), data.get('color'))
+    status = 200 if result.get('success') else 400
+    return jsonify(result), status
+
+
+@app.route('/api/analysis/pattern-tags', methods=['POST'])
+def route_pattern_tags_post():
+    if not DB_AVAILABLE:
+        return jsonify({'error': 'Database not available'}), 500
+    data = request.get_json(silent=True) or {}
+    pattern_name = data.get('patternName')
+    if not pattern_name or not str(pattern_name).strip():
+        return jsonify({'error': 'patternName is required'}), 400
+    result = save_pattern_tag_state(
+        pattern_name=str(pattern_name),
+        tag_ids=data.get('tagIds') or [],
+        notes=data.get('notes'),
+    )
+    status = 200 if result.get('success') else 400
+    return jsonify(result), status
+
+
+@app.route('/api/analysis/trials/notes', methods=['POST'])
+def route_trial_notes():
+    if not DB_AVAILABLE:
+        return jsonify({'error': 'Database not available'}), 500
+    data = request.get_json(silent=True) or {}
+    trial_id = data.get('trialId')
+    try:
+        trial_id_int = int(trial_id)
+    except (TypeError, ValueError):
+        return jsonify({'error': 'Invalid trialId'}), 400
+    result = set_trial_analyst_notes(trial_id_int, data.get('analystNotes'))
+    status = 200 if result.get('success') else 404
+    return jsonify(result), status
+
+
+@app.route('/api/participants/resolve', methods=['POST'])
+def route_participants_resolve():
+    if not DB_AVAILABLE:
+        return jsonify({'success': False, 'error': 'Database not available'}), 500
+    if not is_pepper_configured():
+        return jsonify({
+            'success': False,
+            'error': 'Participant lookup not configured. Run scripts/generate_study_pepper.sh on this machine.',
+        }), 503
+
+    data = request.get_json(silent=True) or {}
+    blocked = require_coordinator_for_new_participant(data)
+    if blocked is not None:
+        return blocked
+
+    name = (data.get('name') or '').strip()
+    if not name:
+        return jsonify({'success': False, 'error': 'Name is required'}), 400
+
+    age_raw = data.get('age')
+    age = None
+    if age_raw is not None and age_raw != '':
+        try:
+            age = int(age_raw)
+        except (TypeError, ValueError):
+            return jsonify({'success': False, 'error': 'Invalid age'}), 400
+
+    notes = data.get('notes')
+    if notes is not None:
+        notes = str(notes).strip() or None
+
+    try:
+        result = resolve_participant_from_name(
+            name,
+            age=age,
+            gender=data.get('gender') or None,
+            handedness=data.get('handedness') or None,
+            notes=notes,
+            dry_run=bool(data.get('dry_run')),
+            require_existing=bool(data.get('require_existing')),
+        )
+    except RuntimeError as exc:
+        return jsonify({'success': False, 'error': str(exc)}), 503
+    except ValueError as exc:
+        return jsonify({'success': False, 'error': str(exc)}), 400
+
+    status = 200 if result.get('success') else 400
+    if result.get('success'):
+        action = 'participants.resolve.existing' if data.get('require_existing') else 'participants.resolve.enroll'
+        log_audit(action, resource=result.get('participant_code'))
+    return jsonify(result), status
+
+
+@app.route('/api/sessions/bulk', methods=['POST'])
+def route_sessions_bulk():
+    if not DB_AVAILABLE:
+        return jsonify({'error': 'Database not available'}), 500
+    data = request.get_json(silent=True) or {}
+    sessions = data.get('sessions', [])
+    results = []
+    for session_data in sessions:
+        try:
+            results.append(save_session_data(session_data))
+        except Exception as exc:
+            results.append({
+                'success': False,
+                'error': str(exc),
+                'sessionId': session_data.get('sessionId', 'unknown'),
             })
+    success_count = sum(1 for r in results if r.get('success'))
+    if success_count:
+        log_audit('sessions.bulk', resource=f'count={success_count}')
+    return jsonify({
+        'success': success_count == len(sessions),
+        'total': len(sessions),
+        'saved': success_count,
+        'failed': len(sessions) - success_count,
+        'results': results,
+    })
 
-        else:
-            self.send_json_response({'error': 'Not found'}, 404)
+
+@app.route('/')
+def route_index():
+    return send_from_directory(ROOT, 'index.html')
 
 
-class ThreadingHTTPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
-    daemon_threads = True
+@app.route('/<path:filename>')
+def route_static(filename: str):
+    return send_from_directory(ROOT, filename)
 
 
 if __name__ == '__main__':
     os.makedirs(AUDIO_DIR, exist_ok=True)
-    ThreadingHTTPServer.allow_reuse_address = True
 
-    print("=" * 50)
-    print("Haptic Research Server")
-    print("=" * 50)
-    print(f"Database available: {DB_AVAILABLE}")
+    print('=' * 50)
+    print('Haptic Research Server')
+    print('=' * 50)
+    print(f'Database available: {DB_AVAILABLE}')
+    print(f'Auth required: {auth_required()}')
+    if auth_required():
+        from auth import entra_configured
+        print(f'Entra configured: {entra_configured()}')
     print()
+    print(f'Server running at http://{HOST}:{PORT}/')
+    print('Press Ctrl+C to stop')
 
-    with ThreadingHTTPServer((HOST, PORT), Handler) as httpd:
-        print(f"Server running at http://localhost:{PORT}/")
-        print()
-        print("API Endpoints:")
-        print(f"  GET  /api/list-audio-files  - List audio files")
-        print(f"  GET  /api/tags              - Get all tags")
-        print(f"  GET  /api/locations         - Get all locations")
-        print(f"  GET  /api/participants      - Get all participants")
-        print(f"  GET  /api/survey/custom-actions - Known custom survey actions")
-        print(f"  GET  /api/analysis/pattern-metadata - Pattern audio metadata for Analyze")
-        print(f"  GET  /api/analysis/sessions - Get sessions for Analyze page")
-        print(f"  GET  /api/analysis/tags     - Analyst classification tag vocabulary")
-        print(f"  POST /api/analysis/tags     - Create a custom analyst tag")
-        print(f"  GET  /api/analysis/pattern-tags - Tag assignments + notes per pattern")
-        print(f"  POST /api/analysis/pattern-tags - Save tags + notes for a pattern")
-        print(f"  POST /api/analysis/trials/notes - Save analyst note on a trial")
-        print(f"  GET  /api/timing-stats      - Empirical session timing stats")
-        print(f"  GET  /api/pattern-stats     - Per-pattern trial counts for queue weighting")
-        print(f"  POST /api/analysis/trials/exclude - Exclude/include trial in analysis")
-        print(f"  GET  /api/status            - Server status")
-        print(f"  POST /api/session           - Save session data")
-        print(f"  POST /api/sessions/bulk     - Save multiple sessions")
-        print()
-        print("Press Ctrl+C to stop")
-
-        try:
-            httpd.serve_forever()
-        except KeyboardInterrupt:
-            print("\nServer stopped")
+    app.run(host=HOST, port=PORT, debug=False, threaded=True)

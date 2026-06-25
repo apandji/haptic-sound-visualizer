@@ -391,7 +391,10 @@
             hasSeenLiveEegReadingThisSession = false;
             lastEegReadingAt = null;
             // Get participant and location details from sessionInfo
-            const participant = sessionInfo.participants.find(p => p.participant_id === sessionData.data.participant_id);
+            const participant = (typeof sessionInfo.getResolvedParticipant === 'function'
+                ? sessionInfo.getResolvedParticipant()
+                : null)
+                || sessionInfo.participants.find(p => p.participant_id === sessionData.data.participant_id);
             const location = sessionInfo.locations.find(l => l.location_id === sessionData.data.location_id);
 
             // Prepare full session data structure

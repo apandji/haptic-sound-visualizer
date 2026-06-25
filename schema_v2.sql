@@ -5,6 +5,7 @@
 CREATE TABLE participants (
     participant_id    INTEGER PRIMARY KEY AUTOINCREMENT,
     participant_code  TEXT UNIQUE NOT NULL,
+    lookup_hmac       TEXT UNIQUE,
     age               INTEGER,
     gender            TEXT,
     handedness        TEXT,
