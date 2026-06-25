@@ -8,4 +8,8 @@
             
             await loadPatternMetadata();
             await loadFileList();
+
+            if (typeof offerCheckpointRestoreIfPresent === 'function') {
+                offerCheckpointRestoreIfPresent();
+            }
         });

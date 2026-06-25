@@ -363,11 +363,23 @@ def create_trial_survey_response(conn, trial_id: int, survey_response: Dict[str,
 PATTERN_METADATA_PATH = Path(__file__).parent / 'pattern_metadata.json'
 
 
+def _normalize_tag_color(color: Optional[str]) -> Optional[str]:
+    """Accept only #rrggbb hex colors for analyst tag styling."""
+    if not color:
+        return None
+    cleaned = str(color).strip()
+    if re.fullmatch(r'#[0-9a-fA-F]{6}', cleaned):
+        return cleaned.lower()
+    return None
+
+
 def get_connection():
     """Get database connection with foreign keys enabled."""
     conn = sqlite3.connect(str(DB_PATH))
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
+    conn.execute("PRAGMA journal_mode = WAL")
+    conn.execute("PRAGMA busy_timeout = 5000")
     ensure_analysis_schema(conn)
     return conn
 
@@ -586,15 +598,16 @@ def create_analysis_tag(name: str, color: Optional[str] = None) -> Dict[str, Any
         if existing:
             return {'success': True, 'tag': _tag_row_to_payload(existing), 'existed': True}
 
-        if not color:
+        normalized_color = _normalize_tag_color(color)
+        if not normalized_color:
             custom_count = conn.execute(
                 "SELECT COUNT(*) FROM analysis_tags WHERE is_default = 0"
             ).fetchone()[0]
-            color = CUSTOM_TAG_PALETTE[custom_count % len(CUSTOM_TAG_PALETTE)]
+            normalized_color = CUSTOM_TAG_PALETTE[custom_count % len(CUSTOM_TAG_PALETTE)]
 
         cursor = conn.execute(
             "INSERT INTO analysis_tags (name, color, is_default) VALUES (?, ?, 0)",
-            (cleaned_name, color)
+            (cleaned_name, normalized_color)
         )
         conn.commit()
         row = conn.execute(

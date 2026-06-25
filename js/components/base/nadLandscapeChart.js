@@ -97,7 +97,7 @@ class NadLandscapeChart {
         const items = ['<span class="nad-landscape-chart__popover-label">Tags</span>'];
         this.tagsById.forEach(tag => {
             items.push(
-                `<span class="nad-landscape-chart__legend-item"><span class="nad-landscape-chart__legend-dot" style="--dot-color:${tag.color}"></span>${this._escape(tag.name)}</span>`
+                `<span class="nad-landscape-chart__legend-item"><span class="nad-landscape-chart__legend-dot" style="--dot-color:${window.AppUI?.sanitizeCssColor ? window.AppUI.sanitizeCssColor(tag.color) : '#888888'}"></span>${this._escape(tag.name)}</span>`
             );
         });
         items.push(`<span class="nad-landscape-chart__legend-item"><span class="nad-landscape-chart__legend-dot" style="--dot-color:${NadLandscapeChart.multiTagColor()}"></span>Multiple tags</span>`);

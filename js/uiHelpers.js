@@ -22,11 +22,17 @@
     </svg>`;
 
     function escapeHtml(text) {
-        return String(text)
+        return String(text ?? '')
             .replace(/&/g, '&amp;')
             .replace(/</g, '&lt;')
             .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;');
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    function sanitizeCssColor(color, fallback = 'var(--color-accent)') {
+        const value = String(color || '').trim();
+        return /^#[0-9a-fA-F]{6}$/.test(value) ? value.toLowerCase() : fallback;
     }
 
     function loadingHtml(message = 'Loading…') {
@@ -119,25 +125,40 @@
 
     function showBanner(options = {}) {
         const banner = ensureBanner();
-        const type = options.type === 'error' ? 'error' : 'info';
+        const type = ['error', 'warning', 'info'].includes(options.type) ? options.type : 'info';
         const message = options.message || '';
         const actionLabel = options.actionLabel;
         const onAction = options.onAction;
+        const secondaryActionLabel = options.secondaryActionLabel;
+        const onSecondaryAction = options.onSecondaryAction;
+        const onDismiss = options.onDismiss;
 
         banner.className = `app-banner app-banner--${type}`;
         banner.innerHTML = `
             <span class="app-banner__message">${escapeHtml(message)}</span>
             ${actionLabel ? `<button type="button" class="app-banner__action">${escapeHtml(actionLabel)}</button>` : ''}
+            ${secondaryActionLabel ? `<button type="button" class="app-banner__action app-banner__action--secondary">${escapeHtml(secondaryActionLabel)}</button>` : ''}
             <button type="button" class="app-banner__dismiss" aria-label="Dismiss">×</button>
         `;
         banner.hidden = false;
 
-        banner.querySelector('.app-banner__dismiss')?.addEventListener('click', hideBanner);
+        banner.querySelector('.app-banner__dismiss')?.addEventListener('click', () => {
+            if (typeof onDismiss === 'function') onDismiss();
+            hideBanner();
+        });
 
-        const actionBtn = banner.querySelector('.app-banner__action');
+        const actionBtn = banner.querySelector('.app-banner__action:not(.app-banner__action--secondary)');
         if (actionBtn && typeof onAction === 'function') {
             actionBtn.addEventListener('click', () => {
                 onAction();
+                hideBanner();
+            });
+        }
+
+        const secondaryBtn = banner.querySelector('.app-banner__action--secondary');
+        if (secondaryBtn && typeof onSecondaryAction === 'function') {
+            secondaryBtn.addEventListener('click', () => {
+                onSecondaryAction();
                 hideBanner();
             });
         }
@@ -262,6 +283,7 @@
 
     window.AppUI = {
         escapeHtml,
+        sanitizeCssColor,
         loadingHtml,
         emptyHtml,
         errorHtml,

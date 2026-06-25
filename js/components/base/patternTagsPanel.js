@@ -98,7 +98,7 @@ class PatternTagsPanel {
             return `
                 <button type="button"
                     class="pattern-tags__chip ${on ? 'pattern-tags__chip--on' : ''} ${suggested ? 'pattern-tags__chip--suggested' : ''} ${matches ? 'pattern-tags__chip--match' : ''} ${dimmed ? 'pattern-tags__chip--dim' : ''}"
-                    style="--tag-color:${tag.color}"
+                    style="--tag-color:${window.AppUI?.sanitizeCssColor ? window.AppUI.sanitizeCssColor(tag.color) : (tag.color || 'var(--color-accent)')}"
                     data-tag-id="${tag.id}"
                     aria-pressed="${on}"
                     ${suggested ? 'title="Suggested by the data — click to apply"' : ''}>
@@ -269,11 +269,8 @@ class PatternTagsPanel {
     }
 
     _escape(value) {
-        return String(value ?? '')
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;');
+        if (window.AppUI?.escapeHtml) return window.AppUI.escapeHtml(value);
+        return String(value ?? '');
     }
 }
 

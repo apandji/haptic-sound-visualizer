@@ -12,6 +12,11 @@
         mainPlaceholder: null,
         visualizerContainer: null,
         visualizerInitRetries: 0,
-        maxVisualizerRetries: 30
+        maxVisualizerRetries: 30,
+        previewMode: 'single',
+        multiAudioMixer: null,
+        multiAudioPanel: null,
+        activeMultiSlotIndex: 2,
+        blendStrategyId: 'layered'
     };
 })();

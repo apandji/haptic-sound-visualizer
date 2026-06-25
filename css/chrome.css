@@ -578,6 +578,15 @@ a.segmented-control__item {
     color: var(--color-text);
 }
 
+.app-banner--warning {
+    background: var(--color-warning-bg, #fef3c7);
+    color: var(--color-warning-text, #92400e);
+}
+
+.app-banner__action--secondary {
+    background: transparent;
+}
+
 .app-banner__message {
     flex: 1;
 }

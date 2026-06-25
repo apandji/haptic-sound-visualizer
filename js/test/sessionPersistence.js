@@ -24,15 +24,55 @@ function isPersistableTrial(trial) {
         function checkpointActiveSession() {
             if (!testSession || !testSession.isActive) return;
             try {
-                const payload = testSession.getSessionData();
-                localStorage.setItem(CHECKPOINT_KEY, JSON.stringify({
-                    savedAt: new Date().toISOString(),
-                    ...payload
-                }));
+                const payload = typeof testSession.exportCheckpoint === 'function'
+                    ? testSession.exportCheckpoint()
+                    : testSession.getSessionData();
+                localStorage.setItem(CHECKPOINT_KEY, JSON.stringify(payload));
             } catch (error) {
                 console.warn('Could not checkpoint active session:', error);
             }
         }
+
+        function readSessionCheckpoint() {
+            try {
+                const raw = localStorage.getItem(CHECKPOINT_KEY);
+                return raw ? JSON.parse(raw) : null;
+            } catch (error) {
+                console.warn('Could not read session checkpoint:', error);
+                return null;
+            }
+        }
+
+        function offerCheckpointRestoreIfPresent() {
+            const checkpoint = readSessionCheckpoint();
+            if (!checkpoint || !checkpoint.isActive || checkpoint.isAborted) return;
+
+            const completed = (checkpoint.trials || []).filter(isPersistableTrial).length;
+            const savedAt = checkpoint.savedAt
+                ? new Date(checkpoint.savedAt).toLocaleString()
+                : 'recently';
+
+            const interruptedDuringSurvey = checkpoint.currentPhase === 'survey';
+            const resumeHint = interruptedDuringSurvey
+                ? 'Survey will continue for the current pattern.'
+                : 'The current pattern will restart from baseline.';
+
+            window.AppUI?.showBanner?.({
+                type: 'warning',
+                message: `Interrupted test session from ${savedAt} (${completed} completed trial${completed === 1 ? '' : 's'}). ${resumeHint}`,
+                actionLabel: 'Resume',
+                onAction: () => {
+                    if (typeof window.resumeTestSessionFromCheckpoint === 'function') {
+                        window.resumeTestSessionFromCheckpoint(checkpoint);
+                    }
+                },
+                secondaryActionLabel: 'Discard',
+                onSecondaryAction: clearSessionCheckpoint,
+                onDismiss: clearSessionCheckpoint
+            });
+        }
+
+        window.offerCheckpointRestoreIfPresent = offerCheckpointRestoreIfPresent;
 
         function clearSessionCheckpoint() {
             try {

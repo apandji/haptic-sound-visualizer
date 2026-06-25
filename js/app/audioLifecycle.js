@@ -118,6 +118,11 @@
     };
 
     app.loadAndPlayFile = function loadAndPlayFile(file) {
+        if (state.previewMode === 'multi') {
+            app.assignFileToActiveMultiSlot(file);
+            return;
+        }
+
         const originalPath = file.path || `audio_files/${file.name}`;
         let audioUrl = originalPath;
         if (audioUrl.startsWith('/')) {

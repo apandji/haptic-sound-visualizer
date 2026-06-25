@@ -19,6 +19,7 @@ class PatternExplorer {
         this.showHeader = options.showHeader !== false; // Default to true
         this.showFilterButton = options.showFilterButton || false; // Show filter icon button
         this.onFilterButtonClick = options.onFilterButtonClick || null; // Called when filter button clicked
+        this.enableFileDrag = options.enableFileDrag || false;
         
         // Bound event handlers (for proper cleanup)
         this.boundHandlers = {
@@ -151,6 +152,7 @@ class PatternExplorer {
         const playButton = document.createElement('button');
         playButton.className = 'file-item-play-btn';
         playButton.dataset.filePath = file.path;
+        playButton.draggable = false;
         this.updatePlayButtonIcon(playButton, file.path === this.playingFilePath && this.isPlaying, file.name);
         
         // Prevent click event from bubbling to item
@@ -209,6 +211,10 @@ class PatternExplorer {
                 this.handleFileClick(file, item);
             }
         });
+
+        item.draggable = this.enableFileDrag;
+        item.addEventListener('dragstart', (e) => this.handleFileDragStart(e, file, item));
+        item.addEventListener('dragend', () => this.handleFileDragEnd(item));
         
         return item;
     }
@@ -273,9 +279,6 @@ class PatternExplorer {
         }
     }
     
-    /**
-     * Handle file click
-     */
     handleFileClick(file, item) {
         // Remove active from all items
         this.container.querySelectorAll('.file-item').forEach(el => {
@@ -291,7 +294,42 @@ class PatternExplorer {
             this.onFileClick(file);
         }
     }
-    
+
+    handleFileDragStart(event, file, item) {
+        if (!this.enableFileDrag) {
+            event.preventDefault();
+            return;
+        }
+
+        if (event.target.closest('.file-item-play-btn')) {
+            event.preventDefault();
+            return;
+        }
+
+        const dragType = window.MultiAudioConstants?.PATTERN_DRAG_TYPE || 'application/x-sail-pattern';
+        const payload = window.MultiAudioConstants?.serializePatternDragPayload?.(file)
+            || JSON.stringify({ name: file.name, path: file.path || `audio_files/${file.name}` });
+
+        event.dataTransfer.effectAllowed = 'copy';
+        event.dataTransfer.setData(dragType, payload);
+        event.dataTransfer.setData('text/plain', file.name);
+        item.classList.add('file-item--dragging');
+    }
+
+    handleFileDragEnd(item) {
+        item.classList.remove('file-item--dragging');
+    }
+
+    setFileDragEnabled(enabled) {
+        this.enableFileDrag = Boolean(enabled);
+        if (!this.container) return;
+
+        this.container.querySelectorAll('.file-item').forEach((item) => {
+            item.draggable = this.enableFileDrag;
+            item.classList.remove('file-item--dragging');
+        });
+    }
+
     /**
      * Show tooltip for file item
      */

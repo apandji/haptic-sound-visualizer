@@ -1,0 +1,3 @@
+phase,n_rows,avg_delta_abs,avg_theta_abs,avg_alpha_abs,avg_beta_abs,avg_gamma_abs
+baseline,3305,9.3372,4.9333,4.451,4.1914,2.2215
+stimulation,8828,1299.3311,259.0443,101.2722,136.5826,53.0698

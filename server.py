@@ -289,9 +289,13 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self.send_json_response({'error': 'Not found'}, 404)
 
 
+class ThreadingHTTPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
+    daemon_threads = True
+
+
 if __name__ == '__main__':
     os.makedirs(AUDIO_DIR, exist_ok=True)
-    socketserver.TCPServer.allow_reuse_address = True
+    ThreadingHTTPServer.allow_reuse_address = True
 
     print("=" * 50)
     print("Haptic Research Server")
@@ -299,7 +303,7 @@ if __name__ == '__main__':
     print(f"Database available: {DB_AVAILABLE}")
     print()
 
-    with socketserver.TCPServer((HOST, PORT), Handler) as httpd:
+    with ThreadingHTTPServer((HOST, PORT), Handler) as httpd:
         print(f"Server running at http://localhost:{PORT}/")
         print()
         print("API Endpoints:")

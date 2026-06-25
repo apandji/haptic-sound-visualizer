@@ -3,6 +3,11 @@
     const state = app.state;
 
     app.handleFileClick = function handleFileClick(file) {
+        if (state.previewMode === 'multi') {
+            app.assignFileToActiveMultiSlot(file);
+            return;
+        }
+
         const filePath = file.path || `audio_files/${file.name}`;
 
         if (state.currentFilePath === filePath) {
@@ -22,6 +27,11 @@
     };
 
     app.handleFilePreview = function handleFilePreview(file) {
+        if (state.previewMode === 'multi') {
+            app.assignFileToActiveMultiSlot(file);
+            return;
+        }
+
         const filePath = file.path || `audio_files/${file.name}`;
 
         if (state.currentFilePath === filePath) {
@@ -70,5 +80,7 @@
                 }
             }
         });
+
+        app.syncPatternLibraryDrag?.();
     };
 })();

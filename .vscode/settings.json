@@ -1,0 +1,9 @@
+{
+  "sqltools.connections": [
+    {
+      "name": "Haptics study (7643ha)",
+      "driver": "SQLite",
+      "database": "${workspaceFolder}/data/haptics-study/7643ha.db"
+    }
+  ]
+}

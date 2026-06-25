@@ -386,7 +386,7 @@
         /**
          * Initialize test execution flow
          */
-        function initializeTestExecution(sessionData, queueItems) {
+        function initializeTestExecution(sessionData, queueItems, checkpoint = null) {
             abortInProgress = false;
             hasSeenLiveEegReadingThisSession = false;
             lastEegReadingAt = null;
@@ -435,15 +435,24 @@
             };
 
             // Create TestSession
-            testSession = new TestSession({
-                sessionId: sessionData.sessionId,
-                queue: queueItems,
-                sessionData: fullSessionData,
-                onPhaseChange: handlePhaseChange,
-                onTrialComplete: handleTrialComplete,
-                onSessionComplete: handleSessionComplete,
-                onError: handleTestError
-            });
+            if (checkpoint) {
+                testSession = TestSession.fromCheckpoint(checkpoint, {
+                    onPhaseChange: handlePhaseChange,
+                    onTrialComplete: handleTrialComplete,
+                    onSessionComplete: handleSessionComplete,
+                    onError: handleTestError
+                });
+            } else {
+                testSession = new TestSession({
+                    sessionId: sessionData.sessionId,
+                    queue: queueItems,
+                    sessionData: fullSessionData,
+                    onPhaseChange: handlePhaseChange,
+                    onTrialComplete: handleTrialComplete,
+                    onSessionComplete: handleSessionComplete,
+                    onError: handleTestError
+                });
+            }
 
             if (!window.__testSessionUnloadGuard) {
                 window.__testSessionUnloadGuard = true;
@@ -533,9 +542,58 @@
                 }
             });
 
-            // Start the session
-            testSession.start();
+            // Start or resume the session
+            if (checkpoint) {
+                calibrationPhaseCompleted = checkpoint.currentPhase !== 'calibration';
+                testSession.resumeAfterInterruption();
+            } else {
+                testSession.start();
+            }
         }
+
+        function getCheckpointResumeMessage(phase) {
+            if (phase === 'survey') {
+                return 'Resuming the survey for this pattern.';
+            }
+            if (phase === 'calibration') {
+                return 'Restarting calibration from the beginning.';
+            }
+            if (phase === 'baseline' || phase === 'stimulation') {
+                return 'Restarting this pattern from baseline.';
+            }
+            return 'Session resumed.';
+        }
+
+        window.resumeTestSessionFromCheckpoint = function resumeTestSessionFromCheckpoint(checkpoint) {
+            if (!checkpoint?.sessionData || !Array.isArray(checkpoint.queue) || checkpoint.queue.length === 0) {
+                clearSessionCheckpoint();
+                return;
+            }
+
+            if (typeof sessionInfo !== 'undefined') {
+                sessionInfo.isSessionStarted = true;
+                if (sessionInfo.updateStartButton) sessionInfo.updateStartButton();
+            }
+
+            const sessionData = {
+                sessionId: checkpoint.sessionId,
+                data: {
+                    participant_id: checkpoint.sessionData.participant_id,
+                    location_id: checkpoint.sessionData.location_id,
+                    equipment_info: checkpoint.sessionData.equipment_info || '',
+                    experimenter: checkpoint.sessionData.experimenter || '',
+                    notes: checkpoint.sessionData.notes || ''
+                }
+            };
+
+            initializeTestExecution(sessionData, checkpoint.queue, checkpoint);
+            window.AppUI?.showToast?.({
+                type: 'info',
+                title: 'Session resumed',
+                message: getCheckpointResumeMessage(checkpoint.currentPhase),
+                duration: 5000
+            });
+        };
 
         /**
          * Handle phase changes from TestSession

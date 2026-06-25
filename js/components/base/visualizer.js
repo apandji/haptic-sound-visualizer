@@ -58,6 +58,11 @@ class Visualizer {
         this.lastSoundTime = 0;
         this.lastSoundDuration = 0;
 
+        // Multi-audio blend visualization
+        this.visualizationSource = 'single';
+        this.blendStrategyId = 'layered';
+        this.mixPosition = 0.5;
+
         // Initialize p5.js sketch
         this.initSketch();
     }
@@ -166,6 +171,11 @@ class Visualizer {
         // Theme-aware background from design tokens
                 const bg = self.getVisualizerBackground();
                 p.background(bg[0], bg[1], bg[2]);
+
+                if (self.visualizationSource === 'multi') {
+                    self.drawMultiBlend(p);
+                    return;
+                }
 
                 // Check if FFT is initialized
                 if (!self.fft) {
@@ -484,6 +494,44 @@ class Visualizer {
     setAudioPlayer(audioPlayer) {
         this.audioPlayer = audioPlayer;
         this.setupAudioPlayerCallbacks();
+    }
+
+    setVisualizationSource(source) {
+        this.visualizationSource = source === 'multi' ? 'multi' : 'single';
+    }
+
+    setBlendStrategyId(strategyId) {
+        this.blendStrategyId = strategyId || 'layered';
+    }
+
+    setMixPosition(position) {
+        this.mixPosition = Math.max(0, Math.min(1, Number(position)));
+    }
+
+    drawMultiBlend(p) {
+        const mixState = window.HapticApp?.getMultiMixVizState?.();
+        const sources = mixState?.sources || [];
+        const hasActive = sources.some((source) => source?.soundFile?.isLoaded() && source.weight > 0.001);
+
+        if (!hasActive) {
+            p.noStroke();
+            p.fill(140);
+            p.textAlign(p.CENTER, p.CENTER);
+            p.textSize(13);
+            p.text('Assign patterns to NAD slots and press Play', p.width / 2, p.height / 2);
+            return;
+        }
+
+        if (window.BlendWaveformStrategies) {
+            window.BlendWaveformStrategies.draw(mixState.blendStrategyId || this.blendStrategyId, {
+                p,
+                sources,
+                mixPosition: mixState.mixPosition ?? this.mixPosition,
+                patternMetadata: mixState.patternMetadata || {},
+                width: p.width,
+                height: p.height
+            });
+        }
     }
 
     /**

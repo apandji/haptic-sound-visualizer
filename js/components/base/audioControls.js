@@ -43,7 +43,7 @@ class AudioControls {
         this.currentMode = options.defaultMode || 'waveform';
 
         // Visualization modes
-        this.modes = options.modes || [
+        this.modes = options.modes || window.VisualizationModes?.getSingleModeOptions?.() || [
             { value: 'waveform', label: 'Waveform' },
             { value: 'intensity', label: 'Intensity Bars' },
             { value: 'stereo', label: 'Stereo Field' },
@@ -60,6 +60,10 @@ class AudioControls {
         this.onStop = options.onStop || null;
         this.onSeek = options.onSeek || null;
         this.onPlayPause = options.onPlayPause || null;
+
+        // 'single' uses AudioPlayer; 'multi' delegates transport to parent callbacks
+        this.profile = options.profile || 'single';
+        this.canPlayCheck = null;
 
         // DOM element references
         this.stopBtn = null;
@@ -144,6 +148,62 @@ class AudioControls {
         this.progressMarker = this.container.querySelector('.audio-controls__progress-marker');
         this.timeCurrent = this.container.querySelector('.audio-controls__time-current');
         this.timeTotal = this.container.querySelector('.audio-controls__time-total');
+
+        this.loopGroup = this.container.querySelector('.audio-controls__loop-group');
+        this.progressSection = this.container.querySelector('.audio-controls__progress');
+
+        if (this.profile === 'multi') {
+            this.applyMultiProfile();
+        }
+    }
+
+    /**
+     * Configure chrome for multi-audio blend mode.
+     */
+    applyMultiProfile(options = {}) {
+        this.profile = 'multi';
+        if (options.modes) {
+            this.modes = options.modes;
+            if (this.modeSelector) {
+                this.modeSelector.innerHTML = this.modes.map((mode) => (
+                    `<option value="${mode.value}">${mode.label}</option>`
+                )).join('');
+                this.modeSelector.setAttribute('aria-label', 'Blend visualization strategy');
+            }
+        }
+        if (options.currentMode && this.modeSelector) {
+            this.currentMode = options.currentMode;
+            this.modeSelector.value = options.currentMode;
+        }
+        if (options.canPlayCheck) {
+            this.canPlayCheck = options.canPlayCheck;
+        }
+        if (this.loopGroup) this.loopGroup.style.display = 'none';
+        if (this.progressSection) this.progressSection.style.display = 'none';
+    }
+
+    /**
+     * Restore single-audio chrome.
+     */
+    applySingleProfile(options = {}) {
+        this.profile = 'single';
+        this.canPlayCheck = null;
+        if (options.currentMode) {
+            this.currentMode = options.currentMode;
+        }
+        if (options.modes) {
+            this.modes = options.modes;
+            if (this.modeSelector) {
+                this.modeSelector.innerHTML = this.modes.map((mode) => (
+                    `<option value="${mode.value}" ${mode.value === this.currentMode ? 'selected' : ''}>${mode.label}</option>`
+                )).join('');
+                this.modeSelector.setAttribute('aria-label', 'Visualization Mode');
+            }
+        } else if (options.currentMode && this.modeSelector) {
+            this.modeSelector.value = options.currentMode;
+        }
+        if (this.loopGroup) this.loopGroup.style.display = '';
+        if (this.progressSection) this.progressSection.style.display = '';
     }
 
     /**
@@ -184,6 +244,12 @@ class AudioControls {
      * Handle stop button click
      */
     handleStop() {
+        if (this.profile === 'multi') {
+            this.updatePlayPauseState(false);
+            if (this.onStop) this.onStop();
+            return;
+        }
+
         if (this.audioPlayer) {
             this.audioPlayer.stop();
         }
@@ -198,6 +264,18 @@ class AudioControls {
      * Handle play/pause button click
      */
     handlePlayPause() {
+        if (this.profile === 'multi') {
+            if (this.canPlayCheck && !this.canPlayCheck()) return;
+            if (this.visualizer && typeof this.visualizer.ensureAudioContextStarted === 'function') {
+                this.visualizer.ensureAudioContextStarted();
+            }
+            const nextPlaying = !this.isPlaying;
+            if (this.onPlayPause) {
+                this.onPlayPause(nextPlaying);
+            }
+            return;
+        }
+
         if (!this.audioPlayer || !this.audioPlayer.isLoaded()) return;
 
         if (this.audioPlayer.isPlaying()) {
@@ -317,6 +395,11 @@ class AudioControls {
      */
     handleModeChange(mode) {
         this.currentMode = mode;
+
+        if (this.profile === 'multi') {
+            if (this.onModeChange) this.onModeChange(mode);
+            return;
+        }
 
         if (this.visualizer) {
             this.visualizer.setMode(mode);

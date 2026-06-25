@@ -3,8 +3,13 @@
     const state = app.state;
 
     document.addEventListener('keydown', (e) => {
-        if (e.code === 'Space' && e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+        if (e.code === 'Space' && e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA' && e.target.tagName !== 'SELECT') {
             e.preventDefault();
+
+            if (state.previewMode === 'multi') {
+                app.toggleMultiPlayPause?.();
+                return;
+            }
 
             if (state.audioPlayer && state.audioPlayer.isLoaded()) {
                 if (state.audioPlayer.isPlaying()) {
@@ -25,5 +30,6 @@
 
         await app.loadPatternMetadata();
         await app.loadFileList();
+        app.initExploreMultiAudio?.();
     });
 })();

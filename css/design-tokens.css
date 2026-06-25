@@ -172,6 +172,13 @@
     /* Heatmap empty cell base for color-mix */
     --color-heatmap-base: #ffffff;
 
+    /* NAD continuum — minus (rose), neutral (slate), plus (gold); strong = Disruptive, soft = Attentive */
+    --color-nad-minus-strong: #b84766;
+    --color-nad-minus-soft: #d99aaa;
+    --color-nad-neutral: #8b95a5;
+    --color-nad-plus-soft: #c9a03d;
+    --color-nad-plus-strong: #e8c25a;
+
     /* Aliases used by overlay components */
     --color-text-secondary: var(--color-text-muted);
 
@@ -316,6 +323,12 @@
     --color-data-new: #0a84ff;
     --color-visualizer-bg: #18181b;
     --color-heatmap-base: #27272a;
+
+    --color-nad-minus-strong: #e07f9a;
+    --color-nad-minus-soft: #f0a8bc;
+    --color-nad-neutral: #a1a9b8;
+    --color-nad-plus-soft: #c9a44a;
+    --color-nad-plus-strong: #f0d078;
     --color-text-secondary: var(--color-text-muted);
 
     --color-status-good: #66bb6a;

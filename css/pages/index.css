@@ -18,6 +18,61 @@ body {
     overflow: hidden;
 }
 
+/* Explore header bar — matches Analyze page rhythm */
+.app-header--bar {
+    gap: var(--space-3);
+    font-size: var(--text-sm);
+    line-height: var(--leading-tight);
+}
+
+.app-header--bar .app-header__brand {
+    font-size: inherit;
+    font-weight: var(--font-weight-semibold);
+    letter-spacing: 0.08em;
+}
+
+.app-header--bar .app-nav-links .app-nav-links__item {
+    font-size: inherit;
+    font-weight: var(--font-weight-normal);
+    padding: 5px 10px;
+}
+
+.app-header--bar .app-nav-links .app-nav-links__item--active {
+    font-weight: var(--font-weight-medium);
+}
+
+.app-header--bar .segmented-control--sm .segmented-control__item {
+    font-size: inherit;
+    font-weight: var(--font-weight-medium);
+    padding: 5px 10px;
+    gap: 6px;
+}
+
+.app-header--bar .icon svg {
+    width: 15px;
+    height: 15px;
+}
+
+#previewModeToggle {
+    flex-shrink: 0;
+}
+
+.explore-mode-toggle__tabs .segmented-control__item {
+    padding-left: var(--spacing-lg);
+    padding-right: var(--spacing-lg);
+}
+
+#multiAudioPanelMount {
+    flex-shrink: 0;
+    position: relative;
+    z-index: 20;
+    overflow: visible;
+}
+
+#multiAudioPanelMount.hidden {
+    display: none;
+}
+
 /* Main Layout Container */
 .layout {
     flex: 1;
@@ -50,6 +105,7 @@ body {
     flex-direction: column;
     position: relative;
     overflow: hidden;
+    min-height: 0;
 }
 
 /* Placeholder when no file selected */
@@ -93,14 +149,17 @@ body {
     flex-direction: column;
     background: var(--color-visualizer-bg);
     width: 100%;
-    height: 100%;
-    position: absolute;
-    top: 0;
-    left: 0;
+    flex: 1;
+    min-height: 0;
+    position: relative;
+    overflow: hidden;
+    z-index: 1;
 }
 
 .main-content__visualizer.active {
     display: flex;
+    flex: 1 1 0;
+    min-height: 10rem;
 }
 
 .main-content__visualizer #audioControlsContainer {
@@ -108,7 +167,7 @@ body {
 }
 
 .main-content__visualizer #p5-container {
-    flex: 1;
+    flex: 1 1 0;
     width: 100%;
     min-height: 0;
 }

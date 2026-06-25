@@ -216,7 +216,7 @@ class AttentionQueuePanel {
                 ${this.tags.map(tag => `
                     <button type="button"
                         class="attention-queue__tag-chip ${assigned.has(tag.id) ? 'attention-queue__tag-chip--on' : ''}"
-                        style="--tag-color:${this._escape(tag.color || 'var(--color-accent)')}"
+                        style="--tag-color:${window.AppUI?.sanitizeCssColor ? window.AppUI.sanitizeCssColor(tag.color) : 'var(--color-accent)'}"
                         data-queue-tag="${tag.id}"
                         data-queue-tag-pattern="${this._escape(patternName)}"
                         aria-pressed="${assigned.has(tag.id)}">

@@ -730,4 +730,127 @@ class TestSession {
             completedAt: this.isAborted ? null : new Date().toISOString()
         };
     }
+
+    /**
+     * Full runtime snapshot for crash-recovery checkpoints.
+     * @returns {Object}
+     */
+    exportCheckpoint() {
+        return {
+            version: 1,
+            savedAt: new Date().toISOString(),
+            sessionId: this.sessionId,
+            sessionData: this.sessionData,
+            queue: [...this.queue],
+            calibrationReadings: [...this.calibrationReadings],
+            trials: this.trials.map(trial => ({
+                ...trial,
+                pattern: { ...trial.pattern },
+                baselineReadings: [...trial.baselineReadings],
+                stimulationReadings: [...trial.stimulationReadings],
+                testerNotes: [...(trial.testerNotes || [])],
+                testerEvents: [...(trial.testerEvents || [])],
+                selectedTags: [...(trial.selectedTags || [])]
+            })),
+            currentPhase: this.currentPhase,
+            currentTrialIndex: this.currentTrialIndex,
+            isActive: this.isActive,
+            isAborted: this.isAborted,
+            abortReason: this.abortReason
+        };
+    }
+
+    /**
+     * Rehydrate a session from a checkpoint without resetting trial progress.
+     * @param {Object} snapshot
+     * @param {Object} options - Same callback options as the constructor
+     * @returns {TestSession}
+     */
+    static fromCheckpoint(snapshot, options = {}) {
+        const session = new TestSession({
+            sessionId: snapshot.sessionId,
+            queue: snapshot.queue || [],
+            sessionData: snapshot.sessionData,
+            onPhaseChange: options.onPhaseChange || null,
+            onTrialComplete: options.onTrialComplete || null,
+            onSessionComplete: options.onSessionComplete || null,
+            onError: options.onError || null,
+            timing: options.timing,
+            timingConfigPath: options.timingConfigPath
+        });
+
+        session.trials = (snapshot.trials || []).map(trial => ({
+            ...trial,
+            pattern: { ...trial.pattern },
+            baselineReadings: [...(trial.baselineReadings || [])],
+            stimulationReadings: [...(trial.stimulationReadings || [])],
+            testerNotes: [...(trial.testerNotes || [])],
+            testerEvents: [...(trial.testerEvents || [])],
+            selectedTags: [...(trial.selectedTags || [])]
+        }));
+        session.calibrationReadings = [...(snapshot.calibrationReadings || [])];
+        session.currentPhase = snapshot.currentPhase || null;
+        session.currentTrialIndex = Number.isInteger(snapshot.currentTrialIndex)
+            ? snapshot.currentTrialIndex
+            : -1;
+        session.isActive = Boolean(snapshot.isActive);
+        session.isAborted = Boolean(snapshot.isAborted);
+        session.abortReason = snapshot.abortReason || null;
+        session.currentTrial = session.currentTrialIndex >= 0 && session.currentTrialIndex < session.trials.length
+            ? session.trials[session.currentTrialIndex]
+            : null;
+
+        return session;
+    }
+
+    /**
+     * Resume after an interruption. Survey continues where it left off; calibration
+     * and in-progress pattern trials restart from a clean baseline (not mid-stimulation).
+     */
+    resumeAfterInterruption() {
+        if (!this.isActive || !this.currentPhase) return;
+
+        const phase = this.currentPhase;
+
+        if (phase === 'survey') {
+            this.phaseStartTime = Date.now();
+            if (this.onPhaseChange) {
+                const payload = {
+                    patternIndex: this.currentTrialIndex,
+                    patternNumber: this.currentTrialIndex + 1,
+                    totalPatterns: this.trials.length,
+                    pattern: this.currentTrial?.pattern
+                };
+                this.onPhaseChange('survey', this.buildPhasePayload('survey', payload));
+            }
+            return;
+        }
+
+        if (phase === 'calibration') {
+            this.startCalibration();
+            return;
+        }
+
+        if (phase === 'baseline' || phase === 'stimulation') {
+            if (this.currentTrialIndex < 0 || !this.currentTrial) return;
+            this._restartCurrentTrialFromBaseline();
+        }
+    }
+
+    /**
+     * Discard partial readings for the active pattern and begin baseline again.
+     */
+    _restartCurrentTrialFromBaseline() {
+        const trial = this.currentTrial;
+        trial.status = 'in_progress';
+        trial.startTime = new Date().toISOString();
+        trial.endTime = null;
+        trial.baselineReadings = [];
+        trial.stimulationReadings = [];
+        trial.audioTimeOffset = null;
+        trial.surveyResponse = null;
+        trial.selectedTags = [];
+
+        this.startBaseline();
+    }
 }

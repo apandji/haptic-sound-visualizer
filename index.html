@@ -8,32 +8,30 @@
     <script src="js/icons.js?v=2026-06-13.1"></script>
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
     <!-- Design tokens (load first) -->
-    <link rel="stylesheet" href="css/design-tokens.css?v=2026-06-09.3">
+    <link rel="stylesheet" href="css/design-tokens.css?v=2026-06-25.1">
     <link rel="stylesheet" href="css/chrome.css?v=2026-06-13.1">
     <!-- Page CSS -->
-    <link rel="stylesheet" href="css/pages/index.css?v=2026-06-08.1">
+    <link rel="stylesheet" href="css/pages/index.css?v=2026-06-25.7">
     
     <!-- Component CSS -->
-    <link rel="stylesheet" href="css/components/base/patternExplorer.css?v=2026-06-09.2">
+    <link rel="stylesheet" href="css/components/base/patternExplorer.css?v=2026-06-25.4">
     <link rel="stylesheet" href="css/components/base/filterPanel.css?v=2026-06-09.2">
     <link rel="stylesheet" href="css/components/base/dualSlider.css?v=2026-06-08.2">
     <link rel="stylesheet" href="css/components/base/visualizer.css?v=2026-06-08.2">
     <link rel="stylesheet" href="css/components/base/audioControls.css?v=2026-06-08.2">
+    <link rel="stylesheet" href="css/components/base/multiAudioPanel.css?v=2026-06-25.10">
 </head>
 <body>
     <a href="#main-content" class="skip-link">Skip to main content</a>
-    <header class="app-header">
-        <div class="app-header__start">
-            <span class="app-header__brand">SAIL</span>
-            <nav class="app-nav-links" aria-label="Main navigation" data-app-nav>
-                <a href="index.html" class="app-nav-links__item app-nav-links__item--active" aria-current="page"><span class="icon" data-icon="compass"></span>Explore</a>
-                <a href="test.html" class="app-nav-links__item"><span class="icon" data-icon="flask"></span>Test</a>
-                <a href="analyze.html" class="app-nav-links__item"><span class="icon" data-icon="chart"></span>Analyze</a>
-            </nav>
-        </div>
-        <div class="app-header__center">
-            <h1 class="app-header__title">Preview patterns</h1>
-        </div>
+    <header class="app-header app-header--bar">
+        <span class="app-header__brand">SAIL</span>
+        <nav class="app-nav-links" aria-label="Main navigation" data-app-nav>
+            <a href="index.html" class="app-nav-links__item app-nav-links__item--active" aria-current="page"><span class="icon" data-icon="compass"></span>Explore</a>
+            <a href="test.html" class="app-nav-links__item"><span class="icon" data-icon="flask"></span>Test</a>
+            <a href="analyze.html" class="app-nav-links__item"><span class="icon" data-icon="chart"></span>Analyze</a>
+        </nav>
+        <div class="app-header__divider" aria-hidden="true"></div>
+        <div id="previewModeToggle"></div>
         <div class="app-header__end" data-theme-toggle-mount></div>
     </header>
     
@@ -68,7 +66,7 @@
                     </svg>
                 </span>
                 <span class="main-content__placeholder-text">Select a pattern to preview.</span>
-                <span class="main-content__placeholder-hint">Choose a file from the library to play and visualize.</span>
+                <span class="main-content__placeholder-hint" data-explore-placeholder-hint>Choose a file from the library to play and visualize.</span>
             </div>
             
             <!-- Visualizer (shown when file is playing) -->
@@ -76,6 +74,7 @@
                 <div id="audioControlsContainer"></div>
                 <div id="p5-container"></div>
             </div>
+            <div id="multiAudioPanelMount" class="hidden"></div>
         </main>
     </div>
     
@@ -85,23 +84,31 @@
     
     <!-- Component JavaScript -->
     <script src="js/modules/filters.js?v=2026-02-26.1"></script>
+    <script src="js/modules/visualizationModes.js?v=2026-06-25.1"></script>
+    <script src="js/modules/multiAudioConstants.js?v=2026-06-25.9"></script>
+    <script src="js/modules/multiAudioMixWeights.js?v=2026-06-25.1"></script>
+    <script src="js/modules/multiAudioPathGains.js?v=2026-06-25.4"></script>
+    <script src="js/modules/multiAudioMixer.js?v=2026-06-25.4"></script>
+    <script src="js/modules/blendWaveformStrategies.js?v=2026-06-25.3"></script>
     <script src="js/modules/audioPlayer.js?v=2026-02-26.1"></script>
-    <script src="js/components/base/patternExplorer.js?v=2026-06-09.2"></script>
+    <script src="js/components/base/patternExplorer.js?v=2026-06-25.4"></script>
     <script src="js/components/base/filterPanel.js?v=2026-06-09.1"></script>
     <script src="js/components/base/dualSlider.js?v=2026-02-26.1"></script>
-    <script src="js/components/base/visualizer.js?v=2026-06-08.5"></script>
-    <script src="js/components/base/audioControls.js?v=2026-02-26.1"></script>
+    <script src="js/components/base/visualizer.js?v=2026-06-25.2"></script>
+    <script src="js/components/base/audioControls.js?v=2026-06-25.3"></script>
+    <script src="js/components/base/multiAudioPanel.js?v=2026-06-25.10"></script>
     <script src="js/components/base/patternLibraryShell.js?v=2026-06-09.2"></script>
     <script src="js/components/variants/patternExplorerWithFilters.js?v=2026-06-07.8"></script>
     
     <!-- Page Script -->
     <script src="js/uiHelpers.js?v=2026-06-09.2"></script>
     <script src="js/dataCache.js?v=2026-06-07.6"></script>
-    <script src="js/app/state.js?v=2026-02-26.1"></script>
-    <script src="js/app/audioLifecycle.js?v=2026-02-26.1"></script>
-    <script src="js/app/explorer.js?v=2026-06-07.7"></script>
+    <script src="js/app/state.js?v=2026-06-25.1"></script>
+    <script src="js/app/audioLifecycle.js?v=2026-06-25.1"></script>
+    <script src="js/app/multiAudio.js?v=2026-06-25.11"></script>
+    <script src="js/app/explorer.js?v=2026-06-25.4"></script>
     <script src="js/app/dataLoaders.js?v=2026-06-07.7"></script>
-    <script src="js/app/bootstrap.js?v=2026-02-26.1"></script>
+    <script src="js/app/bootstrap.js?v=2026-06-25.1"></script>
     <script src="js/appNav.js?v=2026-06-12.6"></script>
 </body>
 </html>

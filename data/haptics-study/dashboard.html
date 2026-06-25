@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Haptics study — results</title>
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js" charset="utf-8"></script>
+  <style>
+    :root {
+      --bg: #f1f5f9;
+      --card: #fff;
+      --text: #0f172a;
+      --muted: #64748b;
+      --border: #e2e8f0;
+      --accent: #2563eb;
+      --err-bg: #fef2f2;
+      --err-text: #991b1b;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+    header {
+      padding: 1.25rem 1.5rem;
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 0.75rem;
+    }
+    h1 { font-size: 1.125rem; font-weight: 600; margin: 0; }
+    .hint { font-size: 0.8125rem; color: var(--muted); max-width: 42rem; }
+    .actions { display: flex; align-items: center; gap: 0.5rem; }
+    button {
+      font: inherit;
+      font-size: 0.875rem;
+      padding: 0.4rem 0.75rem;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--card);
+      cursor: pointer;
+    }
+    button:hover { border-color: #cbd5e1; }
+    #status { font-size: 0.8125rem; color: var(--muted); }
+    #status.err { color: var(--err-text); }
+    main { padding: 1rem 1.25rem 2rem; max-width: 1200px; margin: 0 auto; }
+    .banner {
+      display: none;
+      margin-bottom: 1rem;
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      background: var(--err-bg);
+      color: var(--err-text);
+      font-size: 0.875rem;
+    }
+    .banner.show { display: block; }
+    section {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1rem 1.1rem;
+      margin-bottom: 1rem;
+    }
+    section h2 {
+      margin: 0 0 0.35rem;
+      font-size: 0.9375rem;
+      font-weight: 600;
+    }
+    .caption { margin: 0 0 0.75rem; font-size: 0.8125rem; color: var(--muted); }
+    .plot { width: 100%; min-height: 280px; }
+    .plot.tall { min-height: 360px; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+    @media (max-width: 720px) { .grid-2 { grid-template-columns: 1fr; } }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8125rem;
+    }
+    th, td { text-align: left; padding: 0.45rem 0.5rem; border-bottom: 1px solid var(--border); }
+    th { cursor: pointer; user-select: none; color: var(--muted); font-weight: 500; }
+    th:hover { color: var(--text); }
+    tbody tr:hover { background: #f8fafc; }
+    .num { text-align: right; font-variant-numeric: tabular-nums; }
+    #explore-summary {
+      margin: 0 0 1rem;
+      padding: 0.65rem 0.85rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: #f8fafc;
+      font-size: 0.8125rem;
+      color: var(--text);
+      line-height: 1.45;
+    }
+    #explore-summary[hidden] { display: none !important; }
+    #explore-summary strong { font-weight: 600; }
+    #explore-summary .muted { color: var(--muted); }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Haptics study — SQL exports</h1>
+      <p class="hint">Reads CSVs from <code>results/</code>. Use an HTTP server (e.g. repo root: <code>python server.py</code> → <code>/data/haptics-study/dashboard.html</code>), not a <code>file://</code> URL, so the browser can load the CSVs.</p>
+    </div>
+    <div class="actions">
+      <span id="status"></span>
+      <button type="button" id="reload">Reload CSVs</button>
+    </div>
+  </header>
+  <main>
+    <div id="banner" class="banner" role="alert"></div>
+    <p id="explore-summary" hidden></p>
+
+    <section>
+      <h2>Self-report by pattern</h2>
+      <p class="caption">Mean urgency, intensity, and confidence (0–1) per audio pattern. Bar length follows trial count when present.</p>
+      <div id="chart-survey" class="plot tall"></div>
+    </section>
+
+    <section>
+      <h2>Mood × pattern</h2>
+      <p class="caption">Cell value = number of survey responses in that bucket.</p>
+      <div id="chart-mood" class="plot tall"></div>
+    </section>
+
+    <section>
+      <h2>Mean band power by phase</h2>
+      <p class="caption">Baseline and stimulation use different vertical scales (absolute μV²-style units from export). Compare bands within each phase.</p>
+      <div class="grid-2">
+        <div id="chart-brain-baseline" class="plot"></div>
+        <div id="chart-brain-stim" class="plot"></div>
+      </div>
+    </section>
+
+    <section>
+      <h2>EEG row coverage</h2>
+      <p class="caption">Rows in <code>brainwave_readings</code> per trial and phase. Click column headers to sort.</p>
+      <div id="chart-coverage" class="plot"></div>
+      <div style="overflow-x: auto; margin-top: 0.75rem;">
+        <table id="table-coverage">
+          <thead><tr></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section>
+      <h2>Sessions by location</h2>
+      <p class="caption">Count of sessions linked to each location.</p>
+      <div id="chart-locations" class="plot"></div>
+    </section>
+  </main>
+
+  <script>
+    const FILES = {
+      survey: 'results/01_survey_aggregate_by_pattern.csv',
+      mood: 'results/02_mood_counts_by_pattern.csv',
+      brain: 'results/03_brainwave_bands_by_phase.csv',
+      coverage: 'results/04_reading_coverage_per_trial_phase.csv',
+      locations: 'results/05_sessions_by_location.csv',
+    };
+
+    const PLOT_CONFIG = { responsive: true, displayModeBar: true, displaylogo: false };
+    const PLOT_FONT = { family: 'ui-sans-serif, system-ui, sans-serif', size: 12, color: '#334155' };
+
+    /** Minimal RFC-style CSV parse (handles "quoted,fields"). */
+    function parseCSV(text) {
+      const rows = [];
+      let i = 0;
+      const len = text.length;
+      const row = [];
+      let field = '';
+      let inQuotes = false;
+      function pushField() {
+        row.push(field);
+        field = '';
+      }
+      function pushRow() {
+        rows.push(row.slice());
+        row.length = 0;
+      }
+      while (i < len) {
+        const c = text[i];
+        if (inQuotes) {
+          if (c === '"') {
+            if (text[i + 1] === '"') { field += '"'; i += 2; continue; }
+            inQuotes = false;
+            i++;
+            continue;
+          }
+          field += c;
+          i++;
+          continue;
+        }
+        if (c === '"') { inQuotes = true; i++; continue; }
+        if (c === ',') { pushField(); i++; continue; }
+        if (c === '\r') { i++; continue; }
+        if (c === '\n') { pushField(); pushRow(); i++; continue; }
+        field += c;
+        i++;
+      }
+      pushField();
+      if (row.length > 1 || (row.length === 1 && row[0] !== '')) pushRow();
+      if (rows.length === 0) return [];
+      const header = rows[0].map((h) => h.trim());
+      return rows.slice(1).filter((r) => r.some((cell) => cell !== '')).map((r) => {
+        const o = {};
+        header.forEach((key, j) => { o[key] = r[j] !== undefined ? r[j].trim() : ''; });
+        return o;
+      });
+    }
+
+    async function loadText(url) {
+      const res = await fetch(url, { cache: 'no-store' });
+      if (!res.ok) throw new Error(`${url}: ${res.status}`);
+      return res.text();
+    }
+
+    function shortPattern(name) {
+      return String(name || '').replace(/\.mp3$/i, '');
+    }
+
+    function plotSurvey(rows) {
+      const y = rows.map((r) => shortPattern(r.pattern_name));
+      const n = rows.map((r) => Number(r.n_trials) || 0);
+      const traces = [
+        { type: 'bar', name: 'Urgency', orientation: 'h', y, x: rows.map((r) => +r.avg_urgency), marker: { color: '#3b82f6' } },
+        { type: 'bar', name: 'Intensity', orientation: 'h', y, x: rows.map((r) => +r.avg_intensity), marker: { color: '#8b5cf6' } },
+        { type: 'bar', name: 'Confidence', orientation: 'h', y, x: rows.map((r) => +r.avg_confidence), marker: { color: '#14b8a6' } },
+      ];
+      const layout = {
+        barmode: 'group',
+        margin: { l: 100, r: 24, t: 8, b: 40 },
+        paper_bgcolor: '#fff',
+        plot_bgcolor: '#fff',
+        font: PLOT_FONT,
+        xaxis: { title: 'Mean (0–1)', range: [0, 1], zeroline: true },
+        yaxis: { automargin: true, categoryorder: 'total ascending' },
+        legend: { orientation: 'h', yanchor: 'bottom', y: 1.02, x: 0 },
+        hovermode: 'closest',
+      };
+      Plotly.react('chart-survey', traces, layout, PLOT_CONFIG);
+      // stash n_trials in customdata via hovertemplate would need trace merge; keep chart simple
+      void n;
+    }
+
+    function plotMood(rows) {
+      const patterns = [...new Set(rows.map((r) => r.pattern_name))].sort();
+      const moods = [...new Set(rows.map((r) => r.mood))].sort();
+      const idxP = Object.fromEntries(patterns.map((p, i) => [p, i]));
+      const idxM = Object.fromEntries(moods.map((m, i) => [m, i]));
+      const z = patterns.map(() => moods.map(() => 0));
+      rows.forEach((r) => {
+        const pi = idxP[r.pattern_name];
+        const mi = idxM[r.mood];
+        if (pi !== undefined && mi !== undefined) z[pi][mi] = +r.n || 0;
+      });
+      const yLabels = patterns.map(shortPattern);
+      Plotly.react('chart-mood', [{
+        type: 'heatmap',
+        x: moods,
+        y: yLabels,
+        z,
+        colorscale: [[0, '#f8fafc'], [0.5, '#93c5fd'], [1, '#1d4ed8']],
+        hovertemplate: '%{y} · %{x}<br>count: %{z}<extra></extra>',
+      }], {
+        margin: { l: 88, r: 24, t: 8, b: 72 },
+        paper_bgcolor: '#fff',
+        plot_bgcolor: '#fff',
+        font: PLOT_FONT,
+        xaxis: { tickangle: -35, side: 'bottom' },
+        yaxis: { automargin: true },
+      }, PLOT_CONFIG);
+    }
+
+    function plotBrain(rows) {
+      const bands = [
+        ['avg_delta_abs', 'Delta'],
+        ['avg_theta_abs', 'Theta'],
+        ['avg_alpha_abs', 'Alpha'],
+        ['avg_beta_abs', 'Beta'],
+        ['avg_gamma_abs', 'Gamma'],
+      ];
+      function oneChart(divId, phase, title) {
+        const row = rows.find((r) => String(r.phase).toLowerCase() === phase);
+        const x = bands.map((b) => b[1]);
+        const y = row ? bands.map((b) => +row[b[0]]) : bands.map(() => 0);
+        Plotly.react(divId, [{
+          type: 'bar',
+          x,
+          y,
+          marker: { color: phase === 'baseline' ? '#64748b' : '#2563eb' },
+          hovertemplate: '%{x}<br>%{y:.4f}<extra></extra>',
+        }], {
+        title: { text: title, font: { ...PLOT_FONT, size: 13 } },
+        margin: { l: 48, r: 16, t: 36, b: 48 },
+        paper_bgcolor: '#fff',
+        plot_bgcolor: '#fff',
+        font: PLOT_FONT,
+        yaxis: { title: 'Mean |band|', zeroline: true },
+        xaxis: { tickangle: -25 },
+      }, PLOT_CONFIG);
+      }
+      oneChart('chart-brain-baseline', 'baseline', 'Baseline');
+      oneChart('chart-brain-stim', 'stimulation', 'Stimulation');
+    }
+
+    function plotCoverageBars(rows) {
+      const byPhase = {};
+      rows.forEach((r) => {
+        const ph = r.phase || 'unknown';
+        if (!byPhase[ph]) byPhase[ph] = [];
+        byPhase[ph].push(+r.reading_rows || 0);
+      });
+      const phases = Object.keys(byPhase).sort();
+      const traces = phases.map((ph) => ({
+        type: 'box',
+        name: ph,
+        y: byPhase[ph],
+        boxpoints: 'outliers',
+        jitter: 0.35,
+      }));
+      Plotly.react('chart-coverage', traces, {
+        margin: { l: 48, r: 16, t: 8, b: 48 },
+        paper_bgcolor: '#fff',
+        plot_bgcolor: '#fff',
+        font: PLOT_FONT,
+        yaxis: { title: 'Reading rows / trial' },
+        showlegend: true,
+      }, PLOT_CONFIG);
+    }
+
+    let coverageRows = [];
+    let coverageSort = { key: 'reading_rows', dir: 'desc' };
+
+    function renderCoverageTable() {
+      const cols = ['trial_id', 'pattern_name', 'phase', 'reading_rows', 't_min_ms', 't_max_ms'];
+      const thead = document.querySelector('#table-coverage thead tr');
+      thead.innerHTML = cols.map((c) => `<th data-col="${c}">${c}</th>`).join('');
+      const tbody = document.querySelector('#table-coverage tbody');
+      const sorted = [...coverageRows].sort((a, b) => {
+        const av = a[coverageSort.key];
+        const bv = b[coverageSort.key];
+        const na = Number(av);
+        const nb = Number(bv);
+        let cmp;
+        if (!Number.isNaN(na) && !Number.isNaN(nb) && String(av) === String(na) && String(bv) === String(nb)) {
+          cmp = na - nb;
+        } else {
+          cmp = String(av).localeCompare(String(bv), undefined, { numeric: true });
+        }
+        return coverageSort.dir === 'asc' ? cmp : -cmp;
+      });
+      tbody.innerHTML = sorted.map((r) => `
+        <tr>
+          <td class="num">${escapeHtml(r.trial_id)}</td>
+          <td>${escapeHtml(shortPattern(r.pattern_name))}</td>
+          <td>${escapeHtml(r.phase)}</td>
+          <td class="num">${escapeHtml(r.reading_rows)}</td>
+          <td class="num">${escapeHtml(r.t_min_ms)}</td>
+          <td class="num">${escapeHtml(r.t_max_ms)}</td>
+        </tr>
+      `).join('');
+      thead.querySelectorAll('th').forEach((th) => {
+        th.addEventListener('click', () => {
+          const col = th.getAttribute('data-col');
+          if (coverageSort.key === col) {
+            coverageSort.dir = coverageSort.dir === 'asc' ? 'desc' : 'asc';
+          } else {
+            coverageSort.key = col;
+            coverageSort.dir = col === 'pattern_name' || col === 'phase' ? 'asc' : 'desc';
+          }
+          renderCoverageTable();
+        });
+      });
+    }
+
+    function escapeHtml(s) {
+      return String(s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function renderExploreSummary(survey, mood, brain, coverage, locs) {
+      const el = document.getElementById('explore-summary');
+      if (!survey.length && !coverage.length) {
+        el.hidden = true;
+        el.textContent = '';
+        return;
+      }
+
+      const totalSurveyTrials = survey.reduce((acc, r) => acc + (+r.n_trials || 0), 0);
+      const nPatterns = survey.length;
+      const maxTrials = survey.reduce((m, r) => Math.max(m, +r.n_trials || 0), 0);
+      const topNames = survey
+        .filter((r) => (+r.n_trials || 0) === maxTrials && maxTrials > 0)
+        .map((r) => escapeHtml(shortPattern(r.pattern_name)));
+      const singles = survey.filter((r) => (+r.n_trials || 0) === 1).length;
+
+      const trialIds = new Set(coverage.map((r) => r.trial_id));
+      const nDistTrials = trialIds.size;
+      const byTrialPhase = {};
+      coverage.forEach((r) => {
+        if (!byTrialPhase[r.trial_id]) byTrialPhase[r.trial_id] = new Set();
+        byTrialPhase[r.trial_id].add(String(r.phase || ''));
+      });
+      let missingBaseline = 0;
+      trialIds.forEach((tid) => {
+        const phases = byTrialPhase[tid];
+        if (!phases || !phases.has('baseline')) missingBaseline += 1;
+      });
+
+      const thinThreshold = 300;
+      const thinRows = coverage.filter((r) => (+r.reading_rows || 0) < thinThreshold).length;
+
+      const moodResponses = mood.reduce((acc, r) => acc + (+r.n || 0), 0);
+      const brainPhases = brain.length;
+      const totalSessions = locs.reduce((acc, r) => acc + (+r.n_sessions || 0), 0);
+      const nLocsWithSessions = locs.filter((r) => (+r.n_sessions || 0) > 0).length;
+
+      const topList = topNames.length
+        ? `${topNames.slice(0, 8).join(', ')}${topNames.length > 8 ? ', …' : ''}`
+        : '—';
+
+      const a = `<strong>Exploration snapshot</strong> — Survey-backed trials total <strong>${totalSurveyTrials}</strong> across <strong>${nPatterns}</strong> patterns (max per pattern <strong>${maxTrials}</strong>: ${topList}; <strong>${singles}</strong> pattern(s) at n = 1). `;
+      const b = `EEG coverage: <strong>${nDistTrials}</strong> distinct trial(s); <strong>${missingBaseline}</strong> without a baseline phase; <strong>${thinRows}</strong> trial-phase slice(s) under <strong>${thinThreshold}</strong> rows (check signal / dropout). `;
+      const c = `Mood counts sum to <strong>${moodResponses}</strong>; band-power table has <strong>${brainPhases}</strong> phase row(s); sessions total <strong>${totalSessions}</strong> in <strong>${nLocsWithSessions}</strong> location(s) with data. `;
+      const d = `<span class="muted">Next steps that usually pay off: more repeats on the same patterns, baseline/stim parity per trial, then multi-site or between-subject views once N grows—pattern-level claims stay exploratory at low per-pattern n.</span>`;
+
+      el.innerHTML = a + b + c + d;
+      el.hidden = false;
+    }
+
+    function plotLocations(rows) {
+      const x = rows.map((r) => r.location_name || `id ${r.location_id}`);
+      const y = rows.map((r) => +r.n_sessions || 0);
+      Plotly.react('chart-locations', [{
+        type: 'bar',
+        x,
+        y,
+        marker: { color: '#0d9488' },
+        hovertemplate: '%{x}<br>sessions: %{y}<extra></extra>',
+      }], {
+        margin: { l: 48, r: 16, t: 8, b: 80 },
+        paper_bgcolor: '#fff',
+        plot_bgcolor: '#fff',
+        font: PLOT_FONT,
+        xaxis: { tickangle: -30 },
+        yaxis: { title: 'Sessions', zeroline: true },
+      }, PLOT_CONFIG);
+    }
+
+    async function loadAll() {
+      const status = document.getElementById('status');
+      const banner = document.getElementById('banner');
+      banner.classList.remove('show');
+      banner.textContent = '';
+      status.textContent = 'Loading…';
+      status.classList.remove('err');
+      document.getElementById('explore-summary').hidden = true;
+      try {
+        const [surveyT, moodT, brainT, covT, locT] = await Promise.all([
+          loadText(FILES.survey),
+          loadText(FILES.mood),
+          loadText(FILES.brain),
+          loadText(FILES.coverage),
+          loadText(FILES.locations),
+        ]);
+        const survey = parseCSV(surveyT);
+        const mood = parseCSV(moodT);
+        const brain = parseCSV(brainT);
+        coverageRows = parseCSV(covT);
+        const locs = parseCSV(locT);
+
+        plotSurvey(survey);
+        plotMood(mood);
+        plotBrain(brain);
+        plotCoverageBars(coverageRows);
+        renderCoverageTable();
+        plotLocations(locs);
+        renderExploreSummary(survey, mood, brain, coverageRows, locs);
+
+        status.textContent = `Loaded ${survey.length} patterns · ${coverageRows.length} coverage rows`;
+      } catch (e) {
+        console.error(e);
+        status.textContent = 'Load failed';
+        status.classList.add('err');
+        document.getElementById('explore-summary').hidden = true;
+        document.getElementById('explore-summary').textContent = '';
+        banner.textContent = String(e.message || e) + ' — start a local server from the project directory and open this page over http://.';
+        banner.classList.add('show');
+      }
+    }
+
+    document.getElementById('reload').addEventListener('click', loadAll);
+    loadAll();
+  </script>
+</body>
+</html>

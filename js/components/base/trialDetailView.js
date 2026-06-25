@@ -71,7 +71,7 @@ class TrialDetailView {
                         <dt>Experimenter</dt><dd>${this._text(detail.experimenter)}</dd>
                         <dt>Location</dt><dd>${this._text(detail.locationName)}</dd>
                         <dt>Equipment</dt><dd>${this._text(detail.equipmentInfo)}</dd>
-                        <dt>Status</dt><dd>${detail.status || '—'}</dd>
+                        <dt>Status</dt><dd>${detail.status ? this._esc(detail.status) : '—'}</dd>
                     </dl>
                 </section>
                 <section class="trial-detail-view__card">
@@ -223,11 +223,7 @@ class TrialDetailView {
 
     _esc(value) {
         if (window.AppUI?.escapeHtml) return window.AppUI.escapeHtml(value);
-        return String(value ?? '')
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;');
+        return String(value ?? '');
     }
 
     _escapeText(value) {
