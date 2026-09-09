@@ -82,6 +82,17 @@ class MultiAudioPanel {
             : this.assignments[index];
     }
 
+    _slotAudibleWeight(index) {
+        if (window.MultiAudioPathGains?.computeSlotAudibleWeight) {
+            return window.MultiAudioPathGains.computeSlotAudibleWeight(
+                this.assignments,
+                this.mixPosition,
+                index
+            );
+        }
+        return this._slotWeight(index);
+    }
+
     _renderMetaRow(slot, index, weightPct) {
         const effective = this._effectiveAssignment(index);
         const weight = `<span class="multi-audio-dock__weight">${weightPct}%</span>`;
@@ -117,7 +128,7 @@ class MultiAudioPanel {
         list.innerHTML = this.slots.map((slot, index) => {
             const isActive = index === this.activeSlotIndex;
             const color = window.MultiAudioConstants.getSlotColor(slot);
-            const weight = this._slotWeight(index);
+            const weight = this._slotAudibleWeight(index);
             const weightPct = Math.round(weight * 100);
             const stored = this.assignments[index];
             const effective = this._effectiveAssignment(index);

@@ -237,9 +237,93 @@ body {
     display: block;
 }
 
+/* Breadcrumb: the "where am I" strip above the content column. */
+.analyze-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding-bottom: var(--spacing-sm);
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+    min-height: 1.5rem;
+}
+
+.analyze-breadcrumb:empty {
+    display: none;
+}
+
+.analyze-breadcrumb__link {
+    background: none;
+    border: none;
+    padding: 2px 4px;
+    margin: 0 -4px;
+    font: inherit;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    text-decoration: underline;
+    text-decoration-color: var(--color-border);
+    text-underline-offset: 3px;
+}
+
+.analyze-breadcrumb__link:hover {
+    color: var(--color-text);
+    text-decoration-color: currentColor;
+}
+
+.analyze-breadcrumb__current {
+    color: var(--color-text);
+    font-weight: var(--font-weight-medium);
+}
+
+.analyze-breadcrumb__sep {
+    color: var(--color-text-faint);
+}
+
 /* First panel in the scroll column sits on the shared top line. */
 #landscapeFieldPanel {
     margin-top: 0;
+}
+
+/* Small ghost action in a panel header (map toggle, inline-trial close). */
+.analyze-panel__title-tools {
+    display: flex;
+    align-items: baseline;
+    gap: var(--spacing-md);
+    min-width: 0;
+}
+
+.analyze-panel__action {
+    background: none;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-pill);
+    padding: 2px 10px;
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.analyze-panel__action:hover {
+    color: var(--color-text);
+    border-color: var(--color-text-muted);
+}
+
+/* Collapsed landscape: header band (title + meta + toggle) stays as a
+   compact strip; the cohorts row and the plot are hidden. */
+#landscapeFieldPanel.analyze-panel--map-collapsed {
+    padding-bottom: 0;
+}
+
+#landscapeFieldPanel.analyze-panel--map-collapsed .analyze-panel__title-row {
+    margin-bottom: 0;
+    border-bottom: none;
+}
+
+#landscapeFieldPanel.analyze-panel--map-collapsed #tagCohortsPanel,
+#landscapeFieldPanel.analyze-panel--map-collapsed #nadLandscapeChart {
+    display: none;
 }
 
 .analyze-sticky-context {

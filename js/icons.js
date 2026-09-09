@@ -42,6 +42,8 @@
         listFilter: svg('<path d="M3 6h18"/><path d="M7 12h10"/><path d="M10 18h4"/>'),
         // rotate-cw — refresh toolbar button
         refresh: svg('<path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/>'),
+        // download — analysis CSV export
+        download: svg('<path d="M12 15V3"/><path d="m7 10 5 5 5-5"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>'),
 
         // Backward-compat aliases (older data-icon / template keys)
         compass: null,

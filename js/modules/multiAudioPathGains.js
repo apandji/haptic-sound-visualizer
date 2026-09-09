@@ -51,6 +51,28 @@ function computePathGains(assignments, mixPosition, options = {}) {
     return pathGains;
 }
 
+/** Per-slot level for UI/viz — includes 2× boost when Disruptive borrows Attentive. */
+function computeSlotAudibleWeight(assignments, mixPosition, slotIndex, options = {}) {
+    const gainMult = options.disruptiveGainMultiplier ?? DISRUPTIVE_GAIN_MULTIPLIER;
+    const weights = computeSlotWeights(mixPosition);
+    const weight = weights[slotIndex] || 0;
+
+    if (hasOwnSlotAssignment(assignments, slotIndex)) {
+        return weight;
+    }
+
+    const pairSource = getDisruptivePairSource();
+    if (pairSource[slotIndex] != null && weight > 0) {
+        const attentiveIndex = pairSource[slotIndex];
+        const source = assignments?.[attentiveIndex];
+        if (source?.path) {
+            return weight * gainMult;
+        }
+    }
+
+    return weight;
+}
+
 function sanitizeSlotAssignments(assignments) {
     const slotCount = window.MultiAudioConstants?.SLOT_COUNT || 5;
     const next = (assignments || []).map((slot) => (slot ? { ...slot } : null));
@@ -107,6 +129,7 @@ if (typeof window !== 'undefined') {
         getAllSlotIndices,
         getDisruptivePairSource,
         computePathGains,
+        computeSlotAudibleWeight,
         sanitizeSlotAssignments,
         validateSlotAssignment,
         hasOwnSlotAssignment,
@@ -120,6 +143,7 @@ if (typeof module !== 'undefined' && module.exports) {
         getAllSlotIndices,
         getDisruptivePairSource,
         computePathGains,
+        computeSlotAudibleWeight,
         sanitizeSlotAssignments,
         validateSlotAssignment,
         hasOwnSlotAssignment,

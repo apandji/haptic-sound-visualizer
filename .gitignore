@@ -46,6 +46,9 @@ data/haptics-study/*.db
 dist/
 build/
 
+# Generated Gemini / analysis CSV dumps (contain participant-coded study data)
+exports/
+
 # Study pepper + participant codebook (names for one-time backfill only)
 .study_pepper
 .env

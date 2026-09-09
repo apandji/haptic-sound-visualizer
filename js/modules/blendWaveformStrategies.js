@@ -86,7 +86,14 @@ const BlendWaveformStrategies = (function createBlendWaveformStrategies() {
     }
 
     function activeSources(sources) {
-        return (sources || []).filter((source) => source?.soundFile?.isLoaded() && source.weight > 0.001);
+        return (sources || []).filter((source) => {
+            const level = sourceLevel(source);
+            return source?.soundFile?.isLoaded() && level > 0.001;
+        });
+    }
+
+    function sourceLevel(source) {
+        return source?.audibleWeight ?? source?.weight ?? 0;
     }
 
     function lookupPatternMetadata(patternMetadata, source) {
@@ -185,14 +192,14 @@ const BlendWaveformStrategies = (function createBlendWaveformStrategies() {
 
     register('layered', (ctx) => {
         const { p, sources, width, height } = ctx;
-        const layers = activeSources(sources).sort((a, b) => a.weight - b.weight);
+        const layers = activeSources(sources).sort((a, b) => sourceLevel(a) - sourceLevel(b));
 
         drawCenterLine(p, width, height);
         layers.forEach((source) => {
             const samples = sampleWaveform(source.soundFile);
             const rgb = hexToRgb(source.color);
-            const alpha = Math.floor(40 + source.weight * 215);
-            const strokeWeight = 1 + source.weight * 2.5;
+            const alpha = Math.floor(40 + sourceLevel(source) * 215);
+            const strokeWeight = 1 + sourceLevel(source) * 2.5;
             drawWaveformPath(p, samples, width, height, rgb, alpha, strokeWeight);
         });
     });
@@ -208,9 +215,9 @@ const BlendWaveformStrategies = (function createBlendWaveformStrategies() {
 
         layers.forEach((source) => {
             const samples = sampleWaveform(source.soundFile, numPoints);
-            totalWeight += source.weight;
+            totalWeight += sourceLevel(source);
             for (let i = 0; i < numPoints; i++) {
-                composite[i] += samples[i] * source.weight;
+                composite[i] += samples[i] * sourceLevel(source);
             }
         });
 
@@ -234,7 +241,7 @@ const BlendWaveformStrategies = (function createBlendWaveformStrategies() {
         if (!layers.length) return;
 
         const dominant = layers.reduce((best, source) => (
-            source.weight > best.weight ? source : best
+            sourceLevel(source) > sourceLevel(best) ? source : best
         ), layers[0]);
 
         drawCenterLine(p, width, height);
@@ -262,17 +269,17 @@ const BlendWaveformStrategies = (function createBlendWaveformStrategies() {
             p.strokeWeight(1);
             p.line(0, yTop, width, yTop);
 
-            if (!source?.soundFile?.isLoaded() || source.weight <= 0.001) {
+            if (!source?.soundFile?.isLoaded() || sourceLevel(source) <= 0.001) {
                 continue;
             }
 
             const samples = sampleWaveform(source.soundFile);
             const rgb = hexToRgb(source.color);
-            const alpha = Math.floor(50 + source.weight * 205);
+            const alpha = Math.floor(50 + sourceLevel(source) * 205);
             const amplitude = laneHeight * 0.38;
 
             p.stroke(rgb[0], rgb[1], rgb[2], alpha);
-            p.strokeWeight(1.2 + source.weight);
+            p.strokeWeight(1.2 + sourceLevel(source));
             p.noFill();
             p.beginShape();
             for (let j = 0; j < samples.length; j++) {
@@ -299,12 +306,12 @@ const BlendWaveformStrategies = (function createBlendWaveformStrategies() {
             p.strokeWeight(1);
             p.line(0, yTop, width, yTop);
 
-            if (!source?.soundFile?.isLoaded() || source.weight <= 0.001) {
+            if (!source?.soundFile?.isLoaded() || sourceLevel(source) <= 0.001) {
                 continue;
             }
 
             const rgb = hexToRgb(source.color);
-            const alpha = Math.floor(55 + source.weight * 200);
+            const alpha = Math.floor(55 + sourceLevel(source) * 200);
             drawStereoLane(p, source.soundFile, width, yTop, laneHeight, rgb, alpha);
         }
 
@@ -349,15 +356,15 @@ const BlendWaveformStrategies = (function createBlendWaveformStrategies() {
             const balance = meta?.stereo_balance ?? 0;
             const movement = meta?.stereo_movement ?? 0;
             const rgb = hexToRgb(source.color);
-            const alpha = Math.floor(70 + source.weight * 185);
-            const radius = 5 + source.weight * 14;
+            const alpha = Math.floor(70 + sourceLevel(source) * 185);
+            const radius = 5 + sourceLevel(source) * 14;
 
             const x = plot.left + plot.width / 2 + balance * (plot.width / 2 - 10);
             const y = plot.top + plot.height - (movement / movementMax) * plot.height;
 
-            blendBalance += balance * source.weight;
-            blendMovement += movement * source.weight;
-            blendWeight += source.weight;
+            blendBalance += balance * sourceLevel(source);
+            blendMovement += movement * sourceLevel(source);
+            blendWeight += sourceLevel(source);
 
             p.noStroke();
             p.fill(rgb[0], rgb[1], rgb[2], alpha);

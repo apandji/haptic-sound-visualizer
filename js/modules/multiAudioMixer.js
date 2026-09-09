@@ -90,9 +90,10 @@ class MultiAudioMixer {
 
     _applyVolumes() {
         const pathGains = this._getPathGains();
-        const maxGain = window.MultiAudioPathGains?.DISRUPTIVE_GAIN_MULTIPLIER || 2;
+        const peak = window.MultiAudioPathGains?.DISRUPTIVE_GAIN_MULTIPLIER || 2;
         this.tracks.forEach((soundFile, path) => {
-            const gain = Math.min(maxGain, pathGains.get(path) || 0);
+            const raw = pathGains.get(path) || 0;
+            const gain = Math.min(1, raw / peak);
             try {
                 soundFile.setVolume(gain);
             } catch (error) {
@@ -195,6 +196,9 @@ class MultiAudioMixer {
             const usesFallback = window.MultiAudioConstants?.usesAttentiveFallback
                 ? window.MultiAudioConstants.usesAttentiveFallback(this.slots, index)
                 : false;
+            const audibleWeight = window.MultiAudioPathGains?.computeSlotAudibleWeight
+                ? window.MultiAudioPathGains.computeSlotAudibleWeight(this.slots, this.mixPosition, index)
+                : weights[index];
 
             return {
                 slotIndex: index,
@@ -206,6 +210,7 @@ class MultiAudioMixer {
                 usesPairFallback: usesFallback,
                 color: window.MultiAudioConstants.getSlotColor(meta),
                 weight: weights[index],
+                audibleWeight,
                 path,
                 name: effective?.name || null,
                 soundFile: path ? this.tracks.get(path) || null : null

@@ -6,17 +6,18 @@
     <title>SAIL Pattern Library - Analyze</title>
     <script src="js/auth.js?v=2026-06-13.1"></script>
     <script src="js/theme.js?v=2026-06-08.1"></script>
-    <script src="js/icons.js?v=2026-06-13.1"></script>
+    <script src="js/icons.js?v=2026-09-04.1"></script>
     <link rel="preconnect" href="https://cdn.plot.ly" crossorigin>
     <link rel="stylesheet" href="css/design-tokens.css?v=2026-06-09.3">
     <link rel="stylesheet" href="css/chrome.css?v=2026-06-13.1">
-    <link rel="stylesheet" href="css/pages/analyze.css?v=2026-06-13.1">
+    <link rel="stylesheet" href="css/pages/analyze.css?v=2026-07-10.1">
     <link rel="stylesheet" href="css/components/base/patternExplorer.css?v=2026-06-09.2">
     <link rel="stylesheet" href="css/components/variants/patternExplorerForAnalysis.css?v=2026-06-12.5">
     <link rel="stylesheet" href="css/components/base/summaryStats.css?v=2026-06-07.1">
     <link rel="stylesheet" href="css/components/base/radarChart.css?v=2026-06-08.2">
     <link rel="stylesheet" href="css/components/base/boxPlotChart.css?v=2026-06-08.2">
     <link rel="stylesheet" href="css/components/base/timeSeriesChart.css?v=2026-06-08.2">
+    <link rel="stylesheet" href="css/components/base/trialTemporalExplorer.css?v=2026-07-10.2">
     <link rel="stylesheet" href="css/components/base/analyzeSidebarNav.css?v=2026-06-12.1">
     <link rel="stylesheet" href="css/components/base/analyzeToolbar.css?v=2026-06-07.1">
     <link rel="stylesheet" href="css/components/base/trialDetailView.css?v=2026-06-12.2">
@@ -71,11 +72,15 @@
             </div>
 
             <div class="analyze-main__content" id="analyzeContent">
+                <nav class="analyze-breadcrumb" id="analyzeBreadcrumb" aria-label="Analyze navigation"></nav>
                 <div id="patternsModeView" class="analyze-view">
                     <section class="analyze-panel" id="landscapeFieldPanel">
                         <div class="analyze-panel__title-row">
                             <h3 class="analyze-panel__title">Intensity/Urgency Distribution</h3>
-                            <span class="analyze-panel__meta" id="landscapeFieldMeta"></span>
+                            <div class="analyze-panel__title-tools">
+                                <span class="analyze-panel__meta" id="landscapeFieldMeta"></span>
+                                <button type="button" class="analyze-panel__action" id="landscapeCollapseToggle" aria-expanded="true" aria-controls="nadLandscapeChart">Hide map</button>
+                            </div>
                         </div>
                         <div id="tagCohortsPanel"></div>
                         <div id="nadLandscapeChart"></div>
@@ -119,6 +124,7 @@
                             <div class="analyze-panel__chart analyze-panel__chart--full">
                                 <div id="timeSeriesChart"></div>
                             </div>
+                            <div id="trialTemporalExplorer"></div>
                             <div class="analyze-panel__grid">
                                 <div class="analyze-panel__chart">
                                     <div id="radarChart"></div>
@@ -184,6 +190,17 @@
                         </div>
                         <div id="trialsWorkbench"></div>
                     </section>
+
+                    <section class="analyze-panel" id="patternTrialDetailSection" hidden>
+                        <div class="analyze-panel__title-row">
+                            <h3 class="analyze-panel__title">Trial detail</h3>
+                            <div class="analyze-panel__title-tools">
+                                <span class="analyze-panel__meta">viewing one trial of this pattern</span>
+                                <button type="button" class="analyze-panel__action" id="patternTrialDetailClose">Close</button>
+                            </div>
+                        </div>
+                        <div id="patternTrialDetailView"></div>
+                    </section>
                     </div><!-- /patternDetailsContent -->
                     </div><!-- /patternView -->
                 </div><!-- /patternsModeView -->
@@ -223,12 +240,12 @@
     <script src="js/dataCache.js?v=2026-06-07.6"></script>
     <script src="js/analyze/constants.js?v=2026-06-10.1"></script>
     <script src="js/analyze/storage.js?v=2026-06-05.3"></script>
-    <script src="js/modules/analysisDataProcessor.js?v=2026-06-12.10"></script>
+    <script src="js/modules/analysisDataProcessor.js?v=2026-07-10.1"></script>
     <script src="js/components/base/patternExplorer.js?v=2026-06-05.3"></script>
     <script src="js/components/base/analysisDataLoader.js?v=2026-06-07.6"></script>
-    <script src="js/components/base/analyzeSidebarNav.js?v=2026-06-13.1"></script>
+    <script src="js/components/base/analyzeSidebarNav.js?v=2026-07-10.1"></script>
     <script src="js/components/base/analyzeDateRangeCalendar.js?v=2026-06-05.6"></script>
-    <script src="js/components/base/analyzeToolbar.js?v=2026-06-13.1"></script>
+    <script src="js/components/base/analyzeToolbar.js?v=2026-09-04.1"></script>
     <script src="js/components/variants/patternExplorerForAnalysis.js?v=2026-06-12.2"></script>
     <script src="js/components/base/summaryStats.js?v=2026-06-07.1"></script>
     <script src="js/components/base/analyzePatternTabs.js?v=2026-06-07.7"></script>
@@ -237,15 +254,16 @@
     <script src="js/components/base/radarChart.js?v=2026-06-08.3"></script>
     <script src="js/components/base/boxPlotChart.js?v=2026-06-08.3"></script>
     <script src="js/components/base/timeSeriesChart.js?v=2026-06-08.3"></script>
+    <script src="js/components/base/trialTemporalExplorer.js?v=2026-07-10.2"></script>
     <script src="js/components/base/nadLandscapeChart.js?v=2026-06-11.3"></script>
     <script src="js/components/base/attentionQueuePanel.js?v=2026-06-13.1"></script>
     <script src="js/components/base/tagCohortsPanel.js?v=2026-06-11.3"></script>
     <script src="js/components/base/patternTagsPanel.js?v=2026-06-12.1"></script>
     <script src="js/components/base/wordCloudPanel.js?v=2026-06-11.1"></script>
-    <script src="js/components/base/trialsWorkbench.js?v=2026-06-12.1"></script>
+    <script src="js/components/base/trialsWorkbench.js?v=2026-07-10.1"></script>
     <script src="js/analyze/config.js?v=2026-06-08.3"></script>
-    <script src="js/analyze/state.js?v=2026-06-12.1"></script>
-    <script src="js/analyze/app.js?v=2026-06-12.10"></script>
+    <script src="js/analyze/state.js?v=2026-07-10.2"></script>
+    <script src="js/analyze/app.js?v=2026-09-04.1"></script>
     <script src="js/analyze/bootstrap.js?v=2026-06-12.1"></script>
     <script src="js/appNav.js?v=2026-06-12.6"></script>
 </body>

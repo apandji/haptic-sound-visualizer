@@ -7,6 +7,7 @@ class AnalyzeToolbar {
         this.container = document.getElementById(this.containerId);
         this.onFiltersChange = options.onFiltersChange || null;
         this.onRefresh = options.onRefresh || null;
+        this.onExport = options.onExport || null;
         this.filterOptions = { participants: [], dateBounds: { min: null, max: null }, datesWithData: [] };
         this.filtersOpen = false;
         this.includedParticipantIds = null;
@@ -26,11 +27,16 @@ class AnalyzeToolbar {
             <button type="button" id="analyzeRefreshBtn" class="icon-btn analyze-refresh-btn" title="Reload from database" aria-label="Reload from database">
                 <span class="icon analyze-refresh-btn__icon">${icons.refresh || ''}</span>
             </button>
+            <button type="button" id="analyzeExportBtn" class="icon-btn" title="Export CSVs for Gemini" aria-label="Export CSVs for Gemini">
+                <span class="icon">${icons.download || ''}</span>
+                <span class="icon-btn__label">Export</span>
+            </button>
         `;
 
         this.summaryEl = document.getElementById('analyzeCorpusSummary');
         this.filtersBadgeEl = this.container.querySelector('#analyzeFiltersBadge');
         this.refreshButton = this.container.querySelector('#analyzeRefreshBtn');
+        this.exportButton = this.container.querySelector('#analyzeExportBtn');
         this.filtersToggle = this.container.querySelector('#analyzeFiltersToggle');
         this.completedOnlyInput = null;
         this.hideExcludedInput = null;
@@ -79,6 +85,9 @@ class AnalyzeToolbar {
 
         if (this.refreshButton && this.onRefresh) {
             this.refreshButton.addEventListener('click', () => this.onRefresh());
+        }
+        if (this.exportButton && this.onExport) {
+            this.exportButton.addEventListener('click', () => this.onExport());
         }
     }
 
@@ -302,13 +311,30 @@ class AnalyzeToolbar {
         const trialCount = summary.trialCount || 0;
         const allTrialCount = summary.allTrialCount;
         const filtersActive = this._countActiveFilters() > 0;
+        const narrowed = allTrialCount != null && allTrialCount !== trialCount;
 
-        // Make the active corpus unambiguous when filters narrow the data.
-        const trialsPart = filtersActive && allTrialCount != null && allTrialCount !== trialCount
-            ? `Filtered: ${trialCount} of ${allTrialCount} trials`
+        // Make the active corpus unambiguous whenever anything (including
+        // the default completed/excluded filters) is hiding trials.
+        const trialsPart = narrowed
+            ? `${filtersActive ? 'Filtered: ' : ''}${trialCount} of ${allTrialCount} trials`
             : `${trialCount} trials`;
 
         this.summaryEl.textContent = `${summary.sessionCount || 0} sessions · ${trialsPart} · ${summary.participantCount || 0} participants`;
+        this.summaryEl.title = narrowed
+            ? `Showing ${trialCount} of ${allTrialCount} trials — hidden by: ${this._hiddenReasons().join(', ')}. Open Filters to adjust.`
+            : '';
+    }
+
+    _hiddenReasons() {
+        const reasons = [];
+        if (this.includedParticipantIds !== null) reasons.push('participant filter');
+        const { dateFrom, dateTo } = this.dateRangeCalendar
+            ? this.dateRangeCalendar.getRange()
+            : { dateFrom: '', dateTo: '' };
+        if (dateFrom || dateTo) reasons.push('date filter');
+        if (this.completedOnlyInput?.checked) reasons.push('completed trials only');
+        if (this.hideExcludedInput?.checked) reasons.push('excluded trials hidden');
+        return reasons.length ? reasons : ['active filters'];
     }
 
     getFilters() {

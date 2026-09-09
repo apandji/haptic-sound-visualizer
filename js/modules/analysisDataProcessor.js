@@ -214,6 +214,32 @@ class AnalysisDataProcessor {
     }
 
     /**
+     * Per-trial temporal EEG series for one pattern (Brain response deep
+     * dive). Same per-second binning as the aggregate temporal view, but
+     * computed for each trial individually so single-trial dynamics and
+     * participant differences stay visible.
+     */
+    getPatternTrialTimeSeries(patternName) {
+        const trials = this._getFlatTrials({ patternName })
+            .filter(trial => this._trialHasEeg(trial))
+            .sort((a, b) => {
+                const dateCompare = String(a.sessionDate || '').localeCompare(String(b.sessionDate || ''));
+                if (dateCompare !== 0) return dateCompare;
+                return (a.trialOrder || 0) - (b.trialOrder || 0);
+            });
+
+        return trials.map(trial => ({
+            dbTrialId: trial.dbTrialId,
+            trialOrder: trial.trialOrder,
+            participantCode: trial.participantCode || 'Unknown',
+            participantId: trial.participantId,
+            sessionDate: trial.sessionDate,
+            excludeFromAnalysis: Boolean(trial.excludeFromAnalysis),
+            timeSeries: this._computeTimeSeries([trial])
+        }));
+    }
+
+    /**
      * Corpus-wide per-pattern aggregates for the NAD landscape view.
      * Aggregates respect the active global filters; trialPoints additionally
      * include excluded trials (flagged) so the bloom can render them hollow.

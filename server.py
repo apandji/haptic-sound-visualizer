@@ -9,9 +9,12 @@ from __future__ import annotations
 
 import json
 import os
+from datetime import date
 from pathlib import Path
 
-from flask import Flask, jsonify, request, send_from_directory
+from io import BytesIO
+
+from flask import Flask, jsonify, request, send_file, send_from_directory
 
 from auth import (
     api_me,
@@ -63,6 +66,7 @@ try:
         resolve_participant_from_name,
     )
     from participant_ids import is_pepper_configured
+    from analysis_export import build_export_zip_bytes
 
     DB_AVAILABLE = True
 except ImportError as exc:
@@ -184,6 +188,26 @@ def route_pattern_tags_get():
     if not DB_AVAILABLE:
         return jsonify({'error': 'Database not available'}), 500
     return jsonify(get_pattern_tag_state())
+
+
+@app.route('/api/analysis/export')
+def route_analysis_export():
+    if not DB_AVAILABLE:
+        return jsonify({'error': 'Database not available'}), 500
+    readings_arg = (request.args.get('readings') or '').strip().lower()
+    include_readings = readings_arg in ('1', 'true', 'yes')
+    try:
+        payload = build_export_zip_bytes(include_readings=include_readings)
+    except Exception as exc:
+        return jsonify({'error': str(exc)}), 500
+    stamp = date.today().isoformat()
+    log_audit('analysis.export', resource=f'readings={int(include_readings)}')
+    return send_file(
+        BytesIO(payload),
+        mimetype='application/zip',
+        as_attachment=True,
+        download_name=f'haptic_analysis_export_{stamp}.zip',
+    )
 
 
 @app.route('/api/timing-stats')

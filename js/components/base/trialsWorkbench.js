@@ -291,7 +291,7 @@ class TrialsWorkbench {
                 </div>
                 ${analystBlock}
                 <div class="trials-workbench__drawer-footer">
-                    <button type="button" class="trials-workbench__drawer-open" data-open-trial="${String(trial.dbTrialId)}">Open full trial view →</button>
+                    <button type="button" class="trials-workbench__drawer-open" data-open-trial="${String(trial.dbTrialId)}">Open full trial detail ↓</button>
                 </div>
             </div>
         `;

@@ -21,7 +21,7 @@ class AnalyzeSidebarNav {
         this.container.innerHTML = `
             <div class="segmented-control segmented-control--sm analyze-sidebar-nav__tabs" id="analyzeSidebarTablist" role="tablist" aria-label="Sidebar view">
                 <button type="button" class="segmented-control__item segmented-control__item--active" id="analyzeSidebarTab-patterns" data-view="patterns" role="tab" aria-selected="true" aria-controls="patternSidebarPanel">${patternsIcon}Patterns</button>
-                <button type="button" class="segmented-control__item" id="analyzeSidebarTab-trials" data-view="trials" role="tab" aria-selected="false" aria-controls="trialsView" tabindex="-1">${trialsIcon}Trials</button>
+                <button type="button" class="segmented-control__item" id="analyzeSidebarTab-trials" data-view="trials" role="tab" aria-selected="false" aria-controls="trialsView" tabindex="-1" title="Audit every trial across all patterns">${trialsIcon}All trials</button>
             </div>
         `;
 

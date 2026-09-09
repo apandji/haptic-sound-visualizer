@@ -8,6 +8,7 @@ let summaryStats = null;
 let radarChart = null;
 let boxPlotChart = null;
 let timeSeriesChart = null;
+let trialTemporalExplorer = null;
 let patternTabs = null;
 let subjectiveProfilePanel = null;
 let trialDetailView = null;
@@ -19,10 +20,18 @@ let actionsWordCloud = null;
 let vibesWordCloud = null;
 let trialsWorkbench = null;
 let allTrialsWorkbench = null;
+let patternTrialDetailView = null;
 
 let currentView = 'patterns'; // 'patterns' | 'trials'
 let selectedPatternName = null;
 let selectedTrialDbId = null;
+// Trial opened inline inside the pattern view (stays in Patterns mode).
+let inlineTrialDbId = null;
+// Landscape map collapse: auto-collapses when a pattern is selected,
+// unless the user pins it open with the header toggle.
+let landscapeCollapsed = false;
+let mapUserPinnedOpen = false;
+let landscapeChartDirty = false;
 let patternMetadataCatalog = {};
 let modeSearchQueries = { patterns: '', trials: '' };
 

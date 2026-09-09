@@ -95,6 +95,19 @@ This updates `pattern_metadata.json` (with backup).
 - Legacy v1 files (`haptic_research.db`, `schema.sql`) are kept for reference only
 - Legacy MySQL-style sketch (ignore): `docs/archive/database_schema.txt`
 
+## Export for Gemini
+
+Writes a codebook plus tidy CSVs (trial, pattern, session, survey, EEG summaries).
+Participant codes are included; timestamp-level EEG is omitted unless you pass `--readings`.
+
+```bash
+python3 analysis_export.py
+```
+
+Output lands in `exports/analysis_YYYY-MM-DD/`. Upload `CODEBOOK.md`, `trials.csv`, and `patterns.csv` first.
+
+On the Analyze page, **Export** downloads the same bundle as a zip (`GET /api/analysis/export`).
+
 Initialize (or recreate) an empty v2 database:
 
 ```bash
@@ -125,6 +138,7 @@ Opens at `http://127.0.0.1:8000/`. Auth is **off by default**. To enable WashU E
 | GET | `/api/analysis/sessions` | Full session corpus for Analyze (`?limit=N` optional) |
 | GET | `/api/analysis/tags` | Analyst classification tag vocabulary |
 | POST | `/api/analysis/tags` | Create a custom analyst tag |
+| GET | `/api/analysis/export` | Zip of analysis CSVs + codebook (`?readings=1` adds raw EEG) |
 | GET | `/api/analysis/pattern-tags` | Tag assignments + notes per pattern |
 | POST | `/api/analysis/pattern-tags` | Save tags + notes for a pattern |
 | POST | `/api/analysis/trials/notes` | Save analyst note on a trial |

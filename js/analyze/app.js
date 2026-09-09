@@ -4,7 +4,8 @@ function initializeComponents() {
     toolbar = new AnalyzeToolbar({
         containerId: 'analyzeToolbar',
         onFiltersChange: handleFiltersChange,
-        onRefresh: () => dataLoader?.loadFromDatabase()
+        onRefresh: () => dataLoader?.loadFromDatabase(),
+        onExport: exportAnalysisCsv
     });
 
     dataLoader = new AnalysisDataLoader({
@@ -29,6 +30,13 @@ function initializeComponents() {
     boxPlotChart = new BoxPlotChart({ containerId: 'boxPlotChart' });
     timeSeriesChart = new TimeSeriesChart({ containerId: 'timeSeriesChart' });
 
+    // Per-trial deep dive under the aggregate temporal view. "view trial"
+    // routes through openTrialView, which keeps pattern context.
+    trialTemporalExplorer = new TrialTemporalExplorer({
+        containerId: 'trialTemporalExplorer',
+        onTrialOpen: (dbTrialId) => openTrialView(dbTrialId)
+    });
+
     patternTabs = new AnalyzePatternTabs({
         containerId: 'analyzePatternTabs',
         onChange: () => handleResize()
@@ -40,6 +48,15 @@ function initializeComponents() {
         containerId: 'trialDetailView',
         onExcludeChange: handleTrialExcludeChange,
         onNavigate: (dbTrialId) => openTrialView(dbTrialId),
+        onSaveNote: handleDetailNoteSave
+    });
+
+    // Same detail component, mounted inside the pattern view so opening a
+    // trial doesn't yank the analyst out of pattern context.
+    patternTrialDetailView = new TrialDetailView({
+        containerId: 'patternTrialDetailView',
+        onExcludeChange: handleInlineTrialExcludeChange,
+        onNavigate: (dbTrialId) => openInlineTrial(dbTrialId),
         onSaveNote: handleDetailNoteSave
     });
 
@@ -103,6 +120,20 @@ function initializeComponents() {
     patternRailEl = document.getElementById('patternRail');
     attentionRailEl = document.getElementById('attentionRail');
 
+    const mapToggle = document.getElementById('landscapeCollapseToggle');
+    if (mapToggle) {
+        mapToggle.addEventListener('click', () => {
+            // Expanding pins the map open for the session; collapsing unpins.
+            mapUserPinnedOpen = landscapeCollapsed;
+            setLandscapeCollapsed(!landscapeCollapsed);
+        });
+    }
+
+    const inlineTrialClose = document.getElementById('patternTrialDetailClose');
+    if (inlineTrialClose) {
+        inlineTrialClose.addEventListener('click', () => closeInlineTrial());
+    }
+
     bindModebar();
 }
 
@@ -156,14 +187,128 @@ function openPattern(patternName) {
 }
 
 function openTrialView(dbTrialId) {
+    // From the pattern view, open the trial inline instead of switching
+    // modes — the pattern rail and attention queue stay in place.
+    if (currentView === 'patterns' && selectedPatternName) {
+        openInlineTrial(dbTrialId);
+        return;
+    }
     selectedTrialDbId = dbTrialId;
     if (currentView !== 'trials') {
         currentView = 'trials';
         renderCurrentView();
     } else {
         renderTrialDetail();
+        updateBreadcrumb();
     }
     allTrialsWorkbench.setSelectedTrial(dbTrialId);
+}
+
+function openInlineTrial(dbTrialId) {
+    inlineTrialDbId = dbTrialId;
+    renderInlineTrialDetail();
+    const section = document.getElementById('patternTrialDetailSection');
+    if (section) {
+        section.hidden = false;
+        // Land the panel header below the sticky pattern context.
+        const sticky = document.getElementById('analyzeStickyContext');
+        section.style.scrollMarginTop = `${(sticky ? sticky.offsetHeight : 0) + 12}px`;
+        section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    trialsWorkbench.setSelectedTrial(dbTrialId);
+    updateBreadcrumb();
+}
+
+function closeInlineTrial(options = {}) {
+    inlineTrialDbId = null;
+    const section = document.getElementById('patternTrialDetailSection');
+    if (section) section.hidden = true;
+    trialsWorkbench.setSelectedTrial(null);
+    updateBreadcrumb();
+    if (options.scroll && patternViewEl) {
+        patternViewEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+}
+
+function renderInlineTrialDetail() {
+    if (!patternTrialDetailView || !inlineTrialDbId) return;
+    const detail = dataProcessor.getTrialDetail(inlineTrialDbId);
+    if (!detail) {
+        closeInlineTrial();
+        return;
+    }
+    const ids = orderedTrialIds(selectedPatternName);
+    const index = ids.indexOf(String(inlineTrialDbId));
+    patternTrialDetailView.render(detail, {
+        prevId: index > 0 ? ids[index - 1] : null,
+        nextId: index >= 0 && index < ids.length - 1 ? ids[index + 1] : null,
+        position: index >= 0 ? `${index + 1} of ${ids.length}` : null
+    });
+}
+
+// Exclusion toggled from the inline trial panel: shared persistence path,
+// then re-render the panel so badge + checkbox reflect the saved state.
+async function handleInlineTrialExcludeChange(dbTrialId, excluded) {
+    await handleWorkbenchExcludeToggle(dbTrialId, excluded);
+    renderInlineTrialDetail();
+}
+
+// Breadcrumb: Corpus / pattern / trial — the "where am I" strip.
+function updateBreadcrumb() {
+    const el = document.getElementById('analyzeBreadcrumb');
+    if (!el) return;
+
+    const crumbs = [];
+    if (currentView === 'trials') {
+        crumbs.push({ label: 'Corpus', action: 'corpus' });
+        crumbs.push({ label: 'All trials' });
+    } else if (selectedPatternName) {
+        crumbs.push({ label: 'Corpus', action: 'corpus' });
+        if (inlineTrialDbId) {
+            const detail = dataProcessor.getTrialDetail(inlineTrialDbId);
+            crumbs.push({ label: selectedPatternName, action: 'pattern' });
+            crumbs.push({ label: detail ? `Trial #${detail.trialOrder ?? '—'}` : 'Trial' });
+        } else {
+            crumbs.push({ label: selectedPatternName });
+        }
+    } else {
+        crumbs.push({ label: 'Corpus overview' });
+    }
+
+    el.innerHTML = crumbs.map((crumb, index) => {
+        const sep = index ? '<span class="analyze-breadcrumb__sep" aria-hidden="true">/</span>' : '';
+        return crumb.action
+            ? `${sep}<button type="button" class="analyze-breadcrumb__link" data-crumb="${crumb.action}">${escapeHtml(crumb.label)}</button>`
+            : `${sep}<span class="analyze-breadcrumb__current" aria-current="page">${escapeHtml(crumb.label)}</span>`;
+    }).join('');
+
+    el.querySelectorAll('[data-crumb]').forEach(button => {
+        button.addEventListener('click', () => {
+            if (button.dataset.crumb === 'corpus') goToCorpus();
+            else if (button.dataset.crumb === 'pattern') closeInlineTrial({ scroll: true });
+        });
+    });
+}
+
+// Back to the corpus overview: clear selection, reopen the map.
+function goToCorpus() {
+    selectedPatternName = null;
+    inlineTrialDbId = null;
+    const section = document.getElementById('patternTrialDetailSection');
+    if (section) section.hidden = true;
+    sidebar.setSelectedPattern(null);
+    currentView = 'patterns';
+    renderCurrentView();
+    const main = document.getElementById('main-content');
+    if (main) main.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
 }
 
 function updatePatternHeader(patternName, metadata) {
@@ -202,6 +347,39 @@ async function loadPatternCatalog() {
         dataProcessor.setPatternCatalog(await response.json());
     } catch (err) {
         console.warn('Analyze: could not load pattern catalog', err);
+    }
+}
+
+async function exportAnalysisCsv() {
+    const button = toolbar?.exportButton;
+    if (button) button.disabled = true;
+    try {
+        const response = await fetch('/api/analysis/export');
+        if (!response.ok) {
+            let message = `Export failed (${response.status})`;
+            try {
+                const payload = await response.json();
+                if (payload?.error) message = payload.error;
+            } catch (_parseErr) {
+                /* keep status message */
+            }
+            throw new Error(message);
+        }
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        const stamp = new Date().toISOString().slice(0, 10);
+        link.href = url;
+        link.download = `haptic_analysis_export_${stamp}.zip`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+    } catch (err) {
+        console.error('Analyze: CSV export failed', err);
+        window.alert(err?.message || 'Could not export analysis CSVs');
+    } finally {
+        if (button) button.disabled = false;
     }
 }
 
@@ -344,6 +522,7 @@ function renderCurrentView() {
     } else {
         renderPatternsMode();
     }
+    updateBreadcrumb();
 }
 
 // Patterns mode: map on top, selected pattern's details right below it.
@@ -353,9 +532,35 @@ function renderPatternsMode() {
     analyzePlaceholder.style.display = 'none';
     analyzeContent.classList.add('active');
     analyzeContent.classList.remove('analyze-main__content--viewport');
+    syncLandscapeCollapse();
     renderLandscapeView();
     renderPatternDetails();
     handleResize();
+}
+
+// The map auto-collapses while a pattern is open (less scrolling to the
+// details), unless the user pinned it open with the header toggle.
+function syncLandscapeCollapse() {
+    setLandscapeCollapsed(Boolean(selectedPatternName) && !mapUserPinnedOpen);
+}
+
+function setLandscapeCollapsed(collapsed) {
+    landscapeCollapsed = collapsed;
+    const panel = document.getElementById('landscapeFieldPanel');
+    if (panel) panel.classList.toggle('analyze-panel--map-collapsed', collapsed);
+
+    const toggle = document.getElementById('landscapeCollapseToggle');
+    if (toggle) {
+        toggle.textContent = collapsed ? 'Show map' : 'Hide map';
+        toggle.setAttribute('aria-expanded', String(!collapsed));
+    }
+
+    // Re-plot on expand if data changed while the chart was hidden —
+    // Plotly can't size itself inside display:none containers.
+    if (!collapsed && landscapeChartDirty) {
+        renderLandscapeChart();
+    }
+    if (!collapsed) handleResize();
 }
 
 function renderPatternDetails() {
@@ -377,11 +582,8 @@ function renderLandscapeView() {
 
     const landscape = dataProcessor.getCorpusLandscape();
 
-    landscapeChart.update(landscape, {
-        tagsById: analysisTagsById,
-        patternTags: patternTagAssignments
-    });
-
+    // Queue + cohorts live in the rail and always refresh; the chart only
+    // re-plots while visible (deferred to expand when collapsed).
     attentionQueuePanel.update(
         dataProcessor.getResearchHealth(landscape),
         landscape,
@@ -394,6 +596,21 @@ function renderLandscapeView() {
     if (fieldMeta) {
         fieldMeta.textContent = landscapeMetaText(landscape);
     }
+
+    if (landscapeCollapsed) {
+        landscapeChartDirty = true;
+        return;
+    }
+    renderLandscapeChart(landscape);
+}
+
+function renderLandscapeChart(landscape = null) {
+    if (!landscapeChart) return;
+    landscapeChart.update(landscape || dataProcessor.getCorpusLandscape(), {
+        tagsById: analysisTagsById,
+        patternTags: patternTagAssignments
+    });
+    landscapeChartDirty = false;
 }
 
 function landscapeMetaText(landscape) {
@@ -425,9 +642,13 @@ function renderTrialsMode() {
 
 // Trials in the same order the workbench displays them:
 // sessions newest-first, trials by run order within each session.
-function orderedTrialIds() {
+// Pass a pattern name to scope prev/next to that pattern's trials.
+function orderedTrialIds(patternName = null) {
     const sessions = new Map();
-    for (const trial of dataProcessor.getTrials({ includeExcluded: true })) {
+    const query = patternName
+        ? { patternName, includeExcluded: true }
+        : { includeExcluded: true };
+    for (const trial of dataProcessor.getTrials(query)) {
         const key = String(trial.dbSessionId ?? trial.sessionId ?? 'unknown');
         if (!sessions.has(key)) {
             sessions.set(key, { date: trial.sessionDate || trial.startTime || '', trials: [] });
@@ -457,14 +678,22 @@ function renderTrialDetail() {
 }
 
 function handlePatternSelect(patternName) {
+    if (patternName !== selectedPatternName && inlineTrialDbId) {
+        // A different pattern's trial detail would be stale — drop it.
+        inlineTrialDbId = null;
+        const section = document.getElementById('patternTrialDetailSection');
+        if (section) section.hidden = true;
+    }
     selectedPatternName = patternName;
     analyzeMarkPatternViewed(patternName);
     if (currentView !== 'patterns') {
         currentView = 'patterns';
         renderCurrentView();
     } else {
+        syncLandscapeCollapse();
         renderPatternDetails();
         refreshSidebarContent();
+        updateBreadcrumb();
     }
     if (patternViewEl) {
         patternViewEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -529,8 +758,10 @@ function renderPatternAnalysis(patternName, options = {}) {
     }
     if (analysis.timeSeries) {
         timeSeriesChart.update(analysis.timeSeries);
+        trialTemporalExplorer.update(dataProcessor.getPatternTrialTimeSeries(patternName));
     } else {
         timeSeriesChart.clear();
+        trialTemporalExplorer.clear();
     }
 
     // Trials workbench (includes excluded trials so flags stay visible)
@@ -539,7 +770,12 @@ function renderPatternAnalysis(patternName, options = {}) {
         const workbenchTrials = dataProcessor.getTrials({ patternName, includeExcluded: true });
         trialsWorkbench.render(workbenchTrials, patternName);
         trialsPanel.hidden = workbenchTrials.length === 0;
+        if (inlineTrialDbId) trialsWorkbench.setSelectedTrial(inlineTrialDbId);
     }
+
+    // Keep the inline trial panel in sync (or close it if the trial fell
+    // out of the corpus, e.g. after a filter change).
+    if (inlineTrialDbId) renderInlineTrialDetail();
 
     refreshSidebarContent();
     handleResize();
