@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SAIL - Live sounds</title>
+    <script src="js/auth.js"></script>
+    <script src="js/theme.js"></script>
+    <link rel="stylesheet" href="css/design-tokens.css">
+    <link rel="stylesheet" href="css/chrome.css">
+    <link rel="stylesheet" href="css/pages/live-sounds.css">
+</head>
+<body>
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+    <header class="app-header app-header--bar">
+        <span class="app-header__brand">SAIL</span>
+        <nav class="app-nav-links" aria-label="Main navigation" data-app-nav>
+            <a href="index.html" class="app-nav-links__item">Explore</a>
+            <a href="test.html" class="app-nav-links__item">Test</a>
+            <a href="analyze.html" class="app-nav-links__item">Analyze</a>
+            <a href="live-sounds.html" class="app-nav-links__item app-nav-links__item--active" aria-current="page">Live sounds</a>
+        </nav>
+        <div data-auth-mount></div>
+        <div data-theme-toggle-mount></div>
+    </header>
+    <main id="main-content" class="live-page">
+        <div class="live-heading">
+            <div><h1>Live sound observations</h1><p>Play sounds outside the dashboard. Record a quiet baseline, then label each sound while EEG is streaming.</p></div>
+            <span id="connection" class="live-status" role="status">Disconnected</span>
+        </div>
+        <div class="live-layout">
+            <section class="live-card" aria-labelledby="record-heading">
+                <h2 id="record-heading">Record</h2>
+                <label for="participant">Session label <span class="hint">Avoid personal names</span></label>
+                <input id="participant" type="text" maxlength="80" placeholder="e.g. session 01">
+                <label for="sound-note">Sound description</label>
+                <textarea id="sound-note" rows="3" maxlength="1000" placeholder="Source, frequency or settings, volume, timing, and anything else you changed"></textarea>
+                <div class="live-actions">
+                    <button id="connect" type="button">Connect EEG</button>
+                    <button id="baseline" type="button" disabled>Start baseline</button>
+                    <button id="sound" type="button" disabled>Start sound</button>
+                    <button id="stop" type="button" disabled>Stop segment</button>
+                </div>
+                <p id="message" class="live-message" role="status">Start the EEG service, then connect. Use this page while Test is idle.</p>
+                <p id="current" class="live-current">No segment recording</p>
+                <div class="live-actions"><button id="export" type="button" disabled>Export session JSON</button><button id="new-session" type="button">New session</button></div>
+                <p class="hint">Recordings stay in this browser until you export them. Export before clearing browser data. This page never plays sound.</p>
+            </section>
+            <section class="live-card" aria-labelledby="chart-heading">
+                <h2 id="chart-heading">Live relative band power</h2>
+                <div class="live-legend"><span>Delta</span><span>Theta</span><span>Alpha</span><span>Beta</span><span>Gamma</span></div>
+                <canvas id="chart" width="900" height="350" aria-label="Recent relative EEG band power line chart" role="img"></canvas>
+                <p id="quality" class="hint">Waiting for readings</p>
+                <p class="hint">Band power is a rolling EEG estimate, not a raw waveform. Movement, poor contact, and changing volume can alter readings.</p>
+            </section>
+        </div>
+        <section class="live-card" aria-labelledby="segments-heading">
+            <h2 id="segments-heading">Recorded segments</h2>
+            <div class="live-table-wrap"><table><thead><tr><th>Type</th><th>Started</th><th>Duration</th><th>Readings</th><th>Mean alpha</th><th>Change vs baseline</th><th>Notes</th></tr></thead><tbody id="segments"><tr><td colspan="7">No segments yet</td></tr></tbody></table></div>
+        </section>
+    </main>
+    <script src="js/liveSounds.js"></script>
+    <script src="js/appNav.js"></script>
+</body>
+</html>
