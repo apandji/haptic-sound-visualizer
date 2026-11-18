@@ -6,7 +6,7 @@
     const COLORS = ['#8b5cf6', '#0ea5e9', '#22c55e', '#f59e0b', '#ef4444'];
     const MAX_READINGS = 3600;
     const $ = id => document.getElementById(id);
-    const ui = Object.fromEntries(['connection', 'participant', 'sound-note', 'connect', 'baseline', 'sound', 'stop', 'export', 'new-session', 'message', 'current', 'quality', 'chart', 'segments'].map(id => [id, $(id)]));
+    const ui = Object.fromEntries(['connection', 'participant', 'sound-note', 'connect', 'baseline', 'sound', 'stop', 'export', 'new-session', 'message', 'current', 'quality', 'quality-placeholder', 'electrode-quality', 'chart', 'segments'].map(id => [id, $(id)]));
     const freshSession = () => ({ version: 1, id: crypto.randomUUID(), createdAt: new Date().toISOString(), label: '', segments: [] });
     let session;
     try {
@@ -22,6 +22,14 @@
     let lastTimestamp = null;
     let recent = [];
     let elapsedTimer = null;
+    const electrodeQuality = new SignalQualityVisualizer({
+        containerId: 'liveElectrodeQuality',
+        updateInterval: 1000,
+        useMockData: false,
+        liveDataTimeoutMs: 3000
+    });
+    electrodeQuality.mountTo(ui['electrode-quality']);
+    electrodeQuality.setEmbeddedMode(true);
 
     const message = value => { ui.message.textContent = value; };
     const send = command => { if (ws?.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ command })); };
@@ -33,6 +41,7 @@
         ui.connect.textContent = connected ? 'Disconnect EEG' : 'Connect EEG';
         ui.baseline.disabled = !ready || Boolean(active) || session.segments.some(s => s.kind === 'baseline');
         ui.sound.disabled = !ready || Boolean(active) || !session.segments.some(s => s.kind === 'baseline' && s.readings.length);
+        ui.sound.textContent = `Start sound ${session.segments.filter(s => s.kind === 'sound').length + 1}`;
         ui.stop.disabled = !active;
         ui.export.disabled = !session.segments.length;
         ui['new-session'].disabled = Boolean(active);
@@ -56,7 +65,8 @@
                 const current = bandMean(segment, band), reference = baseline && bandMean(baseline, band);
                 return current === null || reference === null ? `${band}: —` : `${band}: ${((current - reference) * 100).toFixed(1)} pp`;
             }).join('\n');
-            const values = [segment.kind, new Date(segment.startedAt).toLocaleString(), `${duration}s`, String(segment.readings.length), alpha === null ? '—' : `${(alpha * 100).toFixed(1)}%`, change, segment.note || '—'];
+            const label = segment.kind === 'sound' ? `Sound ${segment.soundNumber || session.segments.filter(s => s.kind === 'sound' && Date.parse(s.startedAt) <= Date.parse(segment.startedAt)).length}` : 'Baseline';
+            const values = [label, new Date(segment.startedAt).toLocaleString(), `${duration}s`, String(segment.readings.length), alpha === null ? '—' : `${(alpha * 100).toFixed(1)}%`, change, segment.note || '—'];
             const row = ui.segments.insertRow();
             values.forEach(value => { const cell = row.insertCell(); cell.textContent = value; });
         });
@@ -89,13 +99,15 @@
     function finishSegment() {
         if (!active) return;
         active.endedAt = new Date().toISOString();
-        session.segments.push(active);
         const count = active.readings.length;
+        const wasSound = active.kind === 'sound';
+        if (count) session.segments.push(active);
         active = null;
         clearInterval(elapsedTimer);
         ui.current.textContent = 'No segment recording';
         persist(); renderSegments(); refreshControls();
-        message(`Saved segment with ${count} readings. ${count ? '' : 'No EEG readings arrived; check the connection before continuing.'}`);
+        if (wasSound && count) ui['sound-note'].value = '';
+        message(count ? `Saved ${wasSound ? 'sound' : 'baseline'} segment with ${count} readings. ${wasSound ? 'Describe the next sound and start it when ready.' : 'Describe sound 1 when ready.'}` : 'No EEG readings arrived, so the segment was discarded. Check the connection and try again.');
     }
     function beginSegment(kind) {
         if (!ready || active || pendingKind) return;
@@ -108,12 +120,12 @@
     }
     function startPending() {
         if (!pendingKind) return;
-        active = { kind: pendingKind, startedAt: new Date().toISOString(), note: pendingKind === 'sound' ? ui['sound-note'].value.trim() : '', readings: [] };
+        active = { kind: pendingKind, soundNumber: pendingKind === 'sound' ? session.segments.filter(s => s.kind === 'sound').length + 1 : null, startedAt: new Date().toISOString(), note: pendingKind === 'sound' ? ui['sound-note'].value.trim() : '', readings: [] };
         pendingKind = null;
         lastTimestamp = null;
-        ui.current.textContent = `Recording ${active.kind}: 0s, 0 readings`;
+        ui.current.textContent = `Recording ${active.kind === 'sound' ? `sound ${active.soundNumber}` : 'baseline'}: 0s, 0 readings`;
         elapsedTimer = setInterval(() => {
-            if (active) ui.current.textContent = `Recording ${active.kind}: ${Math.floor((Date.now() - Date.parse(active.startedAt)) / 1000)}s, ${active.readings.length} readings`;
+            if (active) ui.current.textContent = `Recording ${active.kind === 'sound' ? `sound ${active.soundNumber}` : 'baseline'}: ${Math.floor((Date.now() - Date.parse(active.startedAt)) / 1000)}s, ${active.readings.length} readings`;
         }, 500);
         message(`Recording ${active.kind}. Start or play the external sound at the same moment you press Start sound.`);
         refreshControls();
@@ -121,8 +133,10 @@
     function disconnect() {
         finishSegment();
         if (ownsStream) send('stop');
+        electrodeQuality.stop(); ui['quality-placeholder'].hidden = false;
         ownsStream = false; ready = false; connected = false; pendingKind = null;
         if (ws) { ws.close(); ws = null; }
+        recent = []; drawChart(); ui.quality.textContent = 'Waiting for readings';
         ui.connection.textContent = 'Disconnected';
         refreshControls();
     }
@@ -139,14 +153,28 @@
                 ui.connection.textContent = packet.mock_mode ? 'Connected · mock EEG' : 'Connected · real EEG';
             } else if (packet.type === 'response' && packet.command === 'status') {
                 // The EEG service has a global stream. Do not join or interrupt another workflow.
-                ready = !packet.is_streaming && packet.connected_clients === 1;
-                message(ready ? 'Ready. Record a quiet baseline first.' : 'EEG stream is in use by another page. Close Test or other EEG clients, then reconnect.');
+                if (!packet.is_streaming && packet.connected_clients === 1) {
+                    message('Starting EEG to check electrode quality…');
+                    send('start');
+                } else {
+                    ready = false;
+                    message('EEG stream is in use by another page. Close Test or other EEG clients, then reconnect.');
+                }
                 refreshControls();
             } else if (packet.type === 'response' && packet.command === 'start') {
-                if (packet.success) { ownsStream = true; startPending(); }
+                if (packet.success) {
+                    ownsStream = true; ready = true;
+                    // This visualizer only renders readings; the WebSocket command owns the real stream.
+                    electrodeQuality.doStartStream(); electrodeQuality.expand();
+                    ui['quality-placeholder'].hidden = true;
+                    if (pendingKind) startPending();
+                    else message('EEG ready. Check electrode quality, then record a quiet baseline.');
+                    refreshControls();
+                }
                 else { pendingKind = null; message(`Could not start EEG: ${packet.error || 'unknown error'}`); }
             } else if (packet.type === 'reading') {
                 const reading = packet.data || {};
+                electrodeQuality.ingestReading(reading);
                 recent.push(reading); if (recent.length > 90) recent.shift();
                 drawChart();
                 ui.quality.textContent = `Signal quality: ${reading.signal_quality ?? 'unknown'} · Latest reading: ${new Date(Number(reading.timestamp_ms) || Date.now()).toLocaleTimeString()}`;
@@ -162,6 +190,8 @@
         socket.onclose = () => {
             if (ws !== socket) return;
             finishSegment(); ws = null; connected = false; ready = false; ownsStream = false; pendingKind = null;
+            electrodeQuality.stop(); ui['quality-placeholder'].hidden = false;
+            recent = []; drawChart(); ui.quality.textContent = 'Waiting for readings';
             ui.connection.textContent = 'Disconnected'; refreshControls();
         };
     }

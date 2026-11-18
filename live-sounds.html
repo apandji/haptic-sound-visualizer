@@ -8,7 +8,8 @@
     <script src="js/theme.js"></script>
     <link rel="stylesheet" href="css/design-tokens.css">
     <link rel="stylesheet" href="css/chrome.css">
-    <link rel="stylesheet" href="css/pages/live-sounds.css">
+    <link rel="stylesheet" href="css/components/base/signalQualityVisualizer.css">
+    <link rel="stylesheet" href="css/pages/live-sounds.css?v=2026-11-18.2">
 </head>
 <body>
     <a href="#main-content" class="skip-link">Skip to main content</a>
@@ -25,7 +26,7 @@
     </header>
     <main id="main-content" class="live-page">
         <div class="live-heading">
-            <div><h1>Live sound observations</h1><p>Play sounds outside the dashboard. Record a quiet baseline, then label each sound while EEG is streaming.</p></div>
+            <div><h1>Live sound observations</h1><p>Play sounds outside the dashboard. Record one quiet baseline, then record as many labeled sounds as you need in the same session.</p></div>
             <span id="connection" class="live-status" role="status">Disconnected</span>
         </div>
         <div class="live-layout">
@@ -33,12 +34,12 @@
                 <h2 id="record-heading">Record</h2>
                 <label for="participant">Session label <span class="hint">Avoid personal names</span></label>
                 <input id="participant" type="text" maxlength="80" placeholder="e.g. session 01">
-                <label for="sound-note">Sound description</label>
+                <label for="sound-note">Next sound description</label>
                 <textarea id="sound-note" rows="3" maxlength="1000" placeholder="Source, frequency or settings, volume, timing, and anything else you changed"></textarea>
                 <div class="live-actions">
                     <button id="connect" type="button">Connect EEG</button>
                     <button id="baseline" type="button" disabled>Start baseline</button>
-                    <button id="sound" type="button" disabled>Start sound</button>
+                    <button id="sound" type="button" disabled>Start sound 1</button>
                     <button id="stop" type="button" disabled>Stop segment</button>
                 </div>
                 <p id="message" class="live-message" role="status">Start the EEG service, then connect. Use this page while Test is idle.</p>
@@ -53,13 +54,20 @@
                 <p id="quality" class="hint">Waiting for readings</p>
                 <p class="hint">Band power is a rolling EEG estimate, not a raw waveform. Movement, poor contact, and changing volume can alter readings.</p>
             </section>
+            <section class="live-card live-quality-card" aria-labelledby="electrode-heading">
+                <h2 id="electrode-heading">Electrode signal quality</h2>
+                <p id="quality-placeholder" class="hint">Connect EEG to see each electrode’s signal quality.</p>
+                <div id="electrode-quality"></div>
+            </section>
         </div>
         <section class="live-card" aria-labelledby="segments-heading">
             <h2 id="segments-heading">Recorded segments</h2>
             <div class="live-table-wrap"><table><thead><tr><th>Type</th><th>Started</th><th>Duration</th><th>Readings</th><th>Mean alpha</th><th>Change vs baseline</th><th>Notes</th></tr></thead><tbody id="segments"><tr><td colspan="7">No segments yet</td></tr></tbody></table></div>
         </section>
     </main>
-    <script src="js/liveSounds.js"></script>
+    <script src="js/modules/eegQualityConfig.js"></script>
+    <script src="js/components/base/signalQualityVisualizer.js"></script>
+    <script src="js/liveSounds.js?v=2026-11-18.2"></script>
     <script src="js/appNav.js"></script>
 </body>
 </html>
