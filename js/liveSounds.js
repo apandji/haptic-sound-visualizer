@@ -6,7 +6,7 @@
     const COLORS = ['#8b5cf6', '#0ea5e9', '#22c55e', '#f59e0b', '#ef4444'];
     const MAX_READINGS = 3600;
     const $ = id => document.getElementById(id);
-    const ui = Object.fromEntries(['connection', 'participant', 'sound-note', 'connect', 'baseline', 'sound', 'stop', 'export', 'new-session', 'message', 'current', 'quality', 'quality-placeholder', 'electrode-quality', 'chart', 'segments'].map(id => [id, $(id)]));
+    const ui = Object.fromEntries(['connection', 'participant', 'sound-note', 'connect', 'baseline', 'sound', 'stop', 'export', 'export-summary', 'new-session', 'message', 'current', 'quality', 'quality-placeholder', 'electrode-quality', 'chart', 'segments'].map(id => [id, $(id)]));
     const freshSession = () => ({ version: 1, id: crypto.randomUUID(), createdAt: new Date().toISOString(), label: '', segments: [] });
     let session;
     try {
@@ -44,12 +44,40 @@
         ui.sound.textContent = `Start sound ${session.segments.filter(s => s.kind === 'sound').length + 1}`;
         ui.stop.disabled = !active;
         ui.export.disabled = !session.segments.length;
-        ui['new-session'].disabled = Boolean(active);
+        ui['export-summary'].disabled = !session.segments.length;
+        ui['new-session'].disabled = Boolean(active) || Boolean(pendingKind);
     }
     const bandMean = (segment, band) => {
         const values = segment.readings.map(r => Number(r[`${band}_rel`])).filter(Number.isFinite);
         return values.length ? values.reduce((a, b) => a + b, 0) / values.length : null;
     };
+    const meanField = (segment, field) => {
+        const values = segment.readings.map(r => Number(r[field])).filter(Number.isFinite);
+        return values.length ? values.reduce((a, b) => a + b, 0) / values.length : null;
+    };
+    const csvCell = value => `"${String(value ?? '').replaceAll('"', '""')}"`;
+    function download(text, type, filename) {
+        const blob = new Blob([text], { type });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a'); link.href = url; link.download = filename; link.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+    function summaryCsv() {
+        const header = ['session_id', 'session_label', 'session_created_at', 'segment_kind', 'sound_number', 'started_at', 'ended_at', 'duration_seconds', 'reading_count', 'source', 'sound_note', 'mean_signal_quality'];
+        BANDS.forEach(band => header.push(`mean_${band}_relative`, `${band}_vs_baseline_pp`));
+        const baseline = session.segments.find(segment => segment.kind === 'baseline');
+        const rows = [header];
+        session.segments.forEach(segment => {
+            const row = [session.id, session.label, session.createdAt, segment.kind, segment.soundNumber ?? '', segment.startedAt, segment.endedAt, Math.max(0, (Date.parse(segment.endedAt) - Date.parse(segment.startedAt)) / 1000), segment.readings.length, segment.readings[0]?.source || '', segment.note || '', meanField(segment, 'signal_quality')];
+            BANDS.forEach(band => {
+                const current = bandMean(segment, band);
+                const reference = baseline && bandMean(baseline, band);
+                row.push(current, segment.kind === 'sound' && current !== null && reference !== null ? (current - reference) * 100 : '');
+            });
+            rows.push(row);
+        });
+        return rows.map(row => row.map(csvCell).join(',')).join('\r\n') + '\r\n';
+    }
     function renderSegments() {
         ui.segments.replaceChildren();
         if (!session.segments.length) {
@@ -201,15 +229,17 @@
     ui.sound.addEventListener('click', () => beginSegment('sound'));
     ui.stop.addEventListener('click', finishSegment);
     ui.export.addEventListener('click', () => {
-        const blob = new Blob([JSON.stringify(session, null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a'); link.href = url; link.download = `sail-live-sounds-${session.id}.json`; link.click();
-        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        download(JSON.stringify(session), 'application/json', `sail-live-sounds-${session.id}.json`);
+    });
+    ui['export-summary'].addEventListener('click', () => {
+        download(summaryCsv(), 'text/csv;charset=utf-8', `sail-live-sounds-summary-${session.id}.csv`);
     });
     ui['new-session'].addEventListener('click', () => {
         if (session.segments.length && !window.confirm('Start a new session? Export the current recording first if you need it.')) return;
-        disconnect(); session = freshSession(); ui.participant.value = ''; ui['sound-note'].value = '';
-        persist(); renderSegments(); refreshControls(); message('New session ready. Connect EEG to record a baseline.');
+        session = freshSession(); ui.participant.value = ''; ui['sound-note'].value = '';
+        recent = []; drawChart();
+        persist(); renderSegments(); refreshControls();
+        message(ready ? 'New session ready. Record its baseline now.' : 'New session ready. Connect EEG to record its baseline.');
     });
     window.addEventListener('beforeunload', () => { finishSegment(); if (ownsStream) send('stop'); });
     renderSegments(); refreshControls(); drawChart();
